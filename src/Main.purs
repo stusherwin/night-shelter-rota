@@ -1,4 +1,4 @@
-module Main (main) where
+module Main where
 
 import Prelude
 
@@ -6,46 +6,58 @@ import Control.Monad.Eff (Eff)
 import Control.Monad.Eff.Console (log)
 import Control.Monad.Eff.Unsafe (unsafePerformEff)
 import DOM.Node.Types (Element)
-import Data.List (List(..), deleteAt)
-import Data.Maybe (fromMaybe)
+import Data.DateTime (DateTime(..), Date(..), Time(..), canonicalDate, date, adjust)
+import Data.Either (Either(..), fromRight, either)
+import Data.Enum (toEnum)
+import Data.Lens (Lens', lens, Prism', prism)
+import Data.List (List(..), deleteAt, snoc, last, head)
+import Data.Array (fromFoldable)
+import Data.Maybe (fromJust, maybe)
+import Data.Time.Duration (Days(..))
+import Data.Tuple (Tuple(..), uncurry)
+import Partial.Unsafe (unsafePartial)
+import React (ReactElement)
 import React as R
 import React.DOM as RD
 import React.DOM.Props as RP
 import ReactDOM as RDOM
 import Thermite as T
 import Unsafe.Coerce (unsafeCoerce)
-import Data.Lens (Lens', lens, Prism', prism)
-import Data.Tuple (Tuple (..), uncurry)
-import Data.Either (Either (..))
+import Data.Formatter.DateTime (formatDateTime)
 
-data Action = Increment | Decrement
+data Action = AddShift
 
-type State = { counter :: Int }
+type State = { shifts :: List Date }
+
+renderShift :: Date -> ReactElement
+renderShift shift = RD.div [ RP.className "alert alert-primary mt-3" ]
+                           [ RD.text $ unsafePartial $ fromRight $ formatDateTime "D MMMM YYYY" (DateTime shift midnight) ] 
 
 render :: T.Render State _ Action
 render send _ state _ =
   [ RD.div [ RP.className "container-fluid mt-3" ]
-           [ RD.h2' [ RD.text "Thermite test app" ]
-           , RD.div [ RP.className "alert alert-primary mt-3" ]
-                    [ RD.text (show state.counter) ]
-           , RD.a [ RP.onClick \_ -> send Increment
+         $ [ RD.h2' [ RD.text "Night Shelter Rota" ] ]
+        <> (fromFoldable $ map renderShift state.shifts)
+        <> [ RD.a [ RP.onClick \_ -> send AddShift
                   , RP.href "#"
                   , RP.role "button"
                   , RP.className "btn btn-primary"
                   ]
-                  [ RD.text "Increment" ]
-           , RD.a [ RP.onClick \_ -> send Decrement
-                  , RP.href "#"
-                  , RP.role "button"
-                  , RP.className "btn btn-primary ml-2"
-                  ]
-                  [ RD.text "Decrement" ]
-           ]   
+                  [ RD.text "Add shift" ]
+            ]
   ]
 
+startDate :: Date
+startDate = unsafePartial fromJust $ canonicalDate <$> toEnum 2017 <*> pure bottom <*> pure bottom
+
+midnight :: Time
+midnight = unsafePartial fromJust $ Time <$> pure bottom <*> pure bottom <*> pure bottom <*> pure bottom
+
+tomorrow :: Date -> Date
+tomorrow dt = maybe dt date $ adjust (Days 1.0) (DateTime dt bottom)
+
 performAction :: T.PerformAction _ State _ Action
-performAction Increment _ _ = void $ T.modifyState \state -> state { counter = min 5 (state.counter + 1) }
-performAction Decrement _ _ = void $ T.modifyState \state -> state { counter = max 0 (state.counter - 1) }
+performAction AddShift _ _ = void $ T.modifyState \state -> state { shifts = snoc state.shifts (maybe startDate tomorrow (last state.shifts)) }
 
 spec :: T.Spec _ State _ Action
 spec = T.simpleSpec performAction render
@@ -55,7 +67,7 @@ unsafeEventValue e = (unsafeCoerce e).target.value
 
 main :: Unit
 main = unsafePerformEff $ do
-  let component = T.createClass spec $ { counter : 10 }
+  let component = T.createClass spec $ { shifts : Nil }
   let appEl = R.createFactory component {}
 
   if isServerSide
