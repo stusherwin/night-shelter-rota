@@ -5,13 +5,14 @@ import Prelude
 import Control.Monad.Eff (Eff)
 import Control.Monad.Eff.Console (log)
 import Control.Monad.Eff.Unsafe (unsafePerformEff)
+import Control.Monad.Eff.Now (nowDate)
 import DOM.Node.Types (Element)
 import Data.DateTime (DateTime(..), Date(..), Time(..), canonicalDate, date, adjust)
+import Data.DateTime.Locale (LocalValue(..))
 import Data.Either (Either(..), fromRight, either)
 import Data.Enum (toEnum)
 import Data.Lens (Lens', lens, Prism', prism)
-import Data.List (List(..), deleteAt, snoc, last, head)
-import Data.Array (fromFoldable)
+import Data.Array (deleteAt, snoc, last, head)
 import Data.Maybe (fromJust, maybe)
 import Data.Time.Duration (Days(..))
 import Data.Tuple (Tuple(..), uncurry)
@@ -27,7 +28,7 @@ import Data.Formatter.DateTime (formatDateTime)
 
 data Action = AddShift
 
-type State = { shifts :: List Date }
+type State = { shifts :: Array Date }
 
 renderShift :: Date -> ReactElement
 renderShift shift = RD.div [ RP.className "alert alert-primary mt-3" ]
@@ -37,7 +38,7 @@ render :: T.Render State _ Action
 render send _ state _ =
   [ RD.div [ RP.className "container-fluid mt-3" ]
          $ [ RD.h2' [ RD.text "Night Shelter Rota" ] ]
-        <> (fromFoldable $ map renderShift state.shifts)
+        <> map renderShift state.shifts
         <> [ RD.a [ RP.onClick \_ -> send AddShift
                   , RP.href "#"
                   , RP.role "button"
@@ -67,7 +68,9 @@ unsafeEventValue e = (unsafeCoerce e).target.value
 
 main :: Unit
 main = unsafePerformEff $ do
-  let component = T.createClass spec $ { shifts : Nil }
+  (LocalValue _ now) <- nowDate
+  let shifts = [now, tomorrow now, tomorrow (tomorrow now)]
+  let component = T.createClass spec $ { shifts : shifts }
   let appEl = R.createFactory component {}
 
   if isServerSide

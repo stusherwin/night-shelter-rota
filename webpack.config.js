@@ -23,7 +23,7 @@ module.exports = {
 
   devServer: {
     contentBase: '.',
-    port: 4011,
+    port: 4012,
     stats: 'errors-only'
   },
 
