@@ -6,11 +6,17 @@ import Control.Monad.Eff (Eff)
 import Control.Monad.Eff.Console (log)
 import Control.Monad.Eff.Unsafe (unsafePerformEff)
 import DOM.Node.Types (Element)
+import Data.List (List(..), deleteAt)
+import Data.Maybe (fromMaybe)
 import React as R
 import React.DOM as RD
 import React.DOM.Props as RP
 import ReactDOM as RDOM
 import Thermite as T
+import Unsafe.Coerce (unsafeCoerce)
+import Data.Lens (Lens', lens, Prism', prism)
+import Data.Tuple (Tuple (..), uncurry)
+import Data.Either (Either (..))
 
 data Action = Increment | Decrement
 
@@ -44,9 +50,12 @@ performAction Decrement _ _ = void $ T.modifyState \state -> state { counter = m
 spec :: T.Spec _ State _ Action
 spec = T.simpleSpec performAction render
 
+unsafeEventValue :: forall event. event -> String
+unsafeEventValue e = (unsafeCoerce e).target.value
+
 main :: Unit
 main = unsafePerformEff $ do
-  let component = T.createClass spec $ { counter : 2 }
+  let component = T.createClass spec $ { counter : 10 }
   let appEl = R.createFactory component {}
 
   if isServerSide
