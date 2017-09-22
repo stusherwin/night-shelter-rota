@@ -31,7 +31,7 @@ shiftSpec = T.simpleSpec performAction render
   render dispatch _ state _ =
     [ RD.div [ RP.className "alert alert-primary mt-3" ]
              [ RD.text $ unsafePartial $ fromRight $ formatDateTime "D MMMM YYYY" (DateTime state.shift midnight) ] 
-    ]
+    ] 
 
   performAction :: T.PerformAction _ ShiftState _ ShiftAction
   performAction _ _ _ = pure unit
