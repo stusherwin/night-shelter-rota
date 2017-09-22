@@ -1,6 +1,6 @@
-module App.ShiftList where
+module App.ShiftList (ShiftListAction, ShiftListState, VolunteerState, shiftListSpec, buildShiftListState, updateShiftListState) where
 
-import Prelude 
+import Prelude
 
 import Data.DateTime (DateTime(..), Date(..), Time(..), canonicalDate, date, adjust)
 import Data.Either (Either(..))
@@ -14,14 +14,15 @@ import React as R
 import React.DOM as RD
 import React.DOM.Props as RP
 
-import App.Common (Volunteer)
 import App.Shift (ShiftState, ShiftAction, shiftSpec, buildShifts, tomorrow)
   
 data ShiftListAction = AddShift
                      | ShiftAction Int ShiftAction
  
+type VolunteerState = { name :: String } 
+
 type ShiftListState = { shifts :: L.List ShiftState
-                      , currentVolunteer :: Maybe Volunteer
+                      , currentVolunteer :: Maybe VolunteerState
                       , currentDate :: Date }
 
 _shifts :: Lens' ShiftListState (L.List ShiftState)
@@ -54,3 +55,12 @@ shiftListSpec =
     performAction :: T.PerformAction _ ShiftListState _ ShiftListAction
     performAction AddShift _ _ = void $ T.modifyState \state -> state { shifts = L.snoc state.shifts {shift:(tomorrow $ _.shift $ unsafePartial $ fromJust $ L.last state.shifts)} }
     performAction _ _ _ = pure unit
+
+buildShiftListState :: forall v. Array ShiftState -> Date -> Maybe { name :: String | v } -> ShiftListState
+buildShiftListState shifts currentDate currentVolunteer = 
+  { shifts: buildShifts currentDate 7
+  , currentVolunteer: (\v -> {name: v.name}) <$> currentVolunteer
+  , currentDate: currentDate }
+
+updateShiftListState :: forall v. Maybe { name :: String | v } -> ShiftListState -> ShiftListState
+updateShiftListState currentVolunteer state = state { currentVolunteer = (\v -> {name: v.name}) <$> currentVolunteer }

@@ -1,22 +1,20 @@
 module App.Main where
 
-import Prelude
-
-import App.Common (Volunteer)
-import App.CurrentVolunteer (CurrentVolunteerState, CurrentVolunteerAction, currentVolunteerSpec)
-import App.ShiftList (ShiftListState, ShiftListAction, shiftListSpec)
-import App.Shift (ShiftState, buildShifts)
+import Prelude 
+ 
+import App.CurrentVolunteer (CurrentVolunteerState, CurrentVolunteerAction(..), currentVolunteerSpec, buildCurrentVolunteerState, updateCurrentVolunteerState)
+import App.ShiftList (ShiftListState, ShiftListAction, shiftListSpec, buildShiftListState, updateShiftListState)
 import Control.Monad.Eff (Eff)
 import Control.Monad.Eff.Console (log)
 import Control.Monad.Eff.Now (nowDate)
 import Control.Monad.Eff.Unsafe (unsafePerformEff)
 import DOM.Node.Types (Element)
-import Data.DateTime (DateTime(..), Date(..), Time(..), canonicalDate, date, adjust)
+import Data.DateTime (Date)
 import Data.DateTime.Locale (LocalValue(..))
 import Data.Either (Either(..))
 import Data.Foldable (fold)
+import Data.Array (find)
 import Data.Lens (Lens', lens, Prism', prism, over)
-import Data.List (List, snoc, last) as L
 import Data.Maybe (Maybe(..), fromJust, maybe)
 import Data.Newtype (unwrap)
 import Data.Tuple (Tuple(..), uncurry)
@@ -29,11 +27,18 @@ import Thermite as T
   
 data Action = ShiftListAction ShiftListAction
             | CurrentVolunteerAction CurrentVolunteerAction
- 
+
+type Shift = { shift :: Date }
+
+type Volunteer = { id :: Int
+                 , name :: String }
+
 type State = { currentDate :: Date
-             , shifts :: L.List ShiftState
+             , shifts :: Array Shift
              , volunteers :: Array Volunteer
-             , currentVolunteer :: Maybe Volunteer }
+             , currentVolunteer :: Maybe Volunteer
+             , shiftListState :: ShiftListState
+             , currentVolunteerState :: CurrentVolunteerState }
 
 _ShiftListAction :: Prism' Action ShiftListAction
 _ShiftListAction = prism ShiftListAction unwrap
@@ -42,22 +47,14 @@ _ShiftListAction = prism ShiftListAction unwrap
   unwrap a = Left a
 
 _shiftListState :: Lens' State ShiftListState
-_shiftListState = lens getter setter
-  where
-  getter s = { currentDate: s.currentDate
-             , currentVolunteer: s.currentVolunteer
-             , shifts: s.shifts }
-  setter s _ = s
+_shiftListState = lens _.shiftListState (_ { shiftListState = _ })
 
 _currentVolunteerState :: Lens' State CurrentVolunteerState
-_currentVolunteerState = lens getter setter
-  where
-  getter s = { volunteers: s.volunteers, currentVolunteer: s.currentVolunteer }
-  setter s a = (s { currentVolunteer = a.currentVolunteer })
+_currentVolunteerState = lens _.currentVolunteerState (_ { currentVolunteerState = _ })
  
 _CurrentVolunteerAction :: Prism' Action CurrentVolunteerAction
 _CurrentVolunteerAction = prism CurrentVolunteerAction unwrap
-  where
+  where 
   unwrap (CurrentVolunteerAction a) = Right a
   unwrap a = Left a
 
@@ -73,25 +70,39 @@ spec = container $ fold
     [ RD.div [ RP.className "container-fluid mt-3" ] (render d p s c) ]
 
   headerSpec :: T.Spec _ State _ Action
-  headerSpec = T.simpleSpec T.defaultPerformAction render
+  headerSpec = T.simpleSpec performAction render
     where
     render :: T.Render State _ Action
     render dispatch _ state _ =
       [ RD.h2' [ RD.text "Night Shelter Rota"
                , RD.text $ maybe "" (\v -> " for " <> v.name) state.currentVolunteer ] ]
+  
+    performAction :: T.PerformAction _ State _ Action
+    performAction (CurrentVolunteerAction (ChangeCurrentVolunteer id)) _ _ = void $ T.modifyState \state ->
+        let volunteer = (maybe Nothing (\id -> find (\v -> v.id == id) state.volunteers) id)
+        in state { currentVolunteer = volunteer 
+                 , shiftListState = (updateShiftListState (volunteer) state.shiftListState)
+                 , currentVolunteerState = (updateCurrentVolunteerState volunteer state.currentVolunteerState)
+                 }
+    performAction _ _ _ = pure unit 
 
 main :: Unit
 main = unsafePerformEff $ do
-  (LocalValue _ now) <- nowDate
-  let component = T.createClass spec $ { currentDate: now
-                                       , shifts: buildShifts now 7
-                                       , currentVolunteer: Nothing
-                                       , volunteers: [ { id: 1, name: "Stu"}
-                                                     , { id: 2, name: "Bob"} ] }
+  (LocalValue _ currentDate) <- nowDate
+  let volunteers = [ { id: 1, name: "Stu" }
+                   , { id: 2, name: "Bob" } ]
+  let shifts = []
+  let currentVolunteer = Nothing
+  let component = T.createClass spec $ { currentDate: currentDate
+                                       , shifts: shifts
+                                       , currentVolunteer: currentVolunteer
+                                       , volunteers: volunteers
+                                       , shiftListState: buildShiftListState shifts currentDate currentVolunteer
+                                       , currentVolunteerState: buildCurrentVolunteerState volunteers currentVolunteer }
   let appEl = R.createFactory component {}
 
   if isServerSide
-     then void (log (RDOM.renderToString appEl))
+     then void (log (RDOM.renderToString appEl)) 
      else void (getElementById "app" >>= RDOM.render appEl)
 
   hot
