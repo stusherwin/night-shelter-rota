@@ -1,8 +1,7 @@
-module App.CurrentVolunteer (CurrentVolunteerState, Volunteer, CurrentVolunteerAction(..), currentVolunteerSpec) where
+module App.CurrentVolunteer (CurrentVolunteerState, CurrentVolunteerAction(..), currentVolunteerSpec) where
 
 import Prelude
 
-import App.Common (unsafeEventSelectedIndex)
 import Data.Array ((!!))
 import Data.Maybe (Maybe, maybe)
 import React (ReactElement)
@@ -10,8 +9,7 @@ import React.DOM as RD
 import React.DOM.Props as RP
 import Thermite as T
 
-type Volunteer = { id :: Int
-                 , name :: String }
+import App.Common (unsafeEventSelectedIndex, Volunteer)
    
 type CurrentVolunteerState = { volunteers :: Array Volunteer
                              , currentVolunteer :: Maybe Volunteer }

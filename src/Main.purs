@@ -2,46 +2,55 @@ module App.Main where
 
 import Prelude
 
+import App.Common (Volunteer)
+import App.CurrentVolunteer (CurrentVolunteerState, CurrentVolunteerAction, currentVolunteerSpec)
+import App.ShiftList (ShiftListState, ShiftListAction, shiftListSpec)
+import App.Shift (ShiftState, buildShifts)
 import Control.Monad.Eff (Eff)
 import Control.Monad.Eff.Console (log)
 import Control.Monad.Eff.Now (nowDate)
 import Control.Monad.Eff.Unsafe (unsafePerformEff)
-import App.CurrentVolunteer (CurrentVolunteerState, CurrentVolunteerAction, currentVolunteerSpec, Volunteer)
 import DOM.Node.Types (Element)
+import Data.DateTime (DateTime(..), Date(..), Time(..), canonicalDate, date, adjust)
 import Data.DateTime.Locale (LocalValue(..))
 import Data.Either (Either(..))
 import Data.Foldable (fold)
 import Data.Lens (Lens', lens, Prism', prism, over)
 import Data.List (List, snoc, last) as L
 import Data.Maybe (Maybe(..), fromJust, maybe)
+import Data.Newtype (unwrap)
 import Data.Tuple (Tuple(..), uncurry)
 import Partial.Unsafe (unsafePartial)
 import React as R
 import React.DOM as RD
 import React.DOM.Props as RP
 import ReactDOM as RDOM
-import App.Shift (ShiftState, ShiftAction, shiftSpec, buildShifts, tomorrow)
 import Thermite as T
   
-data Action = AddShift
-            | ShiftAction Int ShiftAction
+data Action = ShiftListAction ShiftListAction
             | CurrentVolunteerAction CurrentVolunteerAction
  
-type State = { shifts :: L.List ShiftState
+type State = { currentDate :: Date
+             , shifts :: L.List ShiftState
              , volunteers :: Array Volunteer
              , currentVolunteer :: Maybe Volunteer }
 
-_shifts :: Lens' State (L.List ShiftState)
-_shifts = lens _.shifts (_ { shifts = _ })
+_ShiftListAction :: Prism' Action ShiftListAction
+_ShiftListAction = prism ShiftListAction unwrap
+  where
+  unwrap (ShiftListAction a) = Right a
+  unwrap a = Left a
 
-_ShiftAction :: Prism' Action (Tuple Int ShiftAction)
-_ShiftAction = prism (uncurry ShiftAction) \ta ->
-  case ta of 
-    ShiftAction i a -> Right (Tuple i a)
-    _ -> Left ta
+_shiftListState :: Lens' State ShiftListState
+_shiftListState = lens getter setter
+  where
+  getter s = { currentDate: s.currentDate
+             , currentVolunteer: s.currentVolunteer
+             , shifts: s.shifts }
+  setter s _ = s
 
-_currentVolunteer :: Lens' State CurrentVolunteerState
-_currentVolunteer = lens getter setter
+_currentVolunteerState :: Lens' State CurrentVolunteerState
+_currentVolunteerState = lens getter setter
   where
   getter s = { volunteers: s.volunteers, currentVolunteer: s.currentVolunteer }
   setter s a = (s { currentVolunteer = a.currentVolunteer })
@@ -54,10 +63,9 @@ _CurrentVolunteerAction = prism CurrentVolunteerAction unwrap
 
 spec :: forall props eff. T.Spec eff State props Action
 spec = container $ fold
-  [ T.focus _currentVolunteer _CurrentVolunteerAction currentVolunteerSpec
+  [ T.focus _currentVolunteerState _CurrentVolunteerAction currentVolunteerSpec
   , headerSpec
-  , (T.focus _shifts _ShiftAction (T.foreach \_ -> shiftSpec))
-  , footerSpec
+  , T.focus _shiftListState _ShiftListAction shiftListSpec
   ]
   where
   container :: forall state action. T.Spec eff state props action -> T.Spec eff state props action
@@ -72,27 +80,11 @@ spec = container $ fold
       [ RD.h2' [ RD.text "Night Shelter Rota"
                , RD.text $ maybe "" (\v -> " for " <> v.name) state.currentVolunteer ] ]
 
-  footerSpec :: T.Spec _ State _ Action
-  footerSpec = T.simpleSpec performAction render
-    where
-    render :: T.Render State _ Action
-    render dispatch _ state _ =
-      [ RD.a [ RP.onClick \_ -> dispatch AddShift
-            , RP.href "#"
-            , RP.role "button"
-            , RP.className "btn btn-primary"
-            ]
-            [ RD.text "Add shift" ]
-      ]
-
-    performAction :: T.PerformAction _ State _ Action
-    performAction AddShift _ _ = void $ T.modifyState \state -> state { shifts = L.snoc state.shifts {shift:(tomorrow $ _.shift $ unsafePartial $ fromJust $ L.last state.shifts)} }
-    performAction _ _ _ = pure unit
-
 main :: Unit
 main = unsafePerformEff $ do
   (LocalValue _ now) <- nowDate
-  let component = T.createClass spec $ { shifts: buildShifts now 7
+  let component = T.createClass spec $ { currentDate: now
+                                       , shifts: buildShifts now 7
                                        , currentVolunteer: Nothing
                                        , volunteers: [ { id: 1, name: "Stu"}
                                                      , { id: 2, name: "Bob"} ] }
