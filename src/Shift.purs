@@ -1,4 +1,4 @@
-module Shift (ShiftState, ShiftAction, shiftSpec, buildShifts, tomorrow) where
+module App.Shift (ShiftState, ShiftAction, shiftSpec, buildShifts, tomorrow) where
 
 import Prelude
 
@@ -18,7 +18,7 @@ import React.DOM.Props as RP
 import ReactDOM as RDOM 
 import Thermite as T
 
-import Common (unsafeEventValue)
+import App.Common (unsafeEventValue)
    
 type ShiftState = { shift :: Date }
 

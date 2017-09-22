@@ -1,43 +1,35 @@
-module Main where
+module App.Main where
 
 import Prelude
 
-import Common (unsafeEventValue)
 import Control.Monad.Eff (Eff)
 import Control.Monad.Eff.Console (log)
 import Control.Monad.Eff.Now (nowDate)
 import Control.Monad.Eff.Unsafe (unsafePerformEff)
-import CurrentVolunteer (CurrentVolunteerState, CurrentVolunteerAction, currentVolunteerSpec)
+import App.CurrentVolunteer (CurrentVolunteerState, CurrentVolunteerAction, currentVolunteerSpec, Volunteer)
 import DOM.Node.Types (Element)
-import Data.Array (deleteAt, snoc, last, head)
-import Data.DateTime (DateTime(..), Date(..), Time(..), canonicalDate, date, adjust)
 import Data.DateTime.Locale (LocalValue(..))
-import Data.Either (Either(..), fromRight, either)
-import Data.Enum (toEnum)
+import Data.Either (Either(..))
 import Data.Foldable (fold)
-import Data.Formatter.DateTime (formatDateTime)
 import Data.Lens (Lens', lens, Prism', prism, over)
-import Data.List (List(..), snoc, last) as L
+import Data.List (List, snoc, last) as L
 import Data.Maybe (Maybe(..), fromJust, maybe)
-import Data.Time.Duration (Days(..))
 import Data.Tuple (Tuple(..), uncurry)
 import Partial.Unsafe (unsafePartial)
-import React (ReactElement)
 import React as R
 import React.DOM as RD
-import React.DOM.Dynamic (a)
 import React.DOM.Props as RP
 import ReactDOM as RDOM
-import Shift (ShiftState, ShiftAction, shiftSpec, buildShifts, tomorrow)
+import App.Shift (ShiftState, ShiftAction, shiftSpec, buildShifts, tomorrow)
 import Thermite as T
-import Unsafe.Coerce (unsafeCoerce)
- 
+  
 data Action = AddShift
             | ShiftAction Int ShiftAction
             | CurrentVolunteerAction CurrentVolunteerAction
  
 type State = { shifts :: L.List ShiftState
-             , currentVolunteer :: CurrentVolunteerState }
+             , volunteers :: Array Volunteer
+             , currentVolunteer :: Maybe Volunteer }
 
 _shifts :: Lens' State (L.List ShiftState)
 _shifts = lens _.shifts (_ { shifts = _ })
@@ -49,8 +41,11 @@ _ShiftAction = prism (uncurry ShiftAction) \ta ->
     _ -> Left ta
 
 _currentVolunteer :: Lens' State CurrentVolunteerState
-_currentVolunteer = lens _.currentVolunteer (_ { currentVolunteer = _ })
-
+_currentVolunteer = lens getter setter
+  where
+  getter s = { volunteers: s.volunteers, currentVolunteer: s.currentVolunteer }
+  setter s a = (s { currentVolunteer = a.currentVolunteer })
+ 
 _CurrentVolunteerAction :: Prism' Action CurrentVolunteerAction
 _CurrentVolunteerAction = prism CurrentVolunteerAction unwrap
   where
@@ -74,7 +69,8 @@ spec = container $ fold
     where
     render :: T.Render State _ Action
     render dispatch _ state _ =
-      [ RD.h2' [ RD.text "Night Shelter Rota" ] ]
+      [ RD.h2' [ RD.text "Night Shelter Rota"
+               , RD.text $ maybe "" (\v -> " for " <> v.name) state.currentVolunteer ] ]
 
   footerSpec :: T.Spec _ State _ Action
   footerSpec = T.simpleSpec performAction render
@@ -90,13 +86,16 @@ spec = container $ fold
       ]
 
     performAction :: T.PerformAction _ State _ Action
-    performAction _ _ _ = void $ T.modifyState \state -> state { shifts = L.snoc state.shifts {shift:(tomorrow $ _.shift $ unsafePartial $ fromJust $ L.last state.shifts)} }
+    performAction AddShift _ _ = void $ T.modifyState \state -> state { shifts = L.snoc state.shifts {shift:(tomorrow $ _.shift $ unsafePartial $ fromJust $ L.last state.shifts)} }
+    performAction _ _ _ = pure unit
 
 main :: Unit
 main = unsafePerformEff $ do
   (LocalValue _ now) <- nowDate
   let component = T.createClass spec $ { shifts: buildShifts now 7
-                                       , currentVolunteer: Just { name: "Stu" } }
+                                       , currentVolunteer: Nothing
+                                       , volunteers: [ { id: 1, name: "Stu"}
+                                                     , { id: 2, name: "Bob"} ] }
   let appEl = R.createFactory component {}
 
   if isServerSide
@@ -105,7 +104,7 @@ main = unsafePerformEff $ do
 
   hot
 
-foreign import isServerSide :: Boolean
+foreign import isServerSide :: Boolean 
 
 foreign import getElementById :: forall eff. String -> Eff eff Element
 

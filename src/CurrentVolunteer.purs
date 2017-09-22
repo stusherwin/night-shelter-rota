@@ -1,30 +1,22 @@
-module CurrentVolunteer (CurrentVolunteerState, Volunteer, CurrentVolunteerAction(..), currentVolunteerSpec) where
+module App.CurrentVolunteer (CurrentVolunteerState, Volunteer, CurrentVolunteerAction(..), currentVolunteerSpec) where
 
 import Prelude
 
-import Data.DateTime (DateTime(..), Date(..), Time(..), canonicalDate, date, adjust)
-import Data.DateTime.Locale (LocalValue(..))
-import Data.Either (Either(..), fromRight, either)
-import Data.Formatter.DateTime (formatDateTime)
-import Data.List (List(..), snoc, last) as L
-import Data.Maybe (fromJust, maybe, Maybe(..))
-import Data.Time.Duration (Days(..))
-import Partial.Unsafe (unsafePartial)
-
+import App.Common (unsafeEventSelectedIndex)
+import Data.Array ((!!))
+import Data.Maybe (Maybe, maybe)
 import React (ReactElement)
-import React as R
 import React.DOM as RD
 import React.DOM.Props as RP
-import ReactDOM as RDOM 
 import Thermite as T
 
-import Common (unsafeEventValue)
-
-type Volunteer = { name :: String }
+type Volunteer = { id :: Int
+                 , name :: String }
    
-type CurrentVolunteerState = Maybe Volunteer
+type CurrentVolunteerState = { volunteers :: Array Volunteer
+                             , currentVolunteer :: Maybe Volunteer }
  
-data CurrentVolunteerAction = ChangeCurrentVolunteer Volunteer
+data CurrentVolunteerAction = ChangeCurrentVolunteer (Maybe Volunteer)
 
 currentVolunteerSpec :: T.Spec _ CurrentVolunteerState _ CurrentVolunteerAction
 currentVolunteerSpec = T.simpleSpec performAction render
@@ -32,9 +24,18 @@ currentVolunteerSpec = T.simpleSpec performAction render
   render :: T.Render CurrentVolunteerState _ CurrentVolunteerAction
   render dispatch _ state _ =
     [ RD.span [ RP.className "float-right" ]
-              [ RD.text "Current volunteer: "
-              , RD.text (maybe "None" _.name state) ] 
+              [ RD.select [ RP.onChange \e -> dispatch (ChangeCurrentVolunteer $ state.volunteers !! ((unsafeEventSelectedIndex e) - 1)) ]
+                          ([ RD.option [ RP.value "" ]
+                                       [ RD.text "Select a volunteer" ] ]
+                          <> map (option dispatch state) state.volunteers)
+              ]
     ]
+  
+  option :: _ -> CurrentVolunteerState -> Volunteer -> ReactElement
+  option dispatch state v = RD.option [ RP.selected (maybe false (\cv -> cv.id == v.id) state.currentVolunteer) 
+                                      , RP.value $ show v.id
+                                      ]
+                                      [ RD.text v.name ]
 
   performAction :: T.PerformAction _ CurrentVolunteerState _ CurrentVolunteerAction
-  performAction _ _ _ = pure unit
+  performAction (ChangeCurrentVolunteer v) _ _ = void $ T.modifyState \state -> state { currentVolunteer = v }
