@@ -2,8 +2,8 @@ module App.Main where
 
 import Prelude 
  
-import App.CurrentVolunteer (CurrentVolunteerState, CurrentVolunteerAction(..), currentVolunteerSpec, buildCurrentVolunteerState, updateCurrentVolunteerState)
-import App.ShiftList (ShiftListState, ShiftListAction, shiftListSpec, buildShiftListState, updateShiftListState)
+import App.CurrentVolunteer (CurrentVolunteerProps, CurrentVolunteerState, CurrentVolunteerAction(..), currentVolunteerSpec, currentVolunteerInitialState)
+import App.ShiftList (ShiftListProps, ShiftListState, ShiftListAction, shiftListSpec, shiftListInitialState)
 import Control.Monad.Eff (Eff)
 import Control.Monad.Eff.Console (log)
 import Control.Monad.Eff.Now (nowDate)
@@ -25,18 +25,13 @@ import React.DOM.Props as RP
 import ReactDOM as RDOM
 import Thermite as T
   
+import App.Data (Shift, Volunteer)
+
 data Action = ShiftListAction ShiftListAction
             | CurrentVolunteerAction CurrentVolunteerAction
 
-type Shift = { shift :: Date }
-
-type Volunteer = { id :: Int
-                 , name :: String }
-
-type State = { currentDate :: Date
-             , shifts :: Array Shift
+type State = { shifts :: Array Shift
              , volunteers :: Array Volunteer
-             , currentVolunteer :: Maybe Volunteer
              , shiftListState :: ShiftListState
              , currentVolunteerState :: CurrentVolunteerState }
 
@@ -46,17 +41,34 @@ _ShiftListAction = prism ShiftListAction unwrap
   unwrap (ShiftListAction a) = Right a
   unwrap a = Left a
 
-_shiftListState :: Lens' State ShiftListState
-_shiftListState = lens _.shiftListState (_ { shiftListState = _ })
+-- TODO: compose props & state lenses
+-- _shiftListProps :: Lens' State ShiftListProps
+-- _shiftListProps = lens getter setter
 
-_currentVolunteerState :: Lens' State CurrentVolunteerState
-_currentVolunteerState = lens _.currentVolunteerState (_ { currentVolunteerState = _ })
- 
+_shiftListState :: Lens' State (Tuple ShiftListProps ShiftListState)
+_shiftListState = lens getter setter
+  where
+  getter :: State -> Tuple ShiftListProps ShiftListState
+  getter s = Tuple { currentVolunteer: s.currentVolunteerState.currentVolunteer
+                   , shifts: s.shifts } s.shiftListState
+  
+  setter :: State -> Tuple ShiftListProps ShiftListState -> State
+  setter s (Tuple _ a) = s{ shiftListState = a }
+
+_currentVolunteerState :: Lens' State (Tuple CurrentVolunteerProps CurrentVolunteerState)
+_currentVolunteerState = lens getter setter
+  where
+  getter :: State -> Tuple CurrentVolunteerProps CurrentVolunteerState
+  getter s = Tuple { volunteers: s.volunteers } s.currentVolunteerState
+  
+  setter :: State -> Tuple CurrentVolunteerProps CurrentVolunteerState -> State
+  setter s (Tuple _ a) = s{ currentVolunteerState = a }
+
 _CurrentVolunteerAction :: Prism' Action CurrentVolunteerAction
 _CurrentVolunteerAction = prism CurrentVolunteerAction unwrap
   where 
   unwrap (CurrentVolunteerAction a) = Right a
-  unwrap a = Left a
+  unwrap a = Left a 
 
 spec :: forall props eff. T.Spec eff State props Action
 spec = container $ fold
@@ -75,15 +87,9 @@ spec = container $ fold
     render :: T.Render State _ Action
     render dispatch _ state _ =
       [ RD.h2' [ RD.text "Night Shelter Rota"
-               , RD.text $ maybe "" (\v -> " for " <> v.name) state.currentVolunteer ] ]
+               , RD.text $ maybe "" (\v -> " for " <> v.name) state.currentVolunteerState.currentVolunteer ] ]
   
     performAction :: T.PerformAction _ State _ Action
-    performAction (CurrentVolunteerAction (ChangeCurrentVolunteer id)) _ _ = void $ T.modifyState \state ->
-        let volunteer = (maybe Nothing (\id -> find (\v -> v.id == id) state.volunteers) id)
-        in state { currentVolunteer = volunteer 
-                 , shiftListState = (updateShiftListState (volunteer) state.shiftListState)
-                 , currentVolunteerState = (updateCurrentVolunteerState volunteer state.currentVolunteerState)
-                 }
     performAction _ _ _ = pure unit 
 
 main :: Unit
@@ -93,12 +99,11 @@ main = unsafePerformEff $ do
                    , { id: 2, name: "Bob" } ]
   let shifts = []
   let currentVolunteer = Nothing
-  let component = T.createClass spec $ { currentDate: currentDate
-                                       , shifts: shifts
-                                       , currentVolunteer: currentVolunteer
+  let component = T.createClass spec $ { shifts: shifts
                                        , volunteers: volunteers
-                                       , shiftListState: buildShiftListState shifts currentDate currentVolunteer
-                                       , currentVolunteerState: buildCurrentVolunteerState volunteers currentVolunteer }
+                                       , shiftListState: shiftListInitialState { currentVolunteer: currentVolunteer 
+                                                                               , shifts: shifts } currentDate
+                                       , currentVolunteerState: currentVolunteerInitialState { volunteers: volunteers } currentVolunteer }
   let appEl = R.createFactory component {}
 
   if isServerSide

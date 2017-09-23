@@ -1,50 +1,46 @@
-module App.CurrentVolunteer (CurrentVolunteerState, VolunteerState, CurrentVolunteerAction(..), currentVolunteerSpec, buildCurrentVolunteerState, updateCurrentVolunteerState) where
+module App.CurrentVolunteer (CurrentVolunteerProps, CurrentVolunteerState, CurrentVolunteerAction(..), currentVolunteerSpec, currentVolunteerInitialState) where
 
 import Prelude
 
 import App.Common (unsafeEventSelectedIndex)
 import Data.Array ((!!))
 import Data.Maybe (Maybe(..), maybe)
+import Data.Tuple (Tuple(..))
 import React (ReactElement)
 import React.DOM as RD
 import React.DOM.Props as RP
 import Thermite as T
 
-type VolunteerState = { id :: Int
-                      , name :: String }
- 
-type CurrentVolunteerState = { volunteers :: Array VolunteerState
-                             , currentVolunteerId :: Maybe Int } 
- 
-data CurrentVolunteerAction = ChangeCurrentVolunteer (Maybe Int)
+import App.Data (Volunteer)
 
-currentVolunteerSpec :: T.Spec _ CurrentVolunteerState _ CurrentVolunteerAction
+type CurrentVolunteerProps = { volunteers :: Array Volunteer }
+ 
+type CurrentVolunteerState = { currentVolunteer :: Maybe Volunteer } 
+ 
+data CurrentVolunteerAction = ChangeCurrentVolunteer (Maybe Volunteer)
+
+currentVolunteerSpec :: T.Spec _ (Tuple CurrentVolunteerProps CurrentVolunteerState) _ CurrentVolunteerAction
 currentVolunteerSpec = T.simpleSpec performAction render
   where
-  render :: T.Render CurrentVolunteerState _ CurrentVolunteerAction
-  render dispatch _ state _ =
+  render :: T.Render (Tuple CurrentVolunteerProps CurrentVolunteerState) _ CurrentVolunteerAction
+  render dispatch _ (Tuple props state) _ =
     [ RD.span [ RP.className "float-right" ]
-                [ RD.select [ RP.onChange \e -> dispatch (ChangeCurrentVolunteer $ (_.id) <$> state.volunteers !! ((unsafeEventSelectedIndex e) - 1)) ]
+                [ RD.select [ RP.onChange \e -> dispatch (ChangeCurrentVolunteer $ props.volunteers !! ((unsafeEventSelectedIndex e) - 1)) ]
                           ([ RD.option [ RP.value "" ]
                                        [ RD.text "Select a volunteer" ] ]
-                          <> map (option dispatch state) state.volunteers)
+                          <> map (option dispatch state.currentVolunteer) props.volunteers)
               ]
     ]
   
-  option :: _ -> CurrentVolunteerState -> VolunteerState -> ReactElement
-  option dispatch state v = RD.option [ RP.selected (maybe false (_ == v.id) state.currentVolunteerId) 
-                                      , RP.value $ show v.id
-                                      ]
-                                      [ RD.text v.name ]
+  option :: _ -> Maybe Volunteer -> Volunteer -> ReactElement
+  option dispatch currentVolunteer v = RD.option [ RP.selected (maybe false (\cv -> cv.id == v.id) currentVolunteer) 
+                                                 , RP.value $ show v.id
+                                                 ]
+                                                 [ RD.text v.name ]
 
-  performAction :: T.PerformAction _ CurrentVolunteerState _ CurrentVolunteerAction
+  performAction :: T.PerformAction _ (Tuple CurrentVolunteerProps CurrentVolunteerState) _ CurrentVolunteerAction
+  performAction (ChangeCurrentVolunteer v) _ _ = void $ T.modifyState \(Tuple props state) -> Tuple props state{ currentVolunteer = v }
   performAction _ _ _ = pure unit
 
-buildCurrentVolunteerState :: Array VolunteerState -> Maybe VolunteerState -> CurrentVolunteerState
-buildCurrentVolunteerState volunteers currentVolunteer =
-  { volunteers: volunteers
-  , currentVolunteerId: maybe Nothing (\v -> Just v.id) currentVolunteer
-  }
-
-updateCurrentVolunteerState :: Maybe VolunteerState -> CurrentVolunteerState -> CurrentVolunteerState
-updateCurrentVolunteerState currentVolunteer state = state { currentVolunteerId = maybe Nothing (\v -> Just v.id) currentVolunteer }
+currentVolunteerInitialState :: CurrentVolunteerProps -> Maybe Volunteer -> CurrentVolunteerState
+currentVolunteerInitialState volunteers currentVolunteer = { currentVolunteer: currentVolunteer }
