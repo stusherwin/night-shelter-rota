@@ -7,7 +7,7 @@ import Data.Either (Either(..))
 import Data.Lens (Lens', lens, Prism', prism, over)
 import Data.List (List(..), snoc, last) as L
 import Data.Maybe (Maybe(..), fromJust, maybe)
-import Data.Tuple (Tuple(..), uncurry, snd)
+import Data.Tuple (Tuple(..), uncurry, fst, snd)
 import Partial.Unsafe (unsafePartial)
 import Thermite as T
 import React as R
@@ -16,6 +16,7 @@ import React.DOM.Props as RP
 
 import App.Shift (ShiftProps, ShiftState, ShiftAction, shiftSpec, tomorrow)
 import App.Data (Shift, Volunteer)
+import App.Common (lensOfListWithProps) 
   
 data ShiftListAction = AddShift
                      | ShiftAction Int ShiftAction
@@ -28,13 +29,9 @@ type ShiftListState = { shifts :: L.List ShiftState
                       , currentDate :: Date }
  
 _shifts :: Lens' (Tuple ShiftListProps ShiftListState) (L.List (Tuple ShiftProps ShiftState))
-_shifts = lens getter setter 
-  where 
-  getter :: Tuple ShiftListProps ShiftListState -> L.List (Tuple ShiftProps ShiftState)
-  getter (Tuple props state) = map (Tuple {currentVolunteer: props.currentVolunteer}) state.shifts
-
-  setter :: Tuple ShiftListProps ShiftListState -> L.List (Tuple ShiftProps ShiftState) -> Tuple ShiftListProps ShiftListState
-  setter (Tuple props state) shifts = Tuple props state{ shifts = map snd shifts }
+_shifts = lensOfListWithProps (\(Tuple _ s) -> s.shifts)
+                              (\(Tuple p s) a -> Tuple p s{shifts = a})
+                              (\(Tuple p _) -> {currentVolunteer: p.currentVolunteer})
 
 _ShiftAction :: Prism' ShiftListAction (Tuple Int ShiftAction)
 _ShiftAction = prism (uncurry ShiftAction) \ta ->

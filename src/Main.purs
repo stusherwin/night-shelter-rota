@@ -26,6 +26,7 @@ import ReactDOM as RDOM
 import Thermite as T
   
 import App.Data (Shift, Volunteer)
+import App.Common (lensWithProps) 
 
 data Action = ShiftListAction ShiftListAction
             | CurrentVolunteerAction CurrentVolunteerAction
@@ -41,28 +42,14 @@ _ShiftListAction = prism ShiftListAction unwrap
   unwrap (ShiftListAction a) = Right a
   unwrap a = Left a
 
--- TODO: compose props & state lenses
--- _shiftListProps :: Lens' State ShiftListProps
--- _shiftListProps = lens getter setter
-
 _shiftListState :: Lens' State (Tuple ShiftListProps ShiftListState)
-_shiftListState = lens getter setter
-  where
-  getter :: State -> Tuple ShiftListProps ShiftListState
-  getter s = Tuple { currentVolunteer: s.currentVolunteerState.currentVolunteer
-                   , shifts: s.shifts } s.shiftListState
-  
-  setter :: State -> Tuple ShiftListProps ShiftListState -> State
-  setter s (Tuple _ a) = s{ shiftListState = a }
+_shiftListState = lensWithProps _.shiftListState _{shiftListState = _}
+  \s -> { currentVolunteer: s.currentVolunteerState.currentVolunteer
+        , shifts: s.shifts }
 
 _currentVolunteerState :: Lens' State (Tuple CurrentVolunteerProps CurrentVolunteerState)
-_currentVolunteerState = lens getter setter
-  where
-  getter :: State -> Tuple CurrentVolunteerProps CurrentVolunteerState
-  getter s = Tuple { volunteers: s.volunteers } s.currentVolunteerState
-  
-  setter :: State -> Tuple CurrentVolunteerProps CurrentVolunteerState -> State
-  setter s (Tuple _ a) = s{ currentVolunteerState = a }
+_currentVolunteerState = lensWithProps _.currentVolunteerState _{currentVolunteerState = _}
+  \s -> { volunteers: s.volunteers }
 
 _CurrentVolunteerAction :: Prism' Action CurrentVolunteerAction
 _CurrentVolunteerAction = prism CurrentVolunteerAction unwrap
