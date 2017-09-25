@@ -1,34 +1,26 @@
-module App.Shift (ShiftProps, ShiftState, ShiftAction, shiftSpec, tomorrow) where
+module App.Shift (ShiftProps, ShiftState, VolunteerState(..), ShiftAction(..), shiftSpec) where
 
 import Prelude
 
-import Data.DateTime (DateTime(..), Date(..), Time(..), canonicalDate, date, adjust)
-import Data.DateTime.Locale (LocalValue(..))
-import Data.Either (Either(..), fromRight, either)
-import Data.Formatter.DateTime (formatDateTime)
-import Data.List (List(..), snoc, last) as L
-import Data.Maybe (Maybe(..), fromJust, maybe)
-import Data.String (joinWith)
-import Data.Time.Duration (Days(..))
-import Data.Tuple (Tuple(..), uncurry)
-import Partial.Unsafe (unsafePartial)
-
+import App.Common (unsafeEventValue, toDateString)
+import App.Data (Volunteer(..))
+import Data.DateTime (Date)
+import Data.Maybe (Maybe(..))
+import Data.Tuple (Tuple(..))
 import React (ReactElement)
-import React as R
 import React.DOM as RD
 import React.DOM.Props as RP
-import ReactDOM as RDOM 
 import Thermite as T
 
-import App.Common (unsafeEventValue)
-import App.Data (Volunteer)
+type ShiftProps = { currentVolName :: Maybe String }
 
-type ShiftProps = { currentVolunteer :: Maybe Volunteer }
+data VolunteerState = CurrentVol String
+                    | OtherVol String
 
-type ShiftState = { shift :: Date
-                  , volunteers :: Array String }
+type ShiftState = { date :: Date
+                  , vols :: Array VolunteerState }
 
-data ShiftAction = Noop
+data ShiftAction = AddCurrentVol Date
 
 shiftSpec :: T.Spec _ (Tuple ShiftProps ShiftState) _ ShiftAction
 shiftSpec = T.simpleSpec performAction render
@@ -36,21 +28,27 @@ shiftSpec = T.simpleSpec performAction render
   render :: T.Render (Tuple ShiftProps ShiftState) _ ShiftAction
   render dispatch _ (Tuple props state) _ =
     [ RD.div [ RP.className "alert alert-primary mt-3" ]
-             [ RD.text $ unsafePartial $ fromRight $ formatDateTime "D MMMM YYYY" (DateTime state.shift midnight)
-             , RD.span [ RP.className "float-right" ]
-                       (map (renderVolunteer props.currentVolunteer) state.volunteers)
-             ] 
+            ([ RD.text $ toDateString state.date
+            ] <> renderAdd dispatch state.date props.currentVolName
+            <> [ RD.span [ RP.className "float-right" ]
+                      (map renderVol state.vols)
+             ])
     ]
+
+  renderAdd :: _ -> Date -> Maybe String -> Array ReactElement
+  renderAdd dispatch date (Just volName)
+    = [ RD.a [ RP.onClick \_ -> dispatch (AddCurrentVol date)
+           , RP.href "#"
+           , RP.role "button"
+           , RP.className "btn btn-primary btn-sm float-right"
+           ]
+           [ RD.text $ "Add " <> volName ]
+      ] 
+  renderAdd _ _ Nothing = [] 
   
-  renderVolunteer :: Maybe Volunteer -> String -> ReactElement
-  renderVolunteer (Just cv) v | cv.name == v = RD.strong' [ RD.text v ]
-  renderVolunteer _         v = RD.text v
+  renderVol :: VolunteerState -> ReactElement
+  renderVol (CurrentVol v) = RD.strong' [ RD.text v ]
+  renderVol (OtherVol v)   = RD.text v
 
   performAction :: T.PerformAction _ (Tuple ShiftProps ShiftState) _ ShiftAction
   performAction _ _ _ = pure unit
-
-midnight :: Time
-midnight = unsafePartial fromJust $ Time <$> pure bottom <*> pure bottom <*> pure bottom <*> pure bottom
-
-tomorrow :: Date -> Date
-tomorrow dt = maybe dt date $ adjust (Days 1.0) (DateTime dt bottom)
