@@ -13,34 +13,36 @@ import Thermite as T
 
 import App.Data (Volunteer(..))
 
-type CurrentVolProps = { vols :: Array Volunteer }
+type CurrentVolProps = {  }
  
-type CurrentVolState = { currentVol :: Maybe Volunteer } 
+type CurrentVolState = { vols :: Array Volunteer
+                       , currentVol :: Maybe Volunteer } 
  
 data CurrentVolAction = ChangeCurrentVol (Maybe Volunteer)
 
-currentVolSpec :: T.Spec _ (Tuple CurrentVolProps CurrentVolState) _ CurrentVolAction
+currentVolSpec :: T.Spec _ CurrentVolState _ CurrentVolAction
 currentVolSpec = T.simpleSpec performAction render
   where
-  render :: T.Render (Tuple CurrentVolProps CurrentVolState) _ CurrentVolAction
-  render dispatch _ (Tuple props state) _ =
+  render :: T.Render CurrentVolState _ CurrentVolAction
+  render dispatch _ state _ =
     [ RD.span [ RP.className "float-right" ]
-                [ RD.select [ RP.onChange \e -> dispatch (ChangeCurrentVol $ props.vols !! ((unsafeEventSelectedIndex e) - 1)) ]
+                [ RD.select [ RP.onChange \e -> dispatch (ChangeCurrentVol $ state.vols !! ((unsafeEventSelectedIndex e) - 1)) ]
                            ([ RD.option [ RP.value "" ]
                                         [ RD.text "Select a volunteer" ] ]
-                           <> map (option dispatch state.currentVol) props.vols)
+                           <> map (option dispatch state.currentVol) state.vols)
               ]
     ]
   
   option :: _ -> Maybe Volunteer -> Volunteer -> ReactElement
-  option dispatch currentVol (V v) = RD.option [ RP.selected (maybe false (\(V cv) -> cv.id == v.id) currentVol) 
+  option dispatch currentVol (Vol v) = RD.option [ RP.selected (maybe false (\(Vol cv) -> cv.id == v.id) currentVol) 
                                                  , RP.value $ show v.id
                                                  ]
                                                  [ RD.text v.name ]
 
-  performAction :: T.PerformAction _ (Tuple CurrentVolProps CurrentVolState) _ CurrentVolAction
-  performAction (ChangeCurrentVol v) _ _ = void $ T.modifyState \(Tuple props state) -> Tuple props state{ currentVol = v }
+  performAction :: T.PerformAction _ CurrentVolState _ CurrentVolAction
+  performAction (ChangeCurrentVol v) _ _ = void $ T.modifyState \state -> state{ currentVol = v }
   performAction _ _ _ = pure unit
 
-currentVolInitialState :: CurrentVolProps -> Maybe Volunteer -> CurrentVolState
-currentVolInitialState volunteers currentVol = { currentVol: currentVol }
+currentVolInitialState :: Array Volunteer -> Maybe Volunteer -> CurrentVolState
+currentVolInitialState vols currentVol = { vols: vols
+                                         , currentVol: currentVol }
