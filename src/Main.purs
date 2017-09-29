@@ -29,7 +29,7 @@ import Thermite as T
  
 import App.Common (lensWithProps, modifyWhere)
 import App.CurrentVolunteer (CurrentVolProps, CurrentVolState, CurrentVolAction(..), currentVolSpec, currentVolInitialState)
-import App.Data (Shift(..), Volunteer(..), VolunteerShift(..), addVolunteer)
+import App.Data (Shift(..), Volunteer(..))
 import App.Shift (ShiftAction(..))
 import App.ShiftList (ShiftListProps, ShiftListState, ShiftListAction(..), shiftListSpec, shiftListInitialState, changeCurrentVol)
 
@@ -67,7 +67,7 @@ spec = container $ fold
   where 
   container :: forall state action. T.Spec (console :: CONSOLE | eff) state props action -> T.Spec (console :: CONSOLE | eff) state props action
   container = over T._render \render d p s c ->
-    [ RD.div [ RP.className "container-fluid mt-3" ] (render d p s c) ]
+    [ RD.div [ RP.className "container" ] (render d p s c) ]
  
   headerSpec :: T.Spec _ State _ Action
   headerSpec = T.simpleSpec performAction render
@@ -78,8 +78,6 @@ spec = container $ fold
                , RD.text $ maybe "" (\(Vol v) -> " for " <> v.name) state.currentVol.currentVol ] ]
      
     performAction :: forall e. T.PerformAction (console :: CONSOLE | e) State _ Action
-    -- performAction (ShiftListAction (ShiftAction _ (AddOvernightVol shiftDate))) _ _ = void $ T.modifyState \state -> state{ shifts = maybe state.shifts (\v -> addVolunteer shiftDate (Overnight v) state.shifts) state.currentVol.currentVol }
-    -- performAction (ShiftListAction (ShiftAction _ (AddEveningVol shiftDate))) _ _ = void $ T.modifyState \state -> state{ shifts = maybe state.shifts (\v -> addVolunteer shiftDate (Evening v) state.shifts) state.currentVol.currentVol }
     performAction (CurrentVolAction (ChangeCurrentVol v)) _ _ = void $ T.modifyState \state -> state{ shiftList = changeCurrentVol v state.shiftList }
     performAction _ _ _ = pure unit
 

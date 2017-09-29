@@ -3,9 +3,9 @@ module App.ShiftList (ShiftListProps, ShiftListAction(..), ShiftListState, shift
 import Prelude
 
 import App.Common (lensOfListWithProps, tomorrow)
-import App.Data (Shift(..), Volunteer(..), VolunteerShift(..), canAddVolunteer, addVolunteer, hasId, hasDate, hasVolWithId)
-import App.Shift (ShiftAction(..), ShiftProps, ShiftState(..), VolunteerState(..), shiftSpec)
-import Data.Array (find)
+import App.Data (Shift(..), Volunteer(..), VolunteerShift(..), canAddVolunteer, addVolunteerShift, changeVolunteerShift, removeVolunteerShift, hasId, hasDate, hasVolWithId) as D
+import App.Shift (ShiftAction(..), ShiftProps, ShiftState(..), ShiftType(..), CurrentVolState, OtherVolState, shiftSpec)
+import Data.Array (find, filter, (!!), sortWith)
 import Data.DateTime (DateTime(..), Date(..), Time(..), canonicalDate, date, adjust)
 import Data.Either (Either(..))
 import Data.Lens (Lens', lens, Prism', prism, over)
@@ -17,14 +17,15 @@ import React as R
 import React.DOM as RD
 import React.DOM.Props as RP
 import Thermite as T 
+
 data ShiftListAction = AddShift
                      | ShiftAction Int ShiftAction
 
 type ShiftListProps = { 
                       }
 
-type ShiftListState = { currentVol :: Maybe Volunteer
-                      , shifts :: Array Shift
+type ShiftListState = { currentVol :: Maybe D.Volunteer
+                      , shifts :: Array D.Shift
                       , shiftRows :: L.List ShiftState
                       , currentDate :: Date }
 
@@ -40,67 +41,106 @@ _ShiftAction = prism (uncurry ShiftAction) \ta ->
 
 shiftListSpec :: forall props eff. T.Spec eff ShiftListState props ShiftListAction
 shiftListSpec = 
-  (T.focus _shiftRows _ShiftAction (T.foreach \_ -> shiftSpec))
+  (table $ T.focus _shiftRows _ShiftAction $ T.foreach \_ -> shiftSpec)
   <> footerSpec
   where
+  table :: T.Spec eff ShiftListState props ShiftListAction -> T.Spec eff ShiftListState props ShiftListAction
+  table = over T._render \render d p s c ->
+    [ RD.table [ RP.className "ui structured table" ]
+               [ RD.thead' [ RD.tr' [ RD.th [ RP.colSpan 2 ]
+                                            [ RD.text "Date" ]
+                                    , RD.th [ RP.colSpan 2
+                                            , RP.className "left-border"
+                                            ]
+                                            [ RD.text "Other volunteers" ]
+                                    , RD.th [ RP.colSpan 2
+                                            , RP.className "left-border right aligned collapsing" ]
+                                            [ RD.text $ maybe "" (\(D.Vol v) -> v.name) s.currentVol ]
+                                    ]
+                           ]
+               , RD.tbody' $ render d p s c
+               ]
+    ]
+ 
   footerSpec :: T.Spec _ ShiftListState _ ShiftListAction
   footerSpec = T.simpleSpec performAction render
     where
     render :: T.Render ShiftListState _ ShiftListAction
-    render dispatch _ state _ =
-      [ RD.a [ RP.onClick \_ -> dispatch AddShift
-             , RP.href "#"
-             , RP.role "button"
-             , RP.className "btn btn-primary"
-             ]
-             [ RD.text "Add shift" ]
-      ]
+    render dispatch _ state _ = []
  
     performAction :: T.PerformAction _ ShiftListState _ ShiftListAction
-    performAction (ShiftAction _ (AddOvernightVol shiftDate)) _ _ = void $ T.modifyState \state -> maybe state (\v -> modifyShifts (addVolunteer shiftDate (Overnight v)) state) state.currentVol
-    performAction (ShiftAction _ (AddEveningVol shiftDate))   _ _ = void $ T.modifyState \state -> maybe state (\v -> modifyShifts (addVolunteer shiftDate (Evening v)) state) state.currentVol
+    performAction (ShiftAction _ (AddCurrentVol shiftDate Overnight))             _ { currentVol: Just cv } = void $ T.modifyState \state -> modifyShifts state $ D.addVolunteerShift    shiftDate (D.Overnight cv)
+    performAction (ShiftAction _ (AddCurrentVol shiftDate Evening))               _ { currentVol: Just cv } = void $ T.modifyState \state -> modifyShifts state $ D.addVolunteerShift    shiftDate (D.Evening cv)
+    performAction (ShiftAction _ (ChangeCurrentVolShiftType shiftDate Overnight)) _ { currentVol: Just cv } = void $ T.modifyState \state -> modifyShifts state $ D.changeVolunteerShift shiftDate (D.Overnight cv)
+    performAction (ShiftAction _ (ChangeCurrentVolShiftType shiftDate Evening))   _ { currentVol: Just cv } = void $ T.modifyState \state -> modifyShifts state $ D.changeVolunteerShift shiftDate (D.Evening cv)
+    performAction (ShiftAction _ (RemoveCurrentVol shiftDate))                    _ { currentVol: Just cv } = void $ T.modifyState \state -> modifyShifts state $ D.removeVolunteerShift shiftDate cv
     performAction _ _ _ = pure unit
 
-shiftListInitialState :: Maybe Volunteer -> Array Shift -> Date -> ShiftListState
+shiftListInitialState :: Maybe D.Volunteer -> Array D.Shift -> Date -> ShiftListState
 shiftListInitialState currentVol shifts currentDate = 
   { currentVol: currentVol
   , shifts: shifts
   , shiftRows: buildShifts currentVol shifts currentDate 7
   , currentDate: currentDate }
 
-buildShifts :: Maybe Volunteer -> Array Shift -> Date -> Int -> L.List ShiftState
+buildShifts :: Maybe D.Volunteer -> Array D.Shift -> Date -> Int -> L.List ShiftState
 buildShifts _ _ _ 0 = L.Nil
-buildShifts currentVol shifts date n = L.Cons (buildShift date) $ buildShifts currentVol shifts (tomorrow date) (n - 1)
+buildShifts currentVol shifts date n = L.Cons (buildShift currentVol date) $ buildShifts currentVol shifts (tomorrow date) (n - 1)
   where 
-  buildShift :: Date -> ShiftState
-  buildShift date = case find (hasDate date) shifts of
-    (Just s@(Shift shift)) -> { currentVolName : map (\(Vol v) -> v.name) currentVol
-                              , date: shift.date 
-                              , vols: map buildVol shift.volunteers 
-                              , canAddCurrentVol: canAddVolunteer s currentVol
-                              } 
-    Nothing          -> { currentVolName : map (\(Vol v) -> v.name) currentVol
-                        , date: date
-                        , vols: []
-                        , canAddCurrentVol: isJust currentVol
-                        }
- 
-  buildVol :: VolunteerShift -> VolunteerState
-  buildVol (Overnight (Vol v)) = { name: v.name
-                                 , isCurrentVol: maybe false (hasId v.id) currentVol
-                                 , isOvernight: true } 
-  buildVol (Evening (Vol v)) = { name: v.name
-                               , isCurrentVol: maybe false (hasId v.id) currentVol
-                               , isOvernight: false }
+  buildShift :: Maybe D.Volunteer -> Date -> ShiftState
+  buildShift Nothing date = case find (D.hasDate date) shifts of
+    Just s@(D.Shift shift) -> 
+      let otherVols = sortWith _.name $ map buildVol shift.volunteers
+      in { date: shift.date 
+         , currentVol: Nothing
+         , otherVol1: otherVols !! 0
+         , otherVol2: otherVols !! 1
+         } 
+    _ -> { date: date
+         , currentVol: Nothing
+         , otherVol1: Nothing
+         , otherVol2: Nothing
+         }
+  buildShift (Just cv@(D.Vol v)) date = case find (D.hasDate date) shifts of
+    Just s@(D.Shift shift) -> 
+      let otherVols = sortWith _.name $ map buildVol $ filter (not <<< D.hasVolWithId $ v.id) shift.volunteers
+      in { date: shift.date 
+         , currentVol: Just { name: v.name
+                            , shiftType: currentVolShiftType cv shift.volunteers
+                            , canAdd: D.canAddVolunteer cv s
+                            }
+         , otherVol1: otherVols !! 0
+         , otherVol2: otherVols !! 1
+         } 
+    _ -> { date: date
+         , currentVol: Just { name: v.name
+                            , shiftType: Nothing
+                            , canAdd: true
+                            }
+         , otherVol1: Nothing
+         , otherVol2: Nothing
+         }
 
-changeCurrentVol :: Maybe Volunteer -> ShiftListState -> ShiftListState
+currentVolShiftType :: D.Volunteer -> Array D.VolunteerShift -> Maybe ShiftType
+currentVolShiftType (D.Vol v) vols = 
+  find (D.hasVolWithId v.id) vols >>= case _ of
+    D.Overnight _ -> Just Overnight
+    D.Evening   _ -> Just Evening
+
+buildVol :: D.VolunteerShift -> OtherVolState
+buildVol (D.Overnight (D.Vol v)) = { name: v.name
+                                   , shiftType: Overnight } 
+buildVol (D.Evening (D.Vol v)) = { name: v.name
+                                 , shiftType: Evening }
+
+changeCurrentVol :: Maybe D.Volunteer -> ShiftListState -> ShiftListState
 changeCurrentVol currentVol state =
   state { currentVol = currentVol
         , shiftRows = buildShifts currentVol state.shifts state.currentDate 7
         }
 
-modifyShifts :: (Array Shift -> Array Shift) -> ShiftListState -> ShiftListState
-modifyShifts modify state =
+modifyShifts :: ShiftListState -> (Array D.Shift -> Array D.Shift) -> ShiftListState
+modifyShifts state modify =
   let shifts = modify state.shifts
   in state { shifts = shifts
            , shiftRows = buildShifts state.currentVol shifts state.currentDate 7

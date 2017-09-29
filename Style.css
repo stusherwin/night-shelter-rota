@@ -1,0 +1,48 @@
+.float-right {
+  float: right;
+}
+
+.container {
+  margin: 10px;
+}
+
+.ui.table tr.weekend {
+  background: #eee;
+}
+
+.ui.checkbox.stu label {
+  cursor: pointer;
+}
+
+.ui.checkbox.stu label.ui.label {
+  font-weight: 100;
+  padding-top: 4px;
+  padding-right: 5px;
+  padding-bottom: 4px;
+}
+
+.ui.checkbox.stu label.ui.label:before {
+  top: 3px;
+  left: 3px;
+}
+
+.ui.checkbox.stu label.ui.label:after {
+  top: 8px;
+  left: 7px;
+}
+
+td.shift-type {
+  width: 160px;
+}
+
+td.shift-type a {
+  border-bottom: 1px dotted rgba(65, 131, 196, 1) !important;
+}
+
+.other-vol i, td.shift-type a i, td.shift-type i {
+  margin-right: 5px;
+}
+
+td.left-border, .ui.table thead th.left-border {
+  border-left: 1px solid rgba(34,36,38,.15);
+}
