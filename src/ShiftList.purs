@@ -4,9 +4,11 @@ import Prelude
 
 import App.Common (lensOfListWithProps, tomorrow)
 import App.Data (Shift(..), Volunteer(..), VolunteerShift(..), canAddVolunteer, addVolunteerShift, changeVolunteerShift, removeVolunteerShift, hasId, hasDate, hasVolWithId) as D
-import App.Shift (ShiftAction(..), ShiftProps, ShiftState(..), ShiftType(..), CurrentVolState, OtherVolState, shiftSpec)
+import App.Shift (ShiftAction(..), ShiftProps, ShiftState(..), ShiftType(..), ShiftStatus(..), CurrentVolState, OtherVolState, shiftSpec)
 import Data.Array (find, filter, (!!), sortWith, length)
 import Data.DateTime (DateTime(..), Date(..), Time(..), canonicalDate, date, adjust)
+import Data.Time.Duration (Days(..))
+import Data.Date (diff)
 import Data.Either (Either(..))
 import Data.Lens (Lens', lens, Prism', prism, over)
 import Data.List (List(..), snoc, last) as L
@@ -46,7 +48,7 @@ shiftListSpec =
   where
   table :: T.Spec eff ShiftListState props ShiftListAction -> T.Spec eff ShiftListState props ShiftListAction
   table = over T._render \render d p s c ->
-    [ RD.table [ RP.className "ui structured table" ]
+    [ RD.table [ RP.className "ui structured unstackable table" ]
                [ 
                  RD.thead' [ RD.tr' ([ RD.th [ RP.colSpan 1
                                              , RP.className ""
@@ -101,25 +103,38 @@ shiftListInitialState :: Maybe D.Volunteer -> Array D.Shift -> Date -> ShiftList
 shiftListInitialState currentVol shifts currentDate = 
   { currentVol: currentVol
   , shifts: shifts
-  , shiftRows: buildShifts currentVol shifts currentDate 7
+  , shiftRows: buildShifts currentVol shifts currentDate
   , currentDate: currentDate }
 
-buildShifts :: Maybe D.Volunteer -> Array D.Shift -> Date -> Int -> L.List ShiftState
-buildShifts _ _ _ 0 = L.Nil
-buildShifts currentVol shifts date n = L.Cons (buildShift currentVol date) $ buildShifts currentVol shifts (tomorrow date) (n - 1)
+buildShifts :: Maybe D.Volunteer -> Array D.Shift -> Date -> L.List ShiftState
+buildShifts currentVol shifts startDate = buildShifts' currentVol shifts startDate 28
   where 
+  buildShifts' :: Maybe D.Volunteer -> Array D.Shift -> Date -> Int -> L.List ShiftState
+  buildShifts' _ _ _ 0 = L.Nil
+  buildShifts' currentVol shifts date n = L.Cons (buildShift currentVol date) $ buildShifts' currentVol shifts (tomorrow date) (n - 1)
+
   buildShift :: Maybe D.Volunteer -> Date -> ShiftState
   buildShift Nothing date = case find (D.hasDate date) shifts of
     Just s@(D.Shift shift) -> 
       let otherVols = sortWith _.name $ map buildVol shift.volunteers
+          noOfVols  = length shift.volunteers 
+          (Days d) = date `diff` startDate
       in { date: shift.date 
-         , noOfVols: length shift.volunteers
+         , noOfVols: noOfVols
+         , status: case noOfVols of
+                     0 -> if d < 7.0 then Bad else OK
+                     1 -> CouldBeBetter
+                     2 -> Good
+                     _ -> OK
          , currentVol: Nothing
          , otherVol1: otherVols !! 0
          , otherVol2: otherVols !! 1
          } 
-    _ -> { date: date
+    _ ->
+      let (Days d) = date `diff` startDate
+      in { date: date
          , noOfVols: 0
+         , status: if d < 7.0 then Bad else OK
          , currentVol: Nothing
          , otherVol1: Nothing
          , otherVol2: Nothing
@@ -127,8 +142,15 @@ buildShifts currentVol shifts date n = L.Cons (buildShift currentVol date) $ bui
   buildShift (Just cv@(D.Vol v)) date = case find (D.hasDate date) shifts of
     Just s@(D.Shift shift) -> 
       let otherVols = sortWith _.name $ map buildVol $ filter (not <<< D.hasVolWithId $ v.id) shift.volunteers
+          noOfVols  = length shift.volunteers
+          (Days d) = date `diff` startDate
       in { date: shift.date 
          , noOfVols: length shift.volunteers
+         , status: case noOfVols of
+                     0 -> if d < 7.0 then Bad else OK
+                     1 -> CouldBeBetter
+                     2 -> Good
+                     _ -> OK
          , currentVol: Just { name: v.name
                             , shiftType: currentVolShiftType cv shift.volunteers
                             , canAdd: D.canAddVolunteer cv s
@@ -136,8 +158,11 @@ buildShifts currentVol shifts date n = L.Cons (buildShift currentVol date) $ bui
          , otherVol1: otherVols !! 0
          , otherVol2: otherVols !! 1
          } 
-    _ -> { date: date
+    _ -> 
+      let (Days d) = date `diff` startDate
+      in { date: date
          , noOfVols: 0
+         , status: if d < 7.0 then Bad else OK
          , currentVol: Just { name: v.name
                             , shiftType: Nothing
                             , canAdd: true
@@ -161,12 +186,12 @@ buildVol (D.Evening (D.Vol v)) = { name: v.name
 changeCurrentVol :: Maybe D.Volunteer -> ShiftListState -> ShiftListState
 changeCurrentVol currentVol state =
   state { currentVol = currentVol
-        , shiftRows = buildShifts currentVol state.shifts state.currentDate 7
+        , shiftRows = buildShifts currentVol state.shifts state.currentDate
         }
 
 modifyShifts :: ShiftListState -> (Array D.Shift -> Array D.Shift) -> ShiftListState
 modifyShifts state modify =
   let shifts = modify state.shifts
   in state { shifts = shifts
-           , shiftRows = buildShifts state.currentVol shifts state.currentDate 7
+           , shiftRows = buildShifts state.currentVol shifts state.currentDate
            }

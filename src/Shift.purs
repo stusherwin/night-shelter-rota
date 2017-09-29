@@ -1,4 +1,4 @@
-module App.Shift (ShiftProps, ShiftState, ShiftType(..), OtherVolState, CurrentVolState, ShiftAction(..), shiftSpec) where
+module App.Shift (ShiftProps, ShiftState, ShiftType(..), OtherVolState, CurrentVolState, ShiftAction(..), ShiftStatus(..), shiftSpec) where
 
 import Prelude
 
@@ -7,7 +7,7 @@ import App.Data (Volunteer(..))
 import Data.DateTime (Date, Weekday(..), year, month, day, weekday)
 import Data.Enum (fromEnum)
 import Data.Maybe (Maybe(..), maybe)
-import Data.String (take, toUpper)
+import Data.String (take, toUpper, joinWith)
 import Data.Tuple (Tuple(..))
 import React (ReactElement)
 import React.DOM as RD
@@ -19,6 +19,11 @@ type ShiftProps = {  }
 data ShiftType = Overnight
                | Evening
 
+data ShiftStatus = Good
+                 | CouldBeBetter
+                 | Bad
+                 | OK
+
 type OtherVolState = { name :: String
                      , shiftType :: ShiftType
                      }
@@ -29,6 +34,7 @@ type CurrentVolState = { name :: String
                        }
 
 type ShiftState = { date :: Date
+                  , status :: ShiftStatus
                   , currentVol :: Maybe CurrentVolState
                   , noOfVols :: Int
                   , otherVol1 :: Maybe OtherVolState
@@ -44,12 +50,19 @@ shiftSpec = T.simpleSpec performAction render
   where
   render :: T.Render ShiftState _ ShiftAction
   render dispatch _ state _ =
-    [ RD.tr [ RP.className if isWeekend state.date then "weekend" else "" ]
-           ([ RD.td  [ RP.className "collapsing" ]
-                     [ RD.text $ "(" <> show state.noOfVols <> "/2)" ]
-            , RD.td  [ RP.className "left-border collapsing" ]
+    [ RD.tr [ RP.className $ joinWith " " [ if isWeekend state.date then "weekend" else ""
+                                          , case state.status of 
+                                              Good -> "positive"
+                                              Bad -> "negative"
+                                              CouldBeBetter -> "warning"
+                                              OK -> ""
+                                          ]
+            ]
+           ([ RD.td  [ RP.className "shift-date collapsing" ]
+                     [ RD.text $ "" <> show state.noOfVols <> "/2" ]
+            , RD.td  [ RP.className "shift-date left-border collapsing" ]
                      [ RD.text $ toUpper $ take 3 $ show $ weekday state.date ]
-            , RD.td  [ RP.className "collapsing" ]
+            , RD.td  [ RP.className "shift-date collapsing" ]
                      [ RD.text $ toDateString state.date ]
             , RD.td  [ RP.className "left-border collapsing" ]
                      $ renderOtherVol state.otherVol1

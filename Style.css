@@ -10,6 +10,26 @@
   background: #eee;
 }
 
+.ui.table tr.weekend td.shift-date {
+  font-weight: bold;
+}
+
+.ui.table tr.weekend td {
+  font-weight: bold;
+}
+
+.ui.table tr.weekend.warning {
+  background: #fff6e9 !important;
+}
+
+.ui.table tr.weekend.negative {
+  background: #ffefef !important;
+}
+
+.ui.table tr.weekend.positive {
+  background: #f9ffeb !important;
+}
+
 .ui.checkbox.stu label {
   cursor: pointer;
 }
