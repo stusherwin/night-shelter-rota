@@ -30,6 +30,7 @@ type CurrentVolState = { name :: String
 
 type ShiftState = { date :: Date
                   , currentVol :: Maybe CurrentVolState
+                  , noOfVols :: Int
                   , otherVol1 :: Maybe OtherVolState
                   , otherVol2 :: Maybe OtherVolState
                   }
@@ -44,48 +45,74 @@ shiftSpec = T.simpleSpec performAction render
   render :: T.Render ShiftState _ ShiftAction
   render dispatch _ state _ =
     [ RD.tr [ RP.className if isWeekend state.date then "weekend" else "" ]
-            [ RD.td  [ RP.className "collapsing" ]
+           ([ RD.td  [ RP.className "collapsing" ]
+                     [ RD.text $ "(" <> show state.noOfVols <> "/2)" ]
+            , RD.td  [ RP.className "left-border collapsing" ]
                      [ RD.text $ toUpper $ take 3 $ show $ weekday state.date ]
-            , RD.td' [ RD.text $ toDateString state.date ]
-            , RD.td  [ RP.className "left-border" ]
+            , RD.td  [ RP.className "collapsing" ]
+                     [ RD.text $ toDateString state.date ]
+            , RD.td  [ RP.className "left-border collapsing" ]
                      $ renderOtherVol state.otherVol1
-            , RD.td' $ renderOtherVol state.otherVol2
-            , RD.td  [ RP.className "left-border shift-type" ]
-                     $ renderShiftType dispatch state
-            , RD.td  [ RP.className "right aligned collapsing" ]
-                     $ renderSelected dispatch state
-            ]
+            , RD.td  [ RP.className "collapsing" ]
+                     $ renderOtherVol state.otherVol2
+            , RD.td' []
+            ] <> case state.currentVol of
+                    (Just _) -> 
+                       [ RD.td  [ RP.className "left-border collapsing shift-type" ]
+                                $ renderShiftType dispatch state
+                       , RD.td  [ RP.className "right aligned collapsing" ]
+                                $ renderSelected dispatch state
+                       ]
+                    _ -> 
+                       [ RD.td' [] ]
+           )
     ]
-
+  
+  renderEndCells :: _ -> ShiftState -> Array ReactElement
+  renderEndCells dispatch { otherVol2: v@(Just _) } =
+    [ RD.td  [ RP.className "left-border" ]
+             $ renderOtherVol v
+    , RD.td  [ RP.className "right aligned collapsing" ]
+             []
+    ]
+    
+  renderEndCells dispatch state@{ otherVol2: _ } =
+    [ RD.td  [ RP.className "left-border shift-type" ]
+              $ renderShiftType dispatch state
+    , RD.td  [ RP.className "right aligned collapsing" ]
+              $ renderSelected dispatch state
+    ]
+  
   renderShiftType :: _ -> ShiftState -> Array ReactElement
   renderShiftType dispatch state@{ date: d, currentVol: (Just { shiftType: Just Overnight }) } =
     [ RD.span []
               [ RD.i [ RP.className "icon-bed" ] []
-              , RD.text "Overnight ("
+              , RD.text "Overnight "
               , RD.a [ RP.onClick \_ -> dispatch $ ChangeCurrentVolShiftType d $ Evening
                      , RP.href "#"
                      ]
-                     [ RD.text "change" ]
-              , RD.text ")"
+                     [ RD.text "[change]" ]
+              , RD.text ""
               ]
     ]
   renderShiftType dispatch state@{ date: d, currentVol: (Just { shiftType: Just Evening }) } =
     [ RD.span []
               [ RD.i [ RP.className "icon-no-bed" ] []
-              , RD.text "Evening only ("
+              , RD.text "Evening only "
               , RD.a [ RP.onClick \_ -> dispatch $ ChangeCurrentVolShiftType d $ Overnight
                      , RP.href "#"
                      ]
-                     [ RD.text "change" ]
-              , RD.text ")"
+                     [ RD.text "[change]" ]
+              , RD.text ""
               ]
     ]
   renderShiftType _ _ = []
 
   renderSelected :: _ -> ShiftState -> Array ReactElement
-  renderSelected dispatch state@{ date: d, currentVol: (Just { shiftType: Nothing, canAdd: ca }) } | ca =
+  renderSelected dispatch state@{ date: d, currentVol: (Just { shiftType: Nothing, canAdd: canAdd }) } =
     [ RD.div [ RP.className "ui fitted checkbox" ]
              [ RD.input [ RP._type "checkbox"
+                        , RP.disabled $ not canAdd
                         , RP.checked false
                         , RP.onChange \_ -> dispatch $ AddCurrentVol d Overnight
                         ]

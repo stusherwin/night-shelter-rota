@@ -2,7 +2,7 @@ module App.Data (Shift (..), Volunteer(..), VolunteerShift(..), addVolunteerShif
 
 import Prelude
 
-import Data.Array (findIndex, find, modifyAt, snoc, updateAt, deleteAt)
+import Data.Array (findIndex, find, modifyAt, snoc, updateAt, deleteAt, length)
 import Data.DateTime (DateTime(..), Date(..), Time(..), canonicalDate, date, adjust)
 import Data.Foldable (foldMap)
 import Data.Maybe (Maybe(..), fromMaybe, isNothing)
@@ -64,4 +64,5 @@ removeVolunteerShift shiftDate (Vol vol) shifts =
     _      -> shifts
 
 canAddVolunteer :: Volunteer -> Shift -> Boolean
-canAddVolunteer (Vol vol) (Shift shift) = isNothing $ find (hasVolWithId vol.id) shift.volunteers
+canAddVolunteer (Vol vol) (Shift shift) = 
+  ((length shift.volunteers) < 2) && (isNothing $ find (hasVolWithId vol.id) shift.volunteers)

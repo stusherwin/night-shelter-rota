@@ -5,7 +5,7 @@ import Prelude
 import App.Common (lensOfListWithProps, tomorrow)
 import App.Data (Shift(..), Volunteer(..), VolunteerShift(..), canAddVolunteer, addVolunteerShift, changeVolunteerShift, removeVolunteerShift, hasId, hasDate, hasVolWithId) as D
 import App.Shift (ShiftAction(..), ShiftProps, ShiftState(..), ShiftType(..), CurrentVolState, OtherVolState, shiftSpec)
-import Data.Array (find, filter, (!!), sortWith)
+import Data.Array (find, filter, (!!), sortWith, length)
 import Data.DateTime (DateTime(..), Date(..), Time(..), canonicalDate, date, adjust)
 import Data.Either (Either(..))
 import Data.Lens (Lens', lens, Prism', prism, over)
@@ -47,18 +47,39 @@ shiftListSpec =
   table :: T.Spec eff ShiftListState props ShiftListAction -> T.Spec eff ShiftListState props ShiftListAction
   table = over T._render \render d p s c ->
     [ RD.table [ RP.className "ui structured table" ]
-               [ RD.thead' [ RD.tr' [ RD.th [ RP.colSpan 2 ]
-                                            [ RD.text "Date" ]
-                                    , RD.th [ RP.colSpan 2
-                                            , RP.className "left-border"
-                                            ]
-                                            [ RD.text "Other volunteers" ]
-                                    , RD.th [ RP.colSpan 2
-                                            , RP.className "left-border right aligned collapsing" ]
-                                            [ RD.text $ maybe "" (\(D.Vol v) -> v.name) s.currentVol ]
-                                    ]
+               [ 
+                 RD.thead' [ RD.tr' ([ RD.th [ RP.colSpan 1
+                                             , RP.className ""
+                                             ]
+                                             [ RD.text "" ]
+                                     , RD.th [ RP.colSpan 2
+                                             , RP.className "left-border"
+                                             ]
+                                             [ RD.text "Shift" ]
+                                     ] <> case s.currentVol of
+                                            (Just (D.Vol v)) ->           
+                                              [ RD.th [ RP.colSpan 2
+                                                      , RP.className "left-border collapsing"
+                                                      ]
+                                                      [ RD.text "Other volunteers" ]
+                                              , RD.th' []
+                                              , RD.th [ RP.colSpan 2
+                                                      , RP.className "left-border right aligned collapsing"
+                                                      ]
+                                                      [ RD.text $ v.name <> "'s shifts" ]
+                                              ]
+                                            _ ->
+                                              [ RD.th [ RP.colSpan 2
+                                                      , RP.className "left-border collapsing"
+                                                      ]
+                                                      [ RD.text "Volunteers" ]
+                                              , RD.th' []
+                                              , RD.th' []
+                                              ]
+                                    )
                            ]
-               , RD.tbody' $ render d p s c
+               , 
+               RD.tbody' $ render d p s c
                ]
     ]
  
@@ -92,11 +113,13 @@ buildShifts currentVol shifts date n = L.Cons (buildShift currentVol date) $ bui
     Just s@(D.Shift shift) -> 
       let otherVols = sortWith _.name $ map buildVol shift.volunteers
       in { date: shift.date 
+         , noOfVols: length shift.volunteers
          , currentVol: Nothing
          , otherVol1: otherVols !! 0
          , otherVol2: otherVols !! 1
          } 
     _ -> { date: date
+         , noOfVols: 0
          , currentVol: Nothing
          , otherVol1: Nothing
          , otherVol2: Nothing
@@ -105,6 +128,7 @@ buildShifts currentVol shifts date n = L.Cons (buildShift currentVol date) $ bui
     Just s@(D.Shift shift) -> 
       let otherVols = sortWith _.name $ map buildVol $ filter (not <<< D.hasVolWithId $ v.id) shift.volunteers
       in { date: shift.date 
+         , noOfVols: length shift.volunteers
          , currentVol: Just { name: v.name
                             , shiftType: currentVolShiftType cv shift.volunteers
                             , canAdd: D.canAddVolunteer cv s
@@ -113,6 +137,7 @@ buildShifts currentVol shifts date n = L.Cons (buildShift currentVol date) $ bui
          , otherVol2: otherVols !! 1
          } 
     _ -> { date: date
+         , noOfVols: 0
          , currentVol: Just { name: v.name
                             , shiftType: Nothing
                             , canAdd: true

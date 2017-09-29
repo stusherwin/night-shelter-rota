@@ -75,7 +75,9 @@ spec = container $ fold
     render :: T.Render State _ Action
     render dispatch _ state _ =
       [ RD.h2' [ RD.text "Night Shelter Rota" 
-               , RD.text $ maybe "" (\(Vol v) -> " for " <> v.name) state.currentVol.currentVol ] ]
+               , RD.text $ maybe "" (\(Vol v) -> " for " <> v.name) state.currentVol.currentVol
+               ]
+      ]
      
     performAction :: forall e. T.PerformAction (console :: CONSOLE | e) State _ Action
     performAction (CurrentVolAction (ChangeCurrentVol v)) _ _ = void $ T.modifyState \state -> state{ shiftList = changeCurrentVol v state.shiftList }
@@ -86,7 +88,8 @@ main :: Unit
 main = unsafePerformEff $ do 
   (LocalValue _ currentDate) <- nowDate 
   let vols = [ Vol { id: 1, name: "Stu" }
-             , Vol { id: 2, name: "Bob" } ]
+             , Vol { id: 2, name: "Bob" }
+             , Vol { id: 3, name: "Jim" } ]
   let shifts = []
   let currentVol = Nothing 
   let component = T.createClass spec $ { vols: vols 

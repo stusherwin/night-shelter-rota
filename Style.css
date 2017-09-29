@@ -46,3 +46,7 @@ td.shift-type a {
 td.left-border, .ui.table thead th.left-border {
   border-left: 1px solid rgba(34,36,38,.15);
 }
+
+.ui.checkbox input[type="checkbox"][disabled] {
+  cursor: default;
+}
