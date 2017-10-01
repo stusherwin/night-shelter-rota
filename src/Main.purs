@@ -1,10 +1,15 @@
 module App.Main where 
   
 import Prelude
- 
+
+import App.Common (lensWithProps, modifyWhere)
+import App.CurrentVolunteer (CurrentVolProps, CurrentVolState, CurrentVolAction(..), currentVolSpec, currentVolInitialState)
+import App.Data (OvernightSharingPrefs(..), Shift(..), Volunteer(..), Gender(..))
+import App.Shift (ShiftAction(..))
+import App.ShiftList (ShiftListProps, ShiftListState, ShiftListAction(..), shiftListSpec, shiftListInitialState, changeCurrentVol)
+import Control.Monad.Aff.Class (liftAff)
 import Control.Monad.Eff (Eff)
 import Control.Monad.Eff.Class (liftEff)
-import Control.Monad.Aff.Class (liftAff)
 import Control.Monad.Eff.Console (log, CONSOLE)
 import Control.Monad.Eff.Now (nowDate)
 import Control.Monad.Eff.Unsafe (unsafePerformEff)
@@ -15,7 +20,7 @@ import Data.DateTime (Date)
 import Data.DateTime.Locale (LocalValue(..))
 import Data.Either (Either(..))
 import Data.Foldable (fold)
-import Data.Lens (Lens', lens, Prism', prism, over) 
+import Data.Lens (Lens', lens, Prism', prism, over)
 import Data.Maybe (Maybe(..), fromJust, maybe)
 import Data.Newtype (unwrap)
 import Data.String (joinWith)
@@ -23,15 +28,9 @@ import Data.Tuple (Tuple(..), uncurry)
 import Partial.Unsafe (unsafePartial)
 import React as R
 import React.DOM as RD
-import React.DOM.Props as RP 
+import React.DOM.Props as RP
 import ReactDOM as RDOM
 import Thermite as T
- 
-import App.Common (lensWithProps, modifyWhere)
-import App.CurrentVolunteer (CurrentVolProps, CurrentVolState, CurrentVolAction(..), currentVolSpec, currentVolInitialState)
-import App.Data (Shift(..), Volunteer(..))
-import App.Shift (ShiftAction(..))
-import App.ShiftList (ShiftListProps, ShiftListState, ShiftListAction(..), shiftListSpec, shiftListInitialState, changeCurrentVol)
 
 data Action = ShiftListAction ShiftListAction
             | CurrentVolAction CurrentVolAction
@@ -87,11 +86,13 @@ spec = container $ fold
 main :: Unit
 main = unsafePerformEff $ do 
   (LocalValue _ currentDate) <- nowDate 
-  let vols = [ Vol { id: 1, name: "Stu" }
-             , Vol { id: 2, name: "Bob" }
-             , Vol { id: 3, name: "Jim" } ]
+  let vols = [ Vol { id: 1, name: "Stu Male Any", gender: Just Male,   overnightSharingPrefs: Any }
+             , Vol { id: 2, name: "Alice Female OnlySameGender", gender: Just Female, overnightSharingPrefs: OnlySameGender }
+             , Vol { id: 3, name: "Jim None None", gender: Nothing,     overnightSharingPrefs: None }
+             , Vol { id: 4, name: "Mary Female Any", gender: Just Female, overnightSharingPrefs: Any }
+             ]
   let shifts = []
-  let currentVol = Nothing 
+  let currentVol = Nothing
   let component = T.createClass spec $ { vols
                                        , shiftList: shiftListInitialState currentVol shifts currentDate
                                        , currentVol: currentVolInitialState vols currentVol }

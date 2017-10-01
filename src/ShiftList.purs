@@ -3,7 +3,7 @@ module App.ShiftList (ShiftListProps, ShiftListAction(..), ShiftListState, shift
 import Prelude
 
 import App.Common (lensOfListWithProps, tomorrow) 
-import App.Data (Shift(..), Volunteer(..), VolunteerShift(..), RuleResult(..), canAddVolunteer, addVolunteerShift, changeVolunteerShift, removeVolunteerShift, hasId, hasDate, hasVolWithId, validate) as D 
+import App.Data (Shift(..), Volunteer(..), VolunteerShift(..), RuleResult(..), canAddVolunteer, addVolunteerShift, changeVolunteerShift, removeVolunteerShift, hasId, hasDate, hasVolWithId, validate, filterOut, canChangeVolunteerShiftType) as D 
 import App.Shift (CurrentVolState, OtherVolState, ShiftAction(..), ShiftProps, ShiftState(..), ShiftStatus(..), ShiftType(..), shiftSpec)
 import DOM.HTML.HTMLElement (offsetHeight)
 import Data.Array (find, filter, (!!), sortWith, length, take)
@@ -92,7 +92,7 @@ shiftListSpec =
     where
     render :: T.Render ShiftListState _ ShiftListAction
     render dispatch _ state _ = []
- 
+
     performAction :: T.PerformAction _ ShiftListState _ ShiftListAction
     performAction (ShiftAction _ (AddCurrentVol shiftDate Overnight))             _ { currentVol: Just cv } = void $ T.modifyState \state -> modifyShifts state $ D.addVolunteerShift    shiftDate (D.Overnight cv)
     performAction (ShiftAction _ (AddCurrentVol shiftDate Evening))               _ { currentVol: Just cv } = void $ T.modifyState \state -> modifyShifts state $ D.addVolunteerShift    shiftDate (D.Evening cv)
@@ -132,8 +132,8 @@ buildShifts currentVol shifts startDate = buildShifts' startDate 28
   
   removeCurrentVol :: Array D.VolunteerShift -> Array D.VolunteerShift
   removeCurrentVol = case currentVol of
-    (Just cv@(D.Vol v)) -> filter (not <<< D.hasVolWithId $ v.id)
-    _ -> id
+    (Just cv) -> D.filterOut cv
+    _ -> id 
 
   buildCurrentVol :: D.Shift -> Maybe CurrentVolState
   buildCurrentVol shift@(D.Shift s) = case currentVol of
@@ -141,6 +141,7 @@ buildShifts currentVol shifts startDate = buildShifts' startDate 28
                                 , shiftType: currentVolShiftType cv s.volunteers
                                 , canAddOvernight: D.canAddVolunteer (D.Overnight cv) shift
                                 , canAddEvening: D.canAddVolunteer (D.Evening cv) shift
+                                , canChangeShiftType: D.canChangeVolunteerShiftType cv shift
                                 }
     _                   -> Nothing
 

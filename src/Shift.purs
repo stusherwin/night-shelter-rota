@@ -3,7 +3,7 @@ module App.Shift (ShiftProps, ShiftState, ShiftType(..), OtherVolState, CurrentV
 import Prelude
 
 import App.Common (unsafeEventValue, toDateString)
-import App.Data (Volunteer(..))
+import App.Data (Volunteer(..), canChangeVolunteerShiftType)
 import Data.DateTime (Date, Weekday(..), year, month, day, weekday)
 import Data.Enum (fromEnum)
 import Data.Maybe (Maybe(..), maybe)
@@ -33,6 +33,7 @@ type CurrentVolState = { name :: String
                        , shiftType :: Maybe ShiftType
                        , canAddOvernight :: Boolean
                        , canAddEvening :: Boolean
+                       , canChangeShiftType :: Boolean
                        }
 
 type ShiftState = { date :: Date
@@ -109,27 +110,31 @@ shiftSpec = T.simpleSpec performAction render
     ]
   
   renderShiftType :: _ -> ShiftState -> Array ReactElement
-  renderShiftType dispatch state@{ date, currentVol: (Just { shiftType: Just Overnight }) } =
+  renderShiftType dispatch state@{ date, currentVol: (Just { shiftType: Just Overnight, canChangeShiftType }) } =
     [ RD.span []
-              [ RD.i [ RP.className "icon-bed" ] []
-              , RD.text "Overnight "
-              , RD.a [ RP.onClick \_ -> dispatch $ ChangeCurrentVolShiftType date $ Evening
-                     , RP.className "action"
-                     ]
-                     [ RD.text "[change]" ]
-              , RD.text ""
-              ]
+            ([ RD.i [ RP.className "icon-bed" ] []
+              , RD.text "Overnight " ]
+            <> if canChangeShiftType
+                 then [ RD.a [ RP.onClick \_ -> dispatch $ ChangeCurrentVolShiftType date $ Evening
+                             , RP.className "action"
+                             ]
+                             [ RD.text "[change]" ]
+                      , RD.text ""
+                      ]
+                 else [])
     ]
-  renderShiftType dispatch state@{ date, currentVol: (Just { shiftType: Just Evening }) } =
+  renderShiftType dispatch state@{ date, currentVol: (Just { shiftType: Just Evening, canChangeShiftType }) } =
     [ RD.span []
-              [ RD.i [ RP.className "icon-no-bed" ] []
-              , RD.text "Evening only "
-              , RD.a [ RP.onClick \_ -> dispatch $ ChangeCurrentVolShiftType date $ Overnight
-                     , RP.className "action"
-                     ]
-                     [ RD.text "[change]" ]
-              , RD.text ""
-              ]
+              ([ RD.i [ RP.className "icon-no-bed" ] []
+              , RD.text "Evening only " ]
+              <> if canChangeShiftType
+                 then [ RD.a [ RP.onClick \_ -> dispatch $ ChangeCurrentVolShiftType date $ Overnight
+                             , RP.className "action"
+                             ]
+                             [ RD.text "[change]" ]
+                      , RD.text ""
+                      ]
+                 else [])
     ]
   renderShiftType _ _ = []
 
