@@ -52,7 +52,7 @@ shiftListSpec =
   table = over T._render \render d p s c ->
     [ RD.table [ RP.className "ui structured unstackable table" ]
                [ 
-                 RD.thead' [ RD.tr' ([ RD.th [ RP.colSpan 1
+                 RD.thead' [ RD.tr' ([ RD.th [ RP.colSpan 2
                                              , RP.className ""
                                              ]
                                              [ RD.text "" ]

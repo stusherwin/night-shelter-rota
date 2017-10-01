@@ -87,6 +87,24 @@
       ]
     },
     {
+      "uid": "c76b7947c957c9b78b11741173c8349b",
+      "css": "warning",
+      "code": 59402,
+      "src": "fontawesome"
+    },
+    {
+      "uid": "e82cedfa1d5f15b00c5a81c9bd731ea2",
+      "css": "info",
+      "code": 59404,
+      "src": "fontawesome"
+    },
+    {
+      "uid": "43ab845088317bd348dee1d975700c48",
+      "css": "ok-circled",
+      "code": 59399,
+      "src": "fontawesome"
+    },
+    {
       "uid": "99c58e3837b383dd5375924289db1801",
       "css": "no-bed",
       "code": 59399,

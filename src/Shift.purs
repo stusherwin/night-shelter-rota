@@ -54,7 +54,9 @@ shiftSpec = T.simpleSpec performAction render
     [ RD.tr [ RP.className $ joinWith " " [ if isWeekend state.date then "weekend" else ""
                                           ]
             ]
-           ([ RD.td  [ RP.className $ "shift-date collapsing " <> statusClass state.status ]
+          ( [ RD.td  [ RP.className $ "shift-status collapsing " <> statusClass state.status ]
+                     (statusIcon state.status)
+            , RD.td  [ RP.className $ "shift-status collapsing " <> statusClass state.status ]
                      [ RD.text $ "" <> show state.noOfVols <> "/2" ]
             , RD.td  [ RP.className $ "shift-date left-border collapsing " <> statusClass state.status ]
                      [ RD.text $ toUpper $ take 3 $ show $ weekday state.date ]
@@ -74,7 +76,7 @@ shiftSpec = T.simpleSpec performAction render
                        ]
                     _ -> 
                        [ RD.td' [] ]
-           )
+          )
     ]
 
   statusClass :: ShiftStatus -> String
@@ -82,6 +84,12 @@ shiftSpec = T.simpleSpec performAction render
   statusClass (Error _)   = "negative"
   statusClass (Warning _) = "warning"
   statusClass _           = ""
+
+  statusIcon :: ShiftStatus -> Array ReactElement
+  statusIcon Good        = [ RD.i [ RP.className "icon-ok" ] [] ]
+  statusIcon (Error e)   = [ RD.i [ RP.className "icon-warning", RP.title e ] [] ]
+  statusIcon (Warning e) = [ RD.i [ RP.className "icon-info", RP.title e ] [] ]
+  statusIcon _ = []
   
   renderEndCells :: _ -> ShiftState -> Array ReactElement
   renderEndCells dispatch { otherVol2: v@(Just _) } =

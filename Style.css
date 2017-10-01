@@ -10,26 +10,34 @@
   background: #eee;
 }
 
-.ui.table tr.weekend td.shift-date {
+.ui.table tr.weekend td.shift-date, .ui.table tr.weekend td.shift-status {
   font-weight: bold;
 }
 
-.ui.table tr.weekend td {
-}
-
-.ui.table tr.weekend td.shift-date.warning {
+.ui.table tr.weekend td.shift-date.warning, .ui.table tr.weekend td.shift-status.warning {
   /* #fffaf3 */
   background: #f8f4ed !important;
 }
 
-.ui.table tr.weekend td.shift-date.negative {
+.ui.table tr.weekend td.shift-date.negative, .ui.table tr.weekend td.shift-status.negative {
   /* #fff6f6 */
   background: #f9eded !important;
 }
 
-.ui.table tr.weekend td.shift-date.positive {
+.ui.table tr.weekend td.shift-date.positive, .ui.table tr.weekend td.shift-status.positive {
   /* #fcfff5 */
   background: #f1f6e4 !important;
+}
+
+.ui.table td.shift-status i {
+  margin-right: -15px;
+  margin-left: -5px;
+  opacity: 0.4;
+}
+
+.ui.table td.shift-status i.icon-warning, .ui.table td.shift-status i.icon-info {
+  cursor: help;
+  opacity: 0.65;
 }
 
 .ui.checkbox.stu label {
