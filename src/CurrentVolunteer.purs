@@ -44,5 +44,6 @@ currentVolSpec = T.simpleSpec performAction render
   performAction _ _ _ = pure unit
 
 currentVolInitialState :: Array Volunteer -> Maybe Volunteer -> CurrentVolState
-currentVolInitialState vols currentVol = { vols: vols
-                                         , currentVol: currentVol }
+currentVolInitialState vols currentVol = { vols
+                                         , currentVol
+                                         }

@@ -22,12 +22,6 @@ data VolunteerShift = Overnight Volunteer
 
 data Shift = Shift { date :: Date, volunteers :: Array VolunteerShift }
 
--- instance showShift :: Show Shift where
---   show (Shift {date: d, volunteers: v, isOvernight: o}) = show o
-
--- instance showVolunteer :: Show Volunteer where
---   show (Vol {name: n}) = show n
-
 hasDate :: Date -> Shift -> Boolean
 hasDate date (Shift s) = s.date == date
 
@@ -43,10 +37,10 @@ volId (Overnight (Vol v)) = v.id
 volId (Evening (Vol v)) = v.id
 
 addVolunteerShift :: Date -> VolunteerShift -> Array Shift -> Array Shift
-addVolunteerShift shiftDate vol shifts =
-  case findIndex (hasDate shiftDate) shifts of
+addVolunteerShift date vol shifts =
+  case findIndex (hasDate date) shifts of
     Just i -> fromMaybe shifts $ modifyAt i (\(Shift s) -> Shift s{ volunteers = (flip snoc) vol s.volunteers }) shifts
-    _      -> snoc shifts $ Shift {date: shiftDate, volunteers: [vol]}
+    _      -> snoc shifts $ Shift {date, volunteers: [vol]}
 
 changeVolunteerShift :: Date -> VolunteerShift -> Array Shift -> Array Shift
 changeVolunteerShift shiftDate vol shifts =
@@ -93,7 +87,7 @@ canAddVolunteer volShift (Shift s) =
   satisfies p = all id <<< map (not <<< isError) <<< (flip flap) p
 
 validate :: Shift -> Date -> Array RuleResult
-validate shift date =
+validate shift currentDate =
   collectViolations params [ notTooManyVolunteers
                            , noDuplicateVolunteers
                            , noVolunteers
@@ -101,9 +95,9 @@ validate shift date =
                            , noOvernightVolunteers
                            ]
   where
-  params = { shift: shift
+  params = { shift
            , maxVolsPerShift: 2
-           , currentDate: date
+           , currentDate
            , urgentPeriodDays: 14.0
            }
 
@@ -116,9 +110,9 @@ validate shift date =
   priority _           = 2
 
 notTooManyVolunteers :: forall r. Rule (maxVolsPerShift :: Int | r)
-notTooManyVolunteers { shift: (Shift s), maxVolsPerShift: max } =
-  if length s.volunteers > max
-    then Just $ Error $ "Too many volunteers (max is " <> show max <> ")"
+notTooManyVolunteers { shift: (Shift s), maxVolsPerShift } =
+  if length s.volunteers > maxVolsPerShift
+    then Just $ Error $ "Too many volunteers (max is " <> show maxVolsPerShift <> ")"
     else Nothing
 
 noDuplicateVolunteers :: forall r. Rule r

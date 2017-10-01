@@ -103,10 +103,11 @@ shiftListSpec =
 
 shiftListInitialState :: Maybe D.Volunteer -> Array D.Shift -> Date -> ShiftListState
 shiftListInitialState currentVol shifts currentDate = 
-  { currentVol: currentVol
-  , shifts: shifts
+  { currentVol
+  , shifts
   , shiftRows: buildShifts currentVol shifts currentDate
-  , currentDate: currentDate }
+  , currentDate
+  }
 
 buildShifts :: Maybe D.Volunteer -> Array D.Shift -> Date -> L.List ShiftState
 buildShifts currentVol shifts startDate = buildShifts' startDate 28
@@ -121,7 +122,7 @@ buildShifts currentVol shifts startDate = buildShifts' startDate 28
         otherVols = sortWith _.name $ map buildVol $ case currentVol of
                                                        (Just cv@(D.Vol v)) -> filter (not <<< D.hasVolWithId $ v.id) s.volunteers
                                                        _ -> s.volunteers
-    in { date: date 
+    in { date 
        , noOfVols: length s.volunteers
        , status: status shift startDate
        , currentVol: buildCurrentVol shift
@@ -161,8 +162,8 @@ buildShifts currentVol shifts startDate = buildShifts' startDate 28
   buildVol :: D.VolunteerShift -> OtherVolState
   buildVol (D.Overnight (D.Vol v)) = { name: v.name
                                      , shiftType: Overnight } 
-  buildVol (D.Evening (D.Vol v)) = { name: v.name
-                                   , shiftType: Evening }
+  buildVol (D.Evening (D.Vol v))   = { name: v.name
+                                     , shiftType: Evening }
 
 changeCurrentVol :: Maybe D.Volunteer -> ShiftListState -> ShiftListState
 changeCurrentVol currentVol state =

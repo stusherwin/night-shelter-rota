@@ -109,22 +109,22 @@ shiftSpec = T.simpleSpec performAction render
     ]
   
   renderShiftType :: _ -> ShiftState -> Array ReactElement
-  renderShiftType dispatch state@{ date: d, currentVol: (Just { shiftType: Just Overnight }) } =
+  renderShiftType dispatch state@{ date, currentVol: (Just { shiftType: Just Overnight }) } =
     [ RD.span []
               [ RD.i [ RP.className "icon-bed" ] []
               , RD.text "Overnight "
-              , RD.a [ RP.onClick \_ -> dispatch $ ChangeCurrentVolShiftType d $ Evening
+              , RD.a [ RP.onClick \_ -> dispatch $ ChangeCurrentVolShiftType date $ Evening
                      , RP.className "action"
                      ]
                      [ RD.text "[change]" ]
               , RD.text ""
               ]
     ]
-  renderShiftType dispatch state@{ date: d, currentVol: (Just { shiftType: Just Evening }) } =
+  renderShiftType dispatch state@{ date, currentVol: (Just { shiftType: Just Evening }) } =
     [ RD.span []
               [ RD.i [ RP.className "icon-no-bed" ] []
               , RD.text "Evening only "
-              , RD.a [ RP.onClick \_ -> dispatch $ ChangeCurrentVolShiftType d $ Overnight
+              , RD.a [ RP.onClick \_ -> dispatch $ ChangeCurrentVolShiftType date $ Overnight
                      , RP.className "action"
                      ]
                      [ RD.text "[change]" ]
@@ -134,22 +134,22 @@ shiftSpec = T.simpleSpec performAction render
   renderShiftType _ _ = []
 
   renderSelected :: _ -> ShiftState -> Array ReactElement
-  renderSelected dispatch state@{ date: d, currentVol: (Just cv@{ shiftType: Nothing }) } =
+  renderSelected dispatch state@{ date, currentVol: (Just cv@{ shiftType: Nothing }) } =
     [ RD.div [ RP.className "ui fitted checkbox" ]
              [ RD.input [ RP._type "checkbox"
                         , RP.disabled $ not cv.canAddOvernight && not cv.canAddEvening
                         , RP.checked false
-                        , RP.onChange \_ -> dispatch $ AddCurrentVol d $ if cv.canAddOvernight then Overnight else Evening
+                        , RP.onChange \_ -> dispatch $ AddCurrentVol date $ if cv.canAddOvernight then Overnight else Evening
                         ]
                         []
              , RD.label' []
              ]
     ]
-  renderSelected dispatch state@{ date: d, currentVol: (Just { shiftType: Just st }) } =
+  renderSelected dispatch state@{ date, currentVol: (Just { shiftType: Just st }) } =
     [ RD.div [ RP.className "ui fitted checkbox" ]
              [ RD.input [ RP._type "checkbox"
                         , RP.checked true
-                        , RP.onChange \_ -> dispatch $ RemoveCurrentVol d
+                        , RP.onChange \_ -> dispatch $ RemoveCurrentVol date
                         ]
                         []
              , RD.label' []

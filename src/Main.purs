@@ -92,7 +92,7 @@ main = unsafePerformEff $ do
              , Vol { id: 3, name: "Jim" } ]
   let shifts = []
   let currentVol = Nothing 
-  let component = T.createClass spec $ { vols: vols 
+  let component = T.createClass spec $ { vols
                                        , shiftList: shiftListInitialState currentVol shifts currentDate
                                        , currentVol: currentVolInitialState vols currentVol }
   let appEl = R.createFactory component {}
