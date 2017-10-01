@@ -1,15 +1,18 @@
-module App.Data (Shift (..), Volunteer(..), VolunteerShift(..), addVolunteerShift, changeVolunteerShift, removeVolunteerShift, canAddVolunteer, hasId, hasDate, hasVolWithId) where
+module App.Data (Shift (..), Volunteer(..), VolunteerShift(..), RuleResult(..), addVolunteerShift, changeVolunteerShift, removeVolunteerShift, canAddVolunteer, hasId, hasDate, hasVolWithId, validate) where
 
 import Prelude
 
-import Data.Array (findIndex, find, modifyAt, snoc, updateAt, deleteAt, length)
+import App.Common (toDateString)
+import Data.Array (findIndex, find, modifyAt, snoc, updateAt, deleteAt, length, all, nub, nubBy, (:), filter, catMaybes, sortWith)
 import Data.DateTime (DateTime(..), Date(..), Time(..), canonicalDate, date, adjust)
+import Data.Time.Duration (Days(..))
+import Data.Date (diff)
+import Data.Either (Either(..))
 import Data.Foldable (foldMap)
-import Data.Maybe (Maybe(..), fromMaybe, isNothing)
+import Data.Lens (_1)
+import Data.Maybe (Maybe(..), fromMaybe, isNothing, isJust, fromJust)
 import Data.Tuple.Nested (Tuple3(..))
 import Type.Data.Boolean (False)
-
-import App.Common (toDateString)
  
 data Volunteer = Vol { id :: Int
                      , name :: String }
@@ -62,7 +65,85 @@ removeVolunteerShift shiftDate (Vol vol) shifts =
                   Just j -> Shift s{ volunteers = fromMaybe s.volunteers $ deleteAt j s.volunteers }
                   _      -> Shift s) shifts
     _      -> shifts
+  
+type RuleParams r = { shift :: Shift | r }
 
-canAddVolunteer :: Volunteer -> Shift -> Boolean
-canAddVolunteer (Vol vol) (Shift shift) = 
-  ((length shift.volunteers) < 2) && (isNothing $ find (hasVolWithId vol.id) shift.volunteers)
+type Rule r = RuleParams r -> Maybe RuleResult
+
+data RuleResult = Error String
+                | Warning String
+                | Neutral
+
+isError :: Maybe RuleResult -> Boolean
+isError (Just (Error _)) = true
+isError _                = false
+
+canAddVolunteer :: VolunteerShift -> Either Date Shift -> Boolean
+canAddVolunteer volShift eitherShift =
+  satisfies params [ notTooManyVolunteers
+                   , noDuplicateVolunteers
+                   ]
+  where
+  params = { shift: case eitherShift of 
+                      (Right (Shift s)) -> Shift s{ volunteers = volShift:s.volunteers }
+                      (Left date)       -> Shift  { date: date
+                                                  , volunteers: [volShift]
+                                                  }
+           , maxVolsPerShift: 2
+           }
+
+  satisfies :: forall r. RuleParams r -> Array (Rule r) -> Boolean
+  satisfies p = all id <<< map (not <<< isError) <<< (flip flap) p
+
+validate :: Either Date Shift -> Date -> Array RuleResult
+validate eitherShift date =
+  collectViolations params [ notTooManyVolunteers
+                           , noDuplicateVolunteers
+                           , noVolunteers
+                           , notEnoughVolunteers
+                           ]
+  where
+  params = { shift: case eitherShift of 
+                      (Right s)   -> s
+                      (Left date) -> Shift { date: date
+                                           , volunteers: []
+                                           }
+           , maxVolsPerShift: 2
+           , currentDate: date
+           , urgentPeriodDays: 14.0
+           }
+
+  collectViolations :: forall r. RuleParams r -> Array (Rule r) -> Array RuleResult
+  collectViolations params severities = sortWith priority $ catMaybes $ (flip flap) params $ severities
+
+  priority :: RuleResult -> Int
+  priority (Error   _) = 0
+  priority (Warning _) = 1
+  priority _           = 2
+
+notTooManyVolunteers :: forall r. Rule (maxVolsPerShift :: Int | r)
+notTooManyVolunteers { shift: (Shift s), maxVolsPerShift: max } =
+  if length s.volunteers > max
+    then Just $ Error $ "Too many volunteers (max is " <> show max <> ")"
+    else Nothing
+
+noDuplicateVolunteers :: forall r. Rule r
+noDuplicateVolunteers { shift: Shift s } =
+  if length (nubBy (\a b -> volId a == volId b) s.volunteers) > length s.volunteers
+    then Just $ Error "Duplicate volunteer"
+    else Nothing
+
+noVolunteers :: forall r. Rule (currentDate :: Date, urgentPeriodDays :: Number | r)
+noVolunteers { shift: Shift s, currentDate, urgentPeriodDays } =
+  let (Days d) = s.date `diff` currentDate
+  in if length s.volunteers == 0
+    then (if d < urgentPeriodDays
+            then Just $ Error "This shift is happening soon and has no volunteers"
+            else Just Neutral)
+    else Nothing
+
+notEnoughVolunteers :: forall r. Rule r
+notEnoughVolunteers { shift: Shift s } =
+  if length s.volunteers == 1
+    then Just $ Warning "This shift could do with another volunteer"
+    else Nothing

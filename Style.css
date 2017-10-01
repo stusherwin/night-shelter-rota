@@ -15,19 +15,21 @@
 }
 
 .ui.table tr.weekend td {
-  font-weight: bold;
 }
 
-.ui.table tr.weekend.warning {
-  background: #fff6e9 !important;
+.ui.table tr.weekend td.shift-date.warning {
+  /* #fffaf3 */
+  background: #f8f4ed !important;
 }
 
-.ui.table tr.weekend.negative {
-  background: #ffefef !important;
+.ui.table tr.weekend td.shift-date.negative {
+  /* #fff6f6 */
+  background: #f9eded !important;
 }
 
-.ui.table tr.weekend.positive {
-  background: #f9ffeb !important;
+.ui.table tr.weekend td.shift-date.positive {
+  /* #fcfff5 */
+  background: #f1f6e4 !important;
 }
 
 .ui.checkbox.stu label {

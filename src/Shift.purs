@@ -20,8 +20,8 @@ data ShiftType = Overnight
                | Evening
 
 data ShiftStatus = Good
-                 | CouldBeBetter
-                 | Bad
+                 | Warning String
+                 | Error String
                  | OK
 
 type OtherVolState = { name :: String
@@ -30,7 +30,8 @@ type OtherVolState = { name :: String
 
 type CurrentVolState = { name :: String
                        , shiftType :: Maybe ShiftType
-                       , canAdd :: Boolean
+                       , canAddOvernight :: Boolean
+                       , canAddEvening :: Boolean
                        }
 
 type ShiftState = { date :: Date
@@ -51,18 +52,13 @@ shiftSpec = T.simpleSpec performAction render
   render :: T.Render ShiftState _ ShiftAction
   render dispatch _ state _ =
     [ RD.tr [ RP.className $ joinWith " " [ if isWeekend state.date then "weekend" else ""
-                                          , case state.status of 
-                                              Good -> "positive"
-                                              Bad -> "negative"
-                                              CouldBeBetter -> "warning"
-                                              OK -> ""
                                           ]
             ]
-           ([ RD.td  [ RP.className "shift-date collapsing" ]
+           ([ RD.td  [ RP.className $ "shift-date collapsing " <> statusClass state.status ]
                      [ RD.text $ "" <> show state.noOfVols <> "/2" ]
-            , RD.td  [ RP.className "shift-date left-border collapsing" ]
+            , RD.td  [ RP.className $ "shift-date left-border collapsing " <> statusClass state.status ]
                      [ RD.text $ toUpper $ take 3 $ show $ weekday state.date ]
-            , RD.td  [ RP.className "shift-date collapsing" ]
+            , RD.td  [ RP.className $ "shift-date collapsing " <> statusClass state.status ]
                      [ RD.text $ toDateString state.date ]
             , RD.td  [ RP.className "left-border collapsing" ]
                      $ renderOtherVol state.otherVol1
@@ -80,6 +76,12 @@ shiftSpec = T.simpleSpec performAction render
                        [ RD.td' [] ]
            )
     ]
+
+  statusClass :: ShiftStatus -> String
+  statusClass Good        = "positive"
+  statusClass (Error _)   = "negative"
+  statusClass (Warning _) = "warning"
+  statusClass _           = ""
   
   renderEndCells :: _ -> ShiftState -> Array ReactElement
   renderEndCells dispatch { otherVol2: v@(Just _) } =
@@ -122,12 +124,12 @@ shiftSpec = T.simpleSpec performAction render
   renderShiftType _ _ = []
 
   renderSelected :: _ -> ShiftState -> Array ReactElement
-  renderSelected dispatch state@{ date: d, currentVol: (Just { shiftType: Nothing, canAdd: canAdd }) } =
+  renderSelected dispatch state@{ date: d, currentVol: (Just cv@{ shiftType: Nothing }) } =
     [ RD.div [ RP.className "ui fitted checkbox" ]
              [ RD.input [ RP._type "checkbox"
-                        , RP.disabled $ not canAdd
+                        , RP.disabled $ not cv.canAddOvernight && not cv.canAddEvening
                         , RP.checked false
-                        , RP.onChange \_ -> dispatch $ AddCurrentVol d Overnight
+                        , RP.onChange \_ -> dispatch $ AddCurrentVol d $ if cv.canAddOvernight then Overnight else Evening
                         ]
                         []
              , RD.label' []
@@ -157,9 +159,6 @@ shiftSpec = T.simpleSpec performAction render
   renderOtherVol _ = []
 
   performAction :: T.PerformAction _ ShiftState _ ShiftAction
-  performAction (AddCurrentVol    _ st)          _ { currentVol: Just cv@{ shiftType: Nothing } } = void $ T.modifyState \state -> state{ currentVol = Just cv{ shiftType = Just st } }
-  performAction (ChangeCurrentVolShiftType _ st) _ { currentVol: Just cv@{ shiftType: Just _ } }  = void $ T.modifyState \state -> state{ currentVol = Just cv{ shiftType = Just st } }
-  performAction (RemoveCurrentVol _)             _ { currentVol: Just cv@{ shiftType: Just _ } }  = void $ T.modifyState \state -> state{ currentVol = Just cv{ shiftType = Nothing } }
   performAction _ _ _ = pure unit
 
   toId :: Date -> String
@@ -174,20 +173,3 @@ shiftSpec = T.simpleSpec performAction render
   changeCurrentVol :: ShiftType -> Maybe CurrentVolState -> Maybe CurrentVolState
   changeCurrentVol st (Just cv@{ shiftType: Just _ }) = Just cv { shiftType = Just st }
   changeCurrentVol _ cv = cv
-
--- [ RD.input [ RP._type "radio"
---            , RP.name $ "type-" <> toId state.date 
---            , RP._id $ "type-bed-" <> toId state.date ]
---            []
--- , RD.label [ RP.htmlFor $ "type-bed-" <> toId state.date 
---            ]
---            [ RD.i [ RP.className "icon-bed" ] []
---            ]
--- , RD.input [ RP._type "radio"
---            , RP.name $ "type-" <> toId state.date 
---            , RP._id $ "type-no-bed-" <> toId state.date ]
---            []
--- , RD.label [ RP.htmlFor $ "type-no-bed-" <> toId state.date 
---            ]
---            [ RD.i [ RP.className "icon-no-bed" ] []
---            ]
