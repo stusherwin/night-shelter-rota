@@ -22,6 +22,7 @@ data ShiftType = Overnight
 data ShiftStatus = Good
                  | Warning String
                  | Error String
+                 | Info String
                  | OK
 
 type OtherVolState = { name :: String
@@ -58,9 +59,9 @@ shiftSpec = T.simpleSpec performAction render
                      (statusIcon state.status)
             , RD.td  [ RP.className $ "shift-status collapsing " <> statusClass state.status ]
                      [ RD.text $ "" <> show state.noOfVols <> "/2" ]
-            , RD.td  [ RP.className $ "shift-date left-border collapsing " <> statusClass state.status ]
+            , RD.td  [ RP.className $ "shift-date left-border collapsing " ]-- <> statusClass state.status ]
                      [ RD.text $ toUpper $ take 3 $ show $ weekday state.date ]
-            , RD.td  [ RP.className $ "shift-date collapsing " <> statusClass state.status ]
+            , RD.td  [ RP.className $ "shift-date collapsing "] -- <> statusClass state.status ]
                      [ RD.text $ toDateString state.date ]
             , RD.td  [ RP.className "left-border collapsing" ]
                      $ renderOtherVol state.otherVol1
@@ -88,7 +89,8 @@ shiftSpec = T.simpleSpec performAction render
   statusIcon :: ShiftStatus -> Array ReactElement
   statusIcon Good        = [ RD.i [ RP.className "icon-ok" ] [] ]
   statusIcon (Error e)   = [ RD.i [ RP.className "icon-warning", RP.title e ] [] ]
-  statusIcon (Warning e) = [ RD.i [ RP.className "icon-info", RP.title e ] [] ]
+  statusIcon (Warning w) = [ RD.i [ RP.className "icon-info", RP.title w ] [] ]
+  statusIcon (Info i)    = [ RD.i [ RP.className "icon-info", RP.title i ] [] ]
   statusIcon _ = []
   
   renderEndCells :: _ -> ShiftState -> Array ReactElement
@@ -112,7 +114,7 @@ shiftSpec = T.simpleSpec performAction render
               [ RD.i [ RP.className "icon-bed" ] []
               , RD.text "Overnight "
               , RD.a [ RP.onClick \_ -> dispatch $ ChangeCurrentVolShiftType d $ Evening
-                     , RP.href "#"
+                     , RP.className "action"
                      ]
                      [ RD.text "[change]" ]
               , RD.text ""
@@ -123,7 +125,7 @@ shiftSpec = T.simpleSpec performAction render
               [ RD.i [ RP.className "icon-no-bed" ] []
               , RD.text "Evening only "
               , RD.a [ RP.onClick \_ -> dispatch $ ChangeCurrentVolShiftType d $ Overnight
-                     , RP.href "#"
+                     , RP.className "action"
                      ]
                      [ RD.text "[change]" ]
               , RD.text ""

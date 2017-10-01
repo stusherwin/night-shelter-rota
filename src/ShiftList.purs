@@ -109,79 +109,60 @@ shiftListInitialState currentVol shifts currentDate =
   , currentDate: currentDate }
 
 buildShifts :: Maybe D.Volunteer -> Array D.Shift -> Date -> L.List ShiftState
-buildShifts currentVol shifts startDate = buildShifts' currentVol shifts startDate 28
+buildShifts currentVol shifts startDate = buildShifts' startDate 28
   where 
-  buildShifts' :: Maybe D.Volunteer -> Array D.Shift -> Date -> Int -> L.List ShiftState
-  buildShifts' _ _ _ 0 = L.Nil
-  buildShifts' currentVol shifts date n = L.Cons (buildShift currentVol date) $ buildShifts' currentVol shifts (tomorrow date) (n - 1)
+  buildShifts' :: Date -> Int -> L.List ShiftState
+  buildShifts' _ 0 = L.Nil
+  buildShifts' date n = L.Cons (buildShift date) $ buildShifts' (tomorrow date) (n - 1)
 
-  buildShift :: Maybe D.Volunteer -> Date -> ShiftState
-  buildShift Nothing date = case find (D.hasDate date) shifts of
-    Just s@(D.Shift shift) -> 
-      let otherVols = sortWith _.name $ map buildVol shift.volunteers
-          noOfVols  = length shift.volunteers 
-      in { date: shift.date 
-         , noOfVols: noOfVols
-         , status: status (Right s) startDate
-         , currentVol: Nothing
-         , otherVol1: otherVols !! 0
-         , otherVol2: otherVols !! 1
-         } 
-    _ ->
-      { date: date
-      , noOfVols: 0
-      , status: status (Left date) startDate
-      , currentVol: Nothing
-      , otherVol1: Nothing
-      , otherVol2: Nothing
-      }
-  buildShift (Just cv@(D.Vol v)) date = case find (D.hasDate date) shifts of
-    Just s@(D.Shift shift) -> 
-      let otherVols = sortWith _.name $ map buildVol $ filter (not <<< D.hasVolWithId $ v.id) shift.volunteers
-          noOfVols  = length shift.volunteers
-      in { date: shift.date 
-         , noOfVols: length shift.volunteers
-         , status: status (Right s) startDate
-         , currentVol: Just { name: v.name 
-                            , shiftType: currentVolShiftType cv shift.volunteers
-                            , canAddOvernight: D.canAddVolunteer (D.Overnight cv) (Right s)
-                            , canAddEvening: D.canAddVolunteer (D.Evening cv) (Right s)
-                            }
-         , otherVol1: otherVols !! 0
-         , otherVol2: otherVols !! 1
-         } 
-    _ -> 
-      { date: date
-      , noOfVols: 0
-      , status: status (Left date) startDate
-      , currentVol: Just { name: v.name
-                         , shiftType: Nothing
-                         , canAddOvernight: true
-                         , canAddEvening: true
-                         }
-      , otherVol1: Nothing
-      , otherVol2: Nothing
-      }
+  buildShift :: Date -> ShiftState
+  buildShift date =
+    let shift@(D.Shift s) = maybe (D.Shift {date: date, volunteers: []}) id $ find (D.hasDate date) shifts
+        otherVols = sortWith _.name $ map buildVol $ case currentVol of
+                                                       (Just cv@(D.Vol v)) -> filter (not <<< D.hasVolWithId $ v.id) s.volunteers
+                                                       _ -> s.volunteers
+    in { date: date 
+       , noOfVols: length s.volunteers
+       , status: status shift startDate
+       , currentVol: buildCurrentVol shift
+       , otherVol1: otherVols !! 0
+       , otherVol2: otherVols !! 1
+       }
+  
+  removeCurrentVol :: Array D.VolunteerShift -> Array D.VolunteerShift
+  removeCurrentVol = case currentVol of
+    (Just cv@(D.Vol v)) -> filter (not <<< D.hasVolWithId $ v.id)
+    _ -> id
 
-status :: Either Date D.Shift -> Date -> ShiftStatus
-status s date =
-  case take 1 $ D.validate s date of
-    [D.Error e]   -> Error e
-    [D.Warning w] -> Warning w
-    [D.Neutral]   -> OK
-    _             -> Good
+  buildCurrentVol :: D.Shift -> Maybe CurrentVolState
+  buildCurrentVol shift@(D.Shift s) = case currentVol of
+    (Just cv@(D.Vol v)) -> Just { name: v.name 
+                                , shiftType: currentVolShiftType cv s.volunteers
+                                , canAddOvernight: D.canAddVolunteer (D.Overnight cv) shift
+                                , canAddEvening: D.canAddVolunteer (D.Evening cv) shift
+                                }
+    _                   -> Nothing
 
-currentVolShiftType :: D.Volunteer -> Array D.VolunteerShift -> Maybe ShiftType
-currentVolShiftType (D.Vol v) vols = 
-  find (D.hasVolWithId v.id) vols >>= case _ of
-    D.Overnight _ -> Just Overnight
-    D.Evening   _ -> Just Evening
+  status :: D.Shift -> Date -> ShiftStatus
+  status s date = 
+    case take 1 $ D.validate s date of
+      [D.Error e]   -> Error e
+      [D.Warning w] -> Warning w
+      [D.Info i]    -> Info i
+      [D.Neutral]   -> OK
+      _             -> Good
 
-buildVol :: D.VolunteerShift -> OtherVolState
-buildVol (D.Overnight (D.Vol v)) = { name: v.name
-                                   , shiftType: Overnight } 
-buildVol (D.Evening (D.Vol v)) = { name: v.name
-                                 , shiftType: Evening }
+  currentVolShiftType :: D.Volunteer -> Array D.VolunteerShift -> Maybe ShiftType
+  currentVolShiftType (D.Vol v) vols = 
+    find (D.hasVolWithId v.id) vols >>= case _ of
+      D.Overnight _ -> Just Overnight
+      D.Evening   _ -> Just Evening
+  
+  buildVol :: D.VolunteerShift -> OtherVolState
+  buildVol (D.Overnight (D.Vol v)) = { name: v.name
+                                     , shiftType: Overnight } 
+  buildVol (D.Evening (D.Vol v)) = { name: v.name
+                                   , shiftType: Evening }
 
 changeCurrentVol :: Maybe D.Volunteer -> ShiftListState -> ShiftListState
 changeCurrentVol currentVol state =
@@ -195,5 +176,3 @@ modifyShifts state modify =
   in state { shifts = shifts
            , shiftRows = buildShifts state.currentVol shifts state.currentDate
            }
-
-

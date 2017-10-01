@@ -72,42 +72,36 @@ type Rule r = RuleParams r -> Maybe RuleResult
 
 data RuleResult = Error String
                 | Warning String
+                | Info String
                 | Neutral
 
 isError :: Maybe RuleResult -> Boolean
 isError (Just (Error _)) = true
 isError _                = false
 
-canAddVolunteer :: VolunteerShift -> Either Date Shift -> Boolean
-canAddVolunteer volShift eitherShift =
+canAddVolunteer :: VolunteerShift -> Shift -> Boolean
+canAddVolunteer volShift (Shift s) =
   satisfies params [ notTooManyVolunteers
                    , noDuplicateVolunteers
                    ]
   where
-  params = { shift: case eitherShift of 
-                      (Right (Shift s)) -> Shift s{ volunteers = volShift:s.volunteers }
-                      (Left date)       -> Shift  { date: date
-                                                  , volunteers: [volShift]
-                                                  }
+  params = { shift: Shift s{ volunteers = volShift:s.volunteers }
            , maxVolsPerShift: 2
            }
 
   satisfies :: forall r. RuleParams r -> Array (Rule r) -> Boolean
   satisfies p = all id <<< map (not <<< isError) <<< (flip flap) p
 
-validate :: Either Date Shift -> Date -> Array RuleResult
-validate eitherShift date =
+validate :: Shift -> Date -> Array RuleResult
+validate shift date =
   collectViolations params [ notTooManyVolunteers
                            , noDuplicateVolunteers
                            , noVolunteers
                            , notEnoughVolunteers
+                           , noOvernightVolunteers
                            ]
   where
-  params = { shift: case eitherShift of 
-                      (Right s)   -> s
-                      (Left date) -> Shift { date: date
-                                           , volunteers: []
-                                           }
+  params = { shift: shift
            , maxVolsPerShift: 2
            , currentDate: date
            , urgentPeriodDays: 14.0
@@ -139,11 +133,23 @@ noVolunteers { shift: Shift s, currentDate, urgentPeriodDays } =
   in if length s.volunteers == 0
     then (if d < urgentPeriodDays
             then Just $ Error "This shift is happening soon and has no volunteers"
-            else Just Neutral)
+            else Just $ Neutral)
     else Nothing
 
 notEnoughVolunteers :: forall r. Rule r
 notEnoughVolunteers { shift: Shift s } =
   if length s.volunteers == 1
-    then Just $ Warning "This shift could do with another volunteer"
+    then Just $ Info "This shift could do with another volunteer"
+    else Nothing
+
+noOvernightVolunteers :: forall r. Rule (currentDate :: Date, urgentPeriodDays :: Number | r)
+noOvernightVolunteers { shift: Shift s, currentDate, urgentPeriodDays } =
+  let (Days d) = s.date `diff` currentDate
+      isOvernight :: VolunteerShift -> Boolean
+      isOvernight (Overnight _) = true
+      isOvernight _ = false
+  in if length s.volunteers /= 0 && (length $ filter isOvernight s.volunteers) == 0
+    then (if d < urgentPeriodDays
+            then Just $ Error "This shift is happening soon and has no overnight volunteer"
+            else Just $ Warning "This shift has no overnight volunteer")
     else Nothing

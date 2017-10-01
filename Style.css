@@ -16,17 +16,17 @@
 
 .ui.table tr.weekend td.shift-date.warning, .ui.table tr.weekend td.shift-status.warning {
   /* #fffaf3 */
-  background: #f8f4ed !important;
+  background: #f3ece1 !important;
 }
 
 .ui.table tr.weekend td.shift-date.negative, .ui.table tr.weekend td.shift-status.negative {
   /* #fff6f6 */
-  background: #f9eded !important;
+  background: #f4e7e7 !important;
 }
 
 .ui.table tr.weekend td.shift-date.positive, .ui.table tr.weekend td.shift-status.positive {
   /* #fcfff5 */
-  background: #f1f6e4 !important;
+  background: #ebf0dc !important;
 }
 
 .ui.table td.shift-status i {
@@ -79,4 +79,8 @@ td.left-border, .ui.table thead th.left-border {
 
 .ui.checkbox input[type="checkbox"][disabled] {
   cursor: default;
+}
+
+a.action {
+  cursor: pointer;
 }
