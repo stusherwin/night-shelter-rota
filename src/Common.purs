@@ -1,4 +1,4 @@
-module App.Common (unsafeEventValue, unsafeEventSelectedIndex, lensWithProps, lensOfListWithProps, midnight, tomorrow, toDateString, updateWhere, modifyWhere) where
+module App.Common (unsafeEventValue, unsafeEventSelectedIndex, lensWithProps, lensOfListWithProps, midnight, tomorrow, toDateString, updateWhere, modifyWhere, updateListWhere, modifyListWhere) where
   
 import Prelude 
 
@@ -7,7 +7,7 @@ import Data.DateTime (DateTime(..), Date(..), Time(..), canonicalDate, date, adj
 import Data.Either (Either(..), fromRight, either)
 import Data.Formatter.DateTime (formatDateTime)
 import Data.Lens (Lens', lens)
-import Data.List (List) as L
+import Data.List (List(..), findIndex, updateAt, modifyAt) as L
 import Data.Maybe (Maybe(..), fromJust, maybe, fromMaybe)
 import Data.Time.Duration (Days(..))
 import Data.Tuple (Tuple(..), snd)
@@ -58,4 +58,16 @@ modifyWhere :: forall a. (a -> Boolean) -> (a -> a) -> Array a -> Array a
 modifyWhere predicate item list = fromMaybe list $ do
   i <- findIndex predicate list
   result <- modifyAt i item list
+  pure result
+
+updateListWhere :: forall a. (a -> Boolean) -> a -> L.List a -> L.List a
+updateListWhere predicate item list = fromMaybe list $ do
+  i <- L.findIndex predicate list
+  result <- L.updateAt i item list
+  pure result
+
+modifyListWhere :: forall a. (a -> Boolean) -> (a -> a) -> L.List a -> L.List a
+modifyListWhere predicate item list = fromMaybe list $ do
+  i <- L.findIndex predicate list
+  result <- L.modifyAt i item list
   pure result

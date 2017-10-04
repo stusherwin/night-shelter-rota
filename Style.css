@@ -40,29 +40,12 @@
   opacity: 0.65;
 }
 
-.ui.checkbox.stu label {
-  cursor: pointer;
-}
-
-.ui.checkbox.stu label.ui.label {
-  font-weight: 100;
-  padding-top: 4px;
-  padding-right: 5px;
-  padding-bottom: 4px;
-}
-
-.ui.checkbox.stu label.ui.label:before {
-  top: 3px;
-  left: 3px;
-}
-
-.ui.checkbox.stu label.ui.label:after {
-  top: 8px;
-  left: 7px;
-}
-
 td.shift-type {
   width: 160px;
+}
+
+td.shift-type > span {
+  margin-left: -10px;
 }
 
 td.shift-type a {
@@ -77,10 +60,28 @@ td.left-border, .ui.table thead th.left-border {
   border-left: 1px solid rgba(34,36,38,.15);
 }
 
+/* .ui.table td.loading i {
+  margin-left: -15px;
+  margin-right: -5px;
+  opacity: 0.4;
+} */
+
+.ui.table tr.loading td {
+  opacity: 0.6;
+  background-color: #f9f9f9;
+}
+
 .ui.checkbox input[type="checkbox"][disabled] {
   cursor: default;
 }
 
 a.action {
   cursor: pointer;
+}
+
+a.action[disabled] {
+  cursor: default;
+  cursor: text;
+  pointer-events: none;
+  color: #999;
 }

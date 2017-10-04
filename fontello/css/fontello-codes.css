@@ -9,6 +9,7 @@
 .icon-ok-circled:before { content: '\e807'; } /* '' */
 .icon-warning:before { content: '\e80a'; } /* '' */
 .icon-info:before { content: '\e80c'; } /* '' */
+.icon-spin:before { content: '\e831'; } /* '' */
 .icon-food:before { content: '\f0f5'; } /* '' */
 .icon-sun:before { content: '\f185'; } /* '' */
 .icon-moon-1:before { content: '\f186'; } /* '' */
