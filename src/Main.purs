@@ -86,10 +86,12 @@ spec = container $ fold
 main :: Unit
 main = unsafePerformEff $ do 
   (LocalValue _ currentDate) <- nowDate 
-  let vols = [ Vol { id: 1, name: "Fred (Share with anyone)", gender: Just Male,   overnightSharingPrefs: Any }
-             , Vol { id: 2, name: "Alice (Only share with females)", gender: Just Female, overnightSharingPrefs: OnlySameGender }
-             , Vol { id: 3, name: "Jim (No sharing)", gender: Nothing,     overnightSharingPrefs: None }
-             , Vol { id: 4, name: "Mary (Share with anyone)", gender: Just Female, overnightSharingPrefs: Any }
+  let vols = [ Vol { id: 1, name: "Fred",    gender: Just Male,           overnightSharingPrefs: Any }
+             , Vol { id: 2, name: "Alice",   gender: Just Female,         overnightSharingPrefs: (OnlyGender Female) }
+             , Vol { id: 3, name: "Jim",     gender: Nothing,             overnightSharingPrefs: None }
+             , Vol { id: 4, name: "Mary",    gender: Just Female,         overnightSharingPrefs: (Custom "Only nice people") }
+             , Vol { id: 5, name: "Smoo 1",  gender: Just (Other "Smoo"), overnightSharingPrefs: (OnlyGender (Other "Smoo")) }
+             , Vol { id: 6, name: "Smoo 2",  gender: Just (Other "Smoo"), overnightSharingPrefs: (OnlyGender (Other "Smoo")) }
              ]
   let shifts = []
   let currentVol = Nothing

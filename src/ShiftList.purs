@@ -2,8 +2,9 @@ module App.ShiftList (ShiftListProps, ShiftListAction(..), ShiftListState, shift
 
 import Prelude
 
-import App.Common (lensOfListWithProps, tomorrow, modifyListWhere) 
-import App.Data (Shift(..), Volunteer(..), VolunteerShift(..), RuleResult(..), canAddVolunteer, addVolunteerShift, changeVolunteerShift, removeVolunteerShift, hasId, hasDate, hasVolWithId, validate, filterOut, canChangeVolunteerShiftType) as D 
+import App.Common (lensOfListWithProps, tomorrow, modifyListWhere, surroundIf)
+import App.Data (OvernightSharingPrefs(..))
+import App.Data (Shift(..), Volunteer(..), VolunteerShift(..), RuleResult(..), canAddVolunteer, addVolunteerShift, changeVolunteerShift, removeVolunteerShift, hasId, hasDate, hasVolWithId, validate, filterOut, canChangeVolunteerShiftType) as D
 import App.Shift (CurrentVolState, OtherVolState, ShiftAction(..), ShiftProps, ShiftState(..), ShiftStatus(..), ShiftType(..), shiftSpec)
 import Control.Monad.Aff (delay)
 import Control.Monad.Aff.Class (liftAff)
@@ -97,19 +98,19 @@ shiftListSpec =
 
     performAction :: T.PerformAction _ ShiftListState _ ShiftListAction
     performAction (ShiftAction _ (AddCurrentVol shiftDate Overnight))             _ { currentVol: Just cv } = void do
-      lift $ liftAff $ delay (Milliseconds 5000.0)
+      lift $ liftAff $ delay (Milliseconds 1000.0)
       T.modifyState \state -> modifyShifts state shiftDate $ D.addVolunteerShift shiftDate (D.Overnight cv)
     performAction (ShiftAction _ (AddCurrentVol shiftDate Evening))               _ { currentVol: Just cv } = void do
-      lift $ liftAff $ delay (Milliseconds 5000.0)
+      lift $ liftAff $ delay (Milliseconds 1000.0)
       T.modifyState \state -> modifyShifts state shiftDate $ D.addVolunteerShift shiftDate (D.Evening cv)
     performAction (ShiftAction _ (ChangeCurrentVolShiftType shiftDate Overnight)) _ { currentVol: Just cv } = void do
-      lift $ liftAff $ delay (Milliseconds 5000.0)
+      lift $ liftAff $ delay (Milliseconds 1000.0)
       T.modifyState \state -> modifyShifts state shiftDate $ D.changeVolunteerShift shiftDate (D.Overnight cv)
     performAction (ShiftAction _ (ChangeCurrentVolShiftType shiftDate Evening))   _ { currentVol: Just cv } = void do
-      lift $ liftAff $ delay (Milliseconds 5000.0)
+      lift $ liftAff $ delay (Milliseconds 1000.0)
       T.modifyState \state -> modifyShifts state shiftDate $ D.changeVolunteerShift shiftDate (D.Evening cv)
     performAction (ShiftAction _ (RemoveCurrentVol shiftDate))                    _ { currentVol: Just cv } = void do
-      lift $ liftAff $ delay (Milliseconds 5000.0)
+      lift $ liftAff $ delay (Milliseconds 1000.0)
       T.modifyState \state -> modifyShifts state shiftDate $ D.removeVolunteerShift shiftDate cv
     performAction _ _ _ = pure unit
 
@@ -138,9 +139,20 @@ buildShift currentVol shifts startDate date =
   where
   buildVol :: D.VolunteerShift -> OtherVolState
   buildVol (D.Overnight (D.Vol v)) = { name: v.name
-                                     , shiftType: Overnight } 
+                                     , shiftType: Overnight
+                                     , sharingPrefs: sharingPrefs v.overnightSharingPrefs
+                                     } 
   buildVol (D.Evening (D.Vol v))   = { name: v.name
-                                     , shiftType: Evening }
+                                     , shiftType: Evening
+                                     , sharingPrefs: sharingPrefs v.overnightSharingPrefs
+                                     }
+
+  sharingPrefs :: OvernightSharingPrefs -> String
+  sharingPrefs prefs = surroundIf " (" ")" (case prefs of
+                                             None -> "No sharing"
+                                             (OnlyGender gender) -> (show gender) <> " only"
+                                             (Custom text) -> text
+                                             _ -> "")
 
   status :: D.Shift -> Date -> ShiftStatus
   status s date = 

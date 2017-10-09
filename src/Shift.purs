@@ -2,10 +2,10 @@ module App.Shift (ShiftProps, ShiftState, ShiftType(..), OtherVolState, CurrentV
 
 import Prelude
 
-import App.Common (unsafeEventValue, toDateString)
-import App.Data (Volunteer(..), canChangeVolunteerShiftType)
+import App.Common (unsafeEventValue, toDateString, surroundIf)
+import App.Data (OvernightSharingPrefs(..), Volunteer(..), canChangeVolunteerShiftType)
 import Data.DateTime (Date, Weekday(..), year, month, day, weekday)
-import Data.Enum (fromEnum)
+import Data.Enum (fromEnum) 
 import Data.Maybe (Maybe(..), maybe)
 import Data.String (take, toUpper, joinWith)
 import Data.Tuple (Tuple(..))
@@ -27,6 +27,7 @@ data ShiftStatus = Good
 
 type OtherVolState = { name :: String
                      , shiftType :: ShiftType
+                     , sharingPrefs :: String
                      }
 
 type CurrentVolState = { name :: String
@@ -161,7 +162,7 @@ shiftSpec = T.simpleSpec performAction render
               [ RD.i [ RP.className $ case v.shiftType of Overnight -> "icon-bed"
                                                           _         -> "icon-no-bed" ]
                      []
-              , RD.text v.name
+              , RD.text $ v.name <> v.sharingPrefs
               ]
     ]
   renderOtherVol _ = []
@@ -184,3 +185,4 @@ shiftSpec = T.simpleSpec performAction render
   changeCurrentVol :: ShiftType -> Maybe CurrentVolState -> Maybe CurrentVolState
   changeCurrentVol st (Just cv@{ shiftType: Just _ }) = Just cv { shiftType = Just st }
   changeCurrentVol _ cv = cv
+

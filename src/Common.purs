@@ -1,4 +1,4 @@
-module App.Common (unsafeEventValue, unsafeEventSelectedIndex, lensWithProps, lensOfListWithProps, midnight, tomorrow, toDateString, updateWhere, modifyWhere, updateListWhere, modifyListWhere) where
+module App.Common (unsafeEventValue, unsafeEventSelectedIndex, lensWithProps, lensOfListWithProps, midnight, tomorrow, toDateString, updateWhere, modifyWhere, updateListWhere, modifyListWhere, surroundIf) where
   
 import Prelude 
 
@@ -64,10 +64,14 @@ updateListWhere :: forall a. (a -> Boolean) -> a -> L.List a -> L.List a
 updateListWhere predicate item list = fromMaybe list $ do
   i <- L.findIndex predicate list
   result <- L.updateAt i item list
-  pure result
+  pure result 
 
 modifyListWhere :: forall a. (a -> Boolean) -> (a -> a) -> L.List a -> L.List a
 modifyListWhere predicate item list = fromMaybe list $ do
   i <- L.findIndex predicate list
   result <- L.modifyAt i item list
   pure result
+
+surroundIf :: String -> String -> String -> String
+surroundIf _ _ "" = ""
+surroundIf start end text = start <> text <> end
