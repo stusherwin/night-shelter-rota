@@ -69,7 +69,7 @@ shiftListSpec =
                                               [ RD.th [ RP.colSpan 2
                                                       , RP.className "left-border collapsing"
                                                       ]
-                                                      [ RD.text $ v.name ]-- <> "'s shifts" ]
+                                                      [ RD.text $ v.name <> "'s shifts" ]
                                               , RD.th [ RP.colSpan 2
                                                       , RP.className "left-border collapsing"
                                                       ]
