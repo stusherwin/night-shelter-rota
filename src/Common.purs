@@ -1,4 +1,4 @@
-module App.Common (unsafeEventValue, unsafeEventSelectedIndex, lensWithProps, lensOfListWithProps, midnight, tomorrow, toDateString, updateWhere, modifyWhere, updateListWhere, modifyListWhere, surroundIf) where
+module App.Common (unsafeEventValue, unsafeEventSelectedIndex, lensWithProps, lensOfListWithProps, midnight, tomorrow, toDateString, updateWhere, modifyWhere, updateListWhere, modifyListWhere, surroundIf, justIf) where
   
 import Prelude 
 
@@ -75,3 +75,6 @@ modifyListWhere predicate item list = fromMaybe list $ do
 surroundIf :: String -> String -> String -> String
 surroundIf _ _ "" = ""
 surroundIf start end text = start <> text <> end
+
+justIf :: forall a. a -> Boolean -> Maybe a
+justIf a condition = if condition then Just a else Nothing
