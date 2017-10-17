@@ -1,4 +1,4 @@
-module App.Data (Shift (..), Volunteer(..), Gender(..), OvernightSharingPrefs(..), VolunteerShift(..), RuleResult(..), addVolunteerShift, changeVolunteerShift, removeVolunteerShift, canAddVolunteer, hasId, hasDate, hasVolWithId, validate, filterOut, canChangeVolunteerShiftType) where
+module App.Data (Shift (..), Volunteer(..), VolId(..), Gender(..), OvernightSharingPrefs(..), VolunteerShift(..), RuleResult(..), addVolunteerShift, changeVolunteerShift, removeVolunteerShift, canAddVolunteer, hasId, hasDate, hasVolWithId, validate, filterOut, canChangeVolunteerShiftType, parseVolId) where
 
 import Prelude
 
@@ -8,8 +8,10 @@ import Data.Date (diff)
 import Data.DateTime (DateTime(..), Date(..), Time(..), canonicalDate, date, adjust)
 import Data.Either (Either(..))
 import Data.Foldable (foldMap)
+import Data.Int (fromString)
 import Data.Lens (_1)
 import Data.Maybe (Maybe(..), fromMaybe, isNothing, isJust, fromJust)
+import Data.Newtype --(Newtype)
 import Data.Time.Duration (Days(..))
 import Data.Tuple.Nested (Tuple3(..))
 import React.DOM.Dynamic (a)
@@ -26,12 +28,20 @@ data OvernightSharingPrefs = None
                            | OnlyGender Gender
                            | Custom String
                            | Any
+
+newtype VolId = VolId Int
+derive instance volIdEq :: Eq VolId
+instance volIdShow :: Show VolId where show (VolId v) = show v
+
+parseVolId :: String -> Maybe VolId
+parseVolId = map VolId <<< fromString
  
-data Volunteer = Vol { id :: Int
+newtype Volunteer = Vol { id :: VolId
                      , name :: String
                      , gender :: Maybe Gender
                      , overnightSharingPrefs :: OvernightSharingPrefs
                      }
+derive instance volunteerNewType :: Newtype Volunteer _
 
 data VolunteerShift = Overnight Volunteer
                     | Evening Volunteer
@@ -41,10 +51,10 @@ data Shift = Shift { date :: Date, volunteers :: Array VolunteerShift }
 hasDate :: Date -> Shift -> Boolean
 hasDate date (Shift s) = s.date == date
 
-hasId :: Int -> Volunteer -> Boolean
+hasId :: VolId -> Volunteer -> Boolean
 hasId id (Vol v) = v.id == id
 
-hasVolWithId :: Int -> VolunteerShift -> Boolean
+hasVolWithId :: VolId -> VolunteerShift -> Boolean
 hasVolWithId id (Overnight (Vol v)) = v.id == id
 hasVolWithId id (Evening (Vol v)) = v.id == id
 
@@ -52,7 +62,7 @@ volThat :: forall a. (Volunteer -> a) -> VolunteerShift -> a
 volThat f (Overnight v) = f v
 volThat f (Evening v)   = f v
 
-volId :: VolunteerShift -> Int
+volId :: VolunteerShift -> VolId
 volId (Overnight (Vol v)) = v.id
 volId (Evening (Vol v)) = v.id
 

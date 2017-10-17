@@ -1,10 +1,11 @@
 module App.Main where 
   
-import Prelude
+import Prelude 
 
 import App.Common (lensWithProps, modifyWhere)
-import App.CurrentVolunteer (CurrentVolProps, CurrentVolState, CurrentVolAction(..), currentVolSpec, currentVolInitialState)
-import App.Data (OvernightSharingPrefs(..), Shift(..), Volunteer(..), Gender(..))
+import App.CurrentVolSelector (CurrentVolSelectorState, CurrentVolSelectorAction(..), currentVolSelectorSpec, currentVolSelectorInitialState)
+import App.CurrentVolDetails (CurrentVolDetailsState, CurrentVolDetailsAction(..), currentVolDetailsSpec, currentVolDetailsInitialState, changeCurrentVol')
+import App.Data (OvernightSharingPrefs(..), Shift(..), Volunteer(..), VolId(..), Gender(..), hasId)
 import App.Shift (ShiftAction(..))
 import App.ShiftList (ShiftListProps, ShiftListState, ShiftListAction(..), shiftListSpec, shiftListInitialState, changeCurrentVol)
 import Control.Monad.Aff.Class (liftAff)
@@ -19,7 +20,7 @@ import Data.Array (find, cons, (!!), length)
 import Data.DateTime (Date)
 import Data.DateTime.Locale (LocalValue(..))
 import Data.Either (Either(..))
-import Data.Foldable (fold)
+import Data.Foldable (fold) 
 import Data.Lens (Lens', lens, Prism', prism, over)
 import Data.Maybe (Maybe(..), fromJust, maybe)
 import Data.Newtype (unwrap)
@@ -33,35 +34,49 @@ import ReactDOM as RDOM
 import Thermite as T
 
 data Action = ShiftListAction ShiftListAction
-            | CurrentVolAction CurrentVolAction
+            | CurrentVolSelectorAction CurrentVolSelectorAction
+            | CurrentVolDetailsAction CurrentVolDetailsAction
  
 type State = { vols :: Array Volunteer
              , shiftList :: ShiftListState
-             , currentVol :: CurrentVolState }
+             , currentVol :: Maybe Volunteer
+             , currentVolSelector :: CurrentVolSelectorState
+             , currentVolDetails :: CurrentVolDetailsState
+             }
  
+_shiftList :: Lens' State ShiftListState
+_shiftList = lens _.shiftList _{shiftList = _}
+
 _ShiftListAction :: Prism' Action ShiftListAction
 _ShiftListAction = prism ShiftListAction unwrap
   where
   unwrap (ShiftListAction a) = Right a
   unwrap a = Left a
- 
-_shiftListState :: Lens' State ShiftListState
-_shiftListState = lens _.shiftList _{shiftList = _}
 
-_currentVolState :: Lens' State CurrentVolState
-_currentVolState = lens _.currentVol _{currentVol = _}
+_currentVolSelector :: Lens' State CurrentVolSelectorState
+_currentVolSelector = lens _.currentVolSelector _{currentVolSelector = _}
 
-_CurrentVolAction :: Prism' Action CurrentVolAction
-_CurrentVolAction = prism CurrentVolAction unwrap
+_CurrentVolSelectorAction :: Prism' Action CurrentVolSelectorAction
+_CurrentVolSelectorAction = prism CurrentVolSelectorAction unwrap
   where 
-  unwrap (CurrentVolAction a) = Right a
+  unwrap (CurrentVolSelectorAction a) = Right a
   unwrap a = Left a 
  
+_currentVolDetails :: Lens' State CurrentVolDetailsState
+_currentVolDetails = lens _.currentVolDetails _{currentVolDetails = _}
+
+_CurrentVolDetailsAction :: Prism' Action CurrentVolDetailsAction
+_CurrentVolDetailsAction = prism CurrentVolDetailsAction unwrap
+  where 
+  unwrap (CurrentVolDetailsAction a) = Right a
+  unwrap a = Left a 
+
 spec :: forall props eff. T.Spec (console :: CONSOLE | eff) State props Action
 spec = container $ fold
-  [ T.focus _currentVolState _CurrentVolAction currentVolSpec
+  [ T.focus _currentVolSelector _CurrentVolSelectorAction currentVolSelectorSpec
+  , T.focus _currentVolDetails _CurrentVolDetailsAction currentVolDetailsSpec
   , headerSpec
-  , T.focus _shiftListState _ShiftListAction shiftListSpec
+  , T.focus _shiftList _ShiftListAction shiftListSpec
   ] 
   where 
   container :: forall state action. T.Spec (console :: CONSOLE | eff) state props action -> T.Spec (console :: CONSOLE | eff) state props action
@@ -74,32 +89,45 @@ spec = container $ fold
     render :: T.Render State _ Action
     render dispatch _ state _ =
       [ RD.h2' [ RD.text "Night Shelter Rota" 
-               , RD.text $ maybe "" (\(Vol v) -> " for " <> v.name) state.currentVol.currentVol
+               , RD.text $ maybe "" (\(Vol v) -> " for " <> v.name) state.currentVol
                ]
       ]
      
     performAction :: forall e. T.PerformAction (console :: CONSOLE | e) State _ Action
-    performAction (CurrentVolAction (ChangeCurrentVol v)) _ _ = void $ T.modifyState \state -> state{ shiftList = changeCurrentVol v state.shiftList }
-    performAction _ _ _ = pure unit
+    performAction (CurrentVolSelectorAction (ChangeCurrentVol volId)) _ _ =
+      void $ T.modifyState \state -> let vol = volId >>= \id -> find (hasId id) state.vols
+                                     in state{ currentVol = vol
+                                             , shiftList = changeCurrentVol vol state.shiftList
+                                             , currentVolDetails = changeCurrentVol' vol state.currentVolDetails
+                                             }
+    performAction (CurrentVolDetailsAction (UpdateName name)) _ _ =
+      void $ T.modifyState \state -> let vol = state.currentVol >>= \(Vol v) -> Just (Vol v{name = name})
+                                     in state{ currentVol = vol
+                                             , shiftList = changeCurrentVol vol state.shiftList
+                                             }
+    performAction _ _ _ = pure unit 
 
  
 main :: Unit
 main = unsafePerformEff $ do 
   (LocalValue _ currentDate) <- nowDate 
-  let vols = [ Vol { id: 1, name: "Fred",    gender: Just Male,           overnightSharingPrefs: Any }
-             , Vol { id: 2, name: "Alice",   gender: Just Female,         overnightSharingPrefs: (OnlyGender Female) }
-             , Vol { id: 3, name: "Jim",     gender: Nothing,             overnightSharingPrefs: None }
-             , Vol { id: 4, name: "Mary",    gender: Just Female,         overnightSharingPrefs: (Custom "Only nice people") }
-             , Vol { id: 5, name: "Smoo 1",  gender: Just (Other "Smoo"), overnightSharingPrefs: (OnlyGender (Other "Smoo")) }
-             , Vol { id: 6, name: "Smoo 2",  gender: Just (Other "Smoo"), overnightSharingPrefs: (OnlyGender (Other "Smoo")) }
+  let vols = [ Vol { id: VolId 1, name: "Fred",    gender: Just Male,           overnightSharingPrefs: Any }
+             , Vol { id: VolId 2, name: "Alice",   gender: Just Female,         overnightSharingPrefs: (OnlyGender Female) }
+             , Vol { id: VolId 3, name: "Jim",     gender: Nothing,             overnightSharingPrefs: None }
+             , Vol { id: VolId 4, name: "Mary",    gender: Just Female,         overnightSharingPrefs: (Custom "Only nice people") }
+             , Vol { id: VolId 5, name: "Smoo 1",  gender: Just (Other "Smoo"), overnightSharingPrefs: (OnlyGender (Other "Smoo")) }
+             , Vol { id: VolId 6, name: "Smoo 2",  gender: Just (Other "Smoo"), overnightSharingPrefs: (OnlyGender (Other "Smoo")) }
              ]
   let shifts = []
   let currentVol = Nothing
   let component = T.createClass spec $ { vols
                                        , shiftList: shiftListInitialState currentVol shifts currentDate
-                                       , currentVol: currentVolInitialState vols currentVol }
+                                       , currentVol: currentVol
+                                       , currentVolSelector: currentVolSelectorInitialState vols currentVol
+                                       , currentVolDetails: currentVolDetailsInitialState currentVol
+                                       }
   let appEl = R.createFactory component {}
-
+ 
   if isServerSide
      then void (log (RDOM.renderToString appEl)) 
      else void (getElementById "app" >>= RDOM.render appEl)
