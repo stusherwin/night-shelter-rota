@@ -122,8 +122,7 @@ config = { maxVolsPerShift: 2
          }
 
 isAllowed :: forall r. { shift :: Shift | r } -> Boolean
-isAllowed params = satisfies params [ notExceedMaxVolunteers
-                                    , notHaveSameVolunteerTwice
+isAllowed params = satisfies params [ notHaveSameVolunteerTwice
                                     ]
   where
   satisfies :: RuleParams r -> Array (Rule r) -> Boolean
@@ -152,7 +151,7 @@ isLooming (Shift shift) currentDate =
 
 validate :: Shift -> Date -> Array RuleResult
 validate shift currentDate =
-  collectViolations params [ must <<< notExceedMaxVolunteers
+  collectViolations params [ should <<< notExceedMaxVolunteers
                            , must <<< notHaveSameVolunteerTwice
                            , mustIf (isLooming shift currentDate) <<< haveAtLeastOneVolunteer
                            , could <<< haveMoreThanOneVolunteer
@@ -180,27 +179,27 @@ validate shift currentDate =
 
 notExceedMaxVolunteers :: forall r. Rule r
 notExceedMaxVolunteers { shift: (Shift s) } =
-  justIf ("This shift has more than " <> show config.maxVolsPerShift <> " volunteers")
+  justIf ("has more than " <> show config.maxVolsPerShift <> " volunteers")
        $ length s.volunteers > config.maxVolsPerShift
 
 notHaveSameVolunteerTwice :: forall r. Rule r
 notHaveSameVolunteerTwice { shift: Shift s } =
-  justIf "The same volunteer is down twice for this shift"
+  justIf "has the same volunteer down twice"
        $ length (nubBy (\a b -> volId a == volId b) s.volunteers) > length s.volunteers
 
 haveAtLeastOneVolunteer :: forall r. Rule (currentDate :: Date | r)
 haveAtLeastOneVolunteer { shift: Shift s } =
-  justIf "This shift has no volunteers"
+  justIf "has no volunteers"
        $ length s.volunteers == 0
 
 haveMoreThanOneVolunteer :: forall r. Rule r
 haveMoreThanOneVolunteer { shift: Shift s } =
-  justIf "This shift has only one volunteer"
+  justIf "has only one volunteer"
        $ length s.volunteers == 1
 
 haveAnOvernightVolunteer :: forall r. Rule (currentDate :: Date | r)
 haveAnOvernightVolunteer { shift: Shift s, currentDate } =
-  justIf "This shift has no overnight volunteer"
+  justIf "has no overnight volunteer"
        $ length s.volunteers /= 0 && (length $ filter isOvernight s.volunteers) == 0
   where
   isOvernight :: VolunteerShift -> Boolean
@@ -209,7 +208,7 @@ haveAnOvernightVolunteer { shift: Shift s, currentDate } =
 
 notViolateAnyVolsSharingPrefs :: forall r. Rule r
 notViolateAnyVolsSharingPrefs { shift: Shift s } =
-  justIf "This shift goes against a volunteer's sharing preferences"
+  justIf "goes against a volunteer's sharing preferences"
        $ any violatesSharingPrefs s.volunteers
   where
   violatesSharingPrefs :: VolunteerShift -> Boolean

@@ -8,16 +8,17 @@ import App.Data (Shift(..), Volunteer(..), VolunteerShift(..), RuleResult(..), c
 import App.Shift (CurrentVolState, OtherVolState, Action(..), State(..), ShiftStatus(..), ShiftType(..), spec) as S
 import Control.Monad.Aff (delay)
 import Control.Monad.Aff.Class (liftAff)
+--import Control.Monad.List.Trans (foldl)
 import Control.Monad.Trans.Class (lift)
 import DOM.HTML.HTMLElement (offsetHeight)
-import Data.Array (find, filter, (!!), sortWith, length, take)
-import Data.String (length) as S
+import Data.Array (find, filter, (!!), sortWith, length, take, foldl)
 import Data.Date (diff)
 import Data.DateTime (DateTime(..), Date(..), Time(..), canonicalDate, date, adjust)
 import Data.Either (Either(..))
 import Data.Lens (Lens', lens, Prism', prism, over)
 import Data.List (List(..), snoc, last, zipWith) as L
 import Data.Maybe (Maybe(..), fromJust, maybe, isJust)
+import Data.String (length) as S
 import Data.Time.Duration (Days(..), Milliseconds(..))
 import Data.Tuple (Tuple(..), uncurry, fst, snd)
 import Math (e)
@@ -153,13 +154,24 @@ buildShift currentVol shifts startDate date =
                                              _ -> "")
 
   status :: D.Shift -> Date -> S.ShiftStatus
-  status s date = 
-    case take 1 $ D.validate s date of
-      [D.Error e]   -> S.Error e
-      [D.Warning w] -> S.Warning w
-      [D.Info i]    -> S.Info i
-      [D.Neutral]   -> S.OK
-      _             -> S.Good
+  status s date =
+    let errors = D.validate s date
+        firstErrorStatus = case take 1 errors of
+          [D.Error e]   -> S.Error
+          [D.Warning w] -> S.Warning
+          [D.Info i]    -> S.Info
+          [D.Neutral]   -> const S.OK
+          _             -> const S.Good
+        
+        extractMsg (D.Error e)   = Just e
+        extractMsg (D.Warning w) = Just w
+        extractMsg (D.Info i)    = Just i
+        extractMsg _             = Nothing
+
+        concat ""  (Just m) = "This shift " <> m
+        concat msg (Just m) = msg <> ", and also " <> m
+        concat msg Nothing  = msg
+    in firstErrorStatus $ foldl concat "" $ map extractMsg errors
   
   buildCurrentVol :: D.Shift -> Maybe S.CurrentVolState
   buildCurrentVol shift@(D.Shift s) = case currentVol of
@@ -201,3 +213,4 @@ modifyShifts state date modify =
   in state { shifts = shifts
            , shiftRows = modifyListWhere (\s -> s.date == date) (\s -> s{ loading = false }) $ preserveLoading state.shiftRows $ buildShifts state.currentVol shifts state.currentDate
            }
+
