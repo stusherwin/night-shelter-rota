@@ -29,16 +29,13 @@ spec = T.simpleSpec performAction render
   where 
   render :: T.Render State _ Action
   render dispatch _ state _ =
-    [ RD.div [ RP.className "field" ]
-             [ RD.label [ RP.htmlFor "volSelect" ]
-                        [ RD.text "Volunteer" ]
-             , RD.select [ RP.onChange \e -> dispatch (ChangeCurrentVol $ parseVolId $ unsafeEventValue e) ]
-                         ( [ RD.option [ RP.value "" ]
-                                       [ RD.text "All volunteers" ] ]
-                           <> map (option dispatch state.currentVolId) state.vols
-                         )
-             
-             ]
+    [ RD.select [ RP.className "vol-select"
+                , RP.onChange \e -> dispatch (ChangeCurrentVol $ parseVolId $ unsafeEventValue e)
+                ]
+              ( [ RD.option [ RP.value "" ]
+                            [ RD.text "All volunteers" ] ]
+                <> map (option dispatch state.currentVolId) state.vols
+              )
     ]
   
   option :: _ -> Maybe VolId -> VolState -> ReactElement

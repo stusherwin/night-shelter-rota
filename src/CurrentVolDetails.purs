@@ -26,21 +26,22 @@ spec = T.simpleSpec performAction render
   where 
   render :: T.Render State _ Action
   render dispatch _ state _ =
-    if state.hasCurrentVol then [ RD.h4 [ RP.className "ui dividing header" ] [ RD.text "Volunteer Details" ]
-                                , RD.div [ RP.className "field" ]
-                                         [ RD.label [ RP.htmlFor "volName" ]
-                                                    [ RD.text "Name" ]
-                                         , RD.input [ RP._type "text"
-                                                    , RP.value state.name
-                                                    , RP.onChange $ dispatch <<< UpdateName <<< unsafeEventValue
-                                                    ]
-                                                    []
+    if state.hasCurrentVol then [ RD.div [ RP.className "ui form" ]
+                                         [ RD.div [ RP.className "field" ]
+                                                  [ RD.label [ RP.htmlFor "volName" ]
+                                                             [ RD.text "Name" ]
+                                                  , RD.input [ RP._type "text"
+                                                             , RP.value state.name
+                                                             , RP.onChange $ dispatch <<< UpdateName <<< unsafeEventValue
+                                                             ]
+                                                             []
+                                                  ]
+                                         , RD.button [ RP.className "ui button"
+                                                     , RP._type "submit"
+                                                     , RP.onClick $ const $ dispatch $ ChangeCurrentVolName state.name
+                                                     ]
+                                                     [ RD.text "Save" ]
                                          ]
-                                , RD.button [ RP.className "ui button"
-                                            , RP._type "submit"
-                                            , RP.onClick $ const $ dispatch $ ChangeCurrentVolName state.name
-                                            ]
-                                            [ RD.text "Save" ]
                                 ]
                                 
                            else []

@@ -72,25 +72,19 @@ _CurrentVolDetailsAction = prism CurrentVolDetailsAction unwrap
 
 spec :: forall props eff. T.Spec (console :: CONSOLE | eff) State props Action
 spec = container (RD.div [ RP.className "container" ]) $ fold
-  [ headerSpec
-  , container (RD.div [ RP.className "ui form" ]) $ fold
-      [ T.focus _currentVolSelector _CurrentVolSelectorAction CVS.spec
-      , T.focus _currentVolDetails _CurrentVolDetailsAction CVD.spec
-      ]
+  [ container (\c -> RD.h2' ([ RD.text "Night Shelter Rota for " ] <> c)) $
+      T.focus _currentVolSelector _CurrentVolSelectorAction CVS.spec
+  , T.focus _currentVolDetails _CurrentVolDetailsAction CVD.spec
   , T.focus _shiftList _ShiftListAction SL.spec
+  , handler
   ] 
   where 
   container :: forall state action. (Array R.ReactElement -> R.ReactElement) -> T.Spec (console :: CONSOLE | eff) state props action -> T.Spec (console :: CONSOLE | eff) state props action
   container elem = over T._render \render d p s c -> [ elem $ render d p s c ]
 
-  headerSpec :: T.Spec _ State _ Action
-  headerSpec = T.simpleSpec performAction render
+  handler :: T.Spec _ State _ Action
+  handler = T.simpleSpec performAction T.defaultRender
     where 
-    render :: T.Render State _ Action
-    render dispatch _ state _ =
-      [ RD.h2' [ RD.text "Night Shelter Rota" 
-               ]
-      ]
      
     performAction :: forall e. T.PerformAction (console :: CONSOLE | e) State _ Action
     performAction (CurrentVolSelectorAction (CVS.ChangeCurrentVol volId)) _ _ =
