@@ -19,24 +19,30 @@ type CurrentVolDetailsState = { hasCurrentVol :: Boolean
                               } 
  
 data CurrentVolDetailsAction = UpdateName String
+                             | ChangeCurrentVolName String
 
 currentVolDetailsSpec :: T.Spec _ CurrentVolDetailsState _ CurrentVolDetailsAction
 currentVolDetailsSpec = T.simpleSpec performAction render
   where 
   render :: T.Render CurrentVolDetailsState _ CurrentVolDetailsAction
   render dispatch _ state _ =
-    if state.hasCurrentVol then [ RD.div [ RP.className "ui form" ]
-                                         [ RD.div [ RP.className "field" ]
-                                                  [ RD.label [ RP.htmlFor "volName" ]
-                                                             [ RD.text "Name" ]
-                                                  , RD.input [ RP._type "text"
-                                                             , RP.value state.name
-                                                             , RP.onChange \e -> dispatch $ UpdateName $ unsafeEventValue e
-                                                             ]
-                                                             []
-                                                  ]
+    if state.hasCurrentVol then [ RD.h4 [ RP.className "ui dividing header" ] [ RD.text "Volunteer Details" ]
+                                , RD.div [ RP.className "field" ]
+                                         [ RD.label [ RP.htmlFor "volName" ]
+                                                    [ RD.text "Name" ]
+                                         , RD.input [ RP._type "text"
+                                                    , RP.value state.name
+                                                    , RP.onChange $ dispatch <<< UpdateName <<< unsafeEventValue
+                                                    ]
+                                                    []
                                          ]
+                                , RD.button [ RP.className "ui button"
+                                            , RP._type "submit"
+                                            , RP.onClick $ const $ dispatch $ ChangeCurrentVolName state.name
+                                            ]
+                                            [ RD.text "Save" ]
                                 ]
+                                
                            else []
   
   performAction :: T.PerformAction _ CurrentVolDetailsState _ CurrentVolDetailsAction

@@ -1,4 +1,4 @@
-module App.CurrentVolSelector (CurrentVolSelectorState, VolState, CurrentVolSelectorAction(..), currentVolSelectorSpec, currentVolSelectorInitialState) where
+module App.CurrentVolSelector (CurrentVolSelectorState, VolState, CurrentVolSelectorAction(..), currentVolSelectorSpec, currentVolSelectorInitialState, changeVols) where
 
 import Prelude
 
@@ -11,7 +11,7 @@ import React (ReactElement)
 import React.DOM as RD
 import React.DOM.Props as RP
 import Thermite as T
-
+ 
 import App.Data (Volunteer(..), VolId(..), parseVolId)
 
 type VolState = { id :: VolId
@@ -19,8 +19,8 @@ type VolState = { id :: VolId
                 }
  
 type CurrentVolSelectorState = { vols :: Array VolState
-                       , currentVolId :: Maybe VolId
-                       } 
+                               , currentVolId :: Maybe VolId
+                               } 
  
 data CurrentVolSelectorAction = ChangeCurrentVol (Maybe VolId)
 
@@ -29,17 +29,15 @@ currentVolSelectorSpec = T.simpleSpec performAction render
   where 
   render :: T.Render CurrentVolSelectorState _ CurrentVolSelectorAction
   render dispatch _ state _ =
-    [ RD.div [ RP.className "ui form" ]
-             [ RD.div [ RP.className "field" ]
-                      [ RD.label [ RP.htmlFor "volSelect" ]
-                                 [ RD.text "Volunteer" ]
-                      , RD.select [ RP.onChange \e -> dispatch (ChangeCurrentVol $ parseVolId $ unsafeEventValue e) ]
-                                  ( [ RD.option [ RP.value "" ]
-                                                [ RD.text "Select a volunteer" ] ]
-                                    <> map (option dispatch state.currentVolId) state.vols
-                                  )
-                      
-                      ]
+    [ RD.div [ RP.className "field" ]
+             [ RD.label [ RP.htmlFor "volSelect" ]
+                        [ RD.text "Volunteer" ]
+             , RD.select [ RP.onChange \e -> dispatch (ChangeCurrentVol $ parseVolId $ unsafeEventValue e) ]
+                         ( [ RD.option [ RP.value "" ]
+                                       [ RD.text "All volunteers" ] ]
+                           <> map (option dispatch state.currentVolId) state.vols
+                         )
+             
              ]
     ]
   
@@ -55,5 +53,8 @@ currentVolSelectorSpec = T.simpleSpec performAction render
 
 currentVolSelectorInitialState :: Array Volunteer -> Maybe Volunteer -> CurrentVolSelectorState
 currentVolSelectorInitialState vols currentVol = { vols: map (unwrap >>> \{id, name} -> {id, name}) vols
-                                         , currentVolId: map (unwrap >>> _.id) currentVol
-                                         }
+                                                 , currentVolId: map (unwrap >>> _.id) currentVol
+                                                 }
+
+changeVols :: Array Volunteer -> CurrentVolSelectorState -> CurrentVolSelectorState
+changeVols vols state = state { vols = map (unwrap >>> \{id, name} -> {id, name}) vols }

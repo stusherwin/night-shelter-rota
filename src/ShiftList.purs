@@ -11,6 +11,7 @@ import Control.Monad.Aff.Class (liftAff)
 import Control.Monad.Trans.Class (lift)
 import DOM.HTML.HTMLElement (offsetHeight)
 import Data.Array (find, filter, (!!), sortWith, length, take)
+import Data.String (length) as S
 import Data.Date (diff)
 import Data.DateTime (DateTime(..), Date(..), Time(..), canonicalDate, date, adjust)
 import Data.Either (Either(..))
@@ -69,7 +70,7 @@ shiftListSpec =
                                               [ RD.th [ RP.colSpan 2
                                                       , RP.className "left-border collapsing"
                                                       ]
-                                                      [ RD.text $ v.name <> "'s shifts" ]
+                                                      [ RD.text $ if (S.length v.name) > 0 then v.name else "Current volunteer" ]
                                               , RD.th [ RP.colSpan 2
                                                       , RP.className "left-border collapsing"
                                                       ]

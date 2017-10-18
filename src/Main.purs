@@ -1,9 +1,9 @@
 module App.Main where 
-  
+ 
 import Prelude 
 
-import App.Common (lensWithProps, modifyWhere)
-import App.CurrentVolSelector (CurrentVolSelectorState, CurrentVolSelectorAction(..), currentVolSelectorSpec, currentVolSelectorInitialState)
+import App.Common (lensWithProps, modifyWhere, updateWhere)
+import App.CurrentVolSelector (CurrentVolSelectorState, CurrentVolSelectorAction(..), currentVolSelectorSpec, currentVolSelectorInitialState, changeVols)
 import App.CurrentVolDetails (CurrentVolDetailsState, CurrentVolDetailsAction(..), currentVolDetailsSpec, currentVolDetailsInitialState, changeCurrentVol')
 import App.Data (OvernightSharingPrefs(..), Shift(..), Volunteer(..), VolId(..), Gender(..), hasId)
 import App.Shift (ShiftAction(..))
@@ -72,24 +72,24 @@ _CurrentVolDetailsAction = prism CurrentVolDetailsAction unwrap
   unwrap a = Left a 
 
 spec :: forall props eff. T.Spec (console :: CONSOLE | eff) State props Action
-spec = container $ fold
-  [ T.focus _currentVolSelector _CurrentVolSelectorAction currentVolSelectorSpec
-  , T.focus _currentVolDetails _CurrentVolDetailsAction currentVolDetailsSpec
-  , headerSpec
+spec = container (RD.div [ RP.className "container" ]) $ fold
+  [ headerSpec
+  , container (RD.div [ RP.className "ui form" ]) $ fold
+      [ T.focus _currentVolSelector _CurrentVolSelectorAction currentVolSelectorSpec
+      , T.focus _currentVolDetails _CurrentVolDetailsAction currentVolDetailsSpec
+      ]
   , T.focus _shiftList _ShiftListAction shiftListSpec
   ] 
   where 
-  container :: forall state action. T.Spec (console :: CONSOLE | eff) state props action -> T.Spec (console :: CONSOLE | eff) state props action
-  container = over T._render \render d p s c ->
-    [ RD.div [ RP.className "container" ] (render d p s c) ]
- 
+  container :: forall state action. (Array R.ReactElement -> R.ReactElement) -> T.Spec (console :: CONSOLE | eff) state props action -> T.Spec (console :: CONSOLE | eff) state props action
+  container elem = over T._render \render d p s c -> [ elem $ render d p s c ]
+
   headerSpec :: T.Spec _ State _ Action
   headerSpec = T.simpleSpec performAction render
     where 
     render :: T.Render State _ Action
     render dispatch _ state _ =
       [ RD.h2' [ RD.text "Night Shelter Rota" 
-               , RD.text $ maybe "" (\(Vol v) -> " for " <> v.name) state.currentVol
                ]
       ]
      
@@ -100,10 +100,12 @@ spec = container $ fold
                                              , shiftList = changeCurrentVol vol state.shiftList
                                              , currentVolDetails = changeCurrentVol' vol state.currentVolDetails
                                              }
-    performAction (CurrentVolDetailsAction (UpdateName name)) _ _ =
+    performAction (CurrentVolDetailsAction (ChangeCurrentVolName name)) _ _ =
       void $ T.modifyState \state -> let vol = state.currentVol >>= \(Vol v) -> Just (Vol v{name = name})
+                                         vols = maybe state.vols (\cv@(Vol v) -> updateWhere (hasId v.id) cv state.vols) vol
                                      in state{ currentVol = vol
                                              , shiftList = changeCurrentVol vol state.shiftList
+                                             , currentVolSelector = changeVols vols state.currentVolSelector
                                              }
     performAction _ _ _ = pure unit 
 
