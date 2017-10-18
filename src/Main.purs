@@ -1,13 +1,12 @@
 module App.Main where 
- 
-import Prelude 
+   
+import Prelude
 
 import App.Common (lensWithProps, modifyWhere, updateWhere)
-import App.CurrentVolSelector (CurrentVolSelectorState, CurrentVolSelectorAction(..), currentVolSelectorSpec, currentVolSelectorInitialState, changeVols)
-import App.CurrentVolDetails (CurrentVolDetailsState, CurrentVolDetailsAction(..), currentVolDetailsSpec, currentVolDetailsInitialState, changeCurrentVol')
+import App.CurrentVolSelector (State, Action(..), spec, initialState, changeVols) as CVS
+import App.CurrentVolDetails (State, Action(..), spec, initialState, changeCurrentVol) as CVD
 import App.Data (OvernightSharingPrefs(..), Shift(..), Volunteer(..), VolId(..), Gender(..), hasId)
-import App.Shift (ShiftAction(..))
-import App.ShiftList (ShiftListProps, ShiftListState, ShiftListAction(..), shiftListSpec, shiftListInitialState, changeCurrentVol)
+import App.ShiftList (State, Action(..), spec, initialState, changeCurrentVol) as SL
 import Control.Monad.Aff.Class (liftAff)
 import Control.Monad.Eff (Eff)
 import Control.Monad.Eff.Class (liftEff)
@@ -33,39 +32,39 @@ import React.DOM.Props as RP
 import ReactDOM as RDOM
 import Thermite as T
 
-data Action = ShiftListAction ShiftListAction
-            | CurrentVolSelectorAction CurrentVolSelectorAction
-            | CurrentVolDetailsAction CurrentVolDetailsAction
+data Action = ShiftListAction SL.Action
+            | CurrentVolSelectorAction CVS.Action
+            | CurrentVolDetailsAction CVD.Action
  
 type State = { vols :: Array Volunteer
-             , shiftList :: ShiftListState
+             , shiftList :: SL.State
              , currentVol :: Maybe Volunteer
-             , currentVolSelector :: CurrentVolSelectorState
-             , currentVolDetails :: CurrentVolDetailsState
+             , currentVolSelector :: CVS.State
+             , currentVolDetails :: CVD.State
              }
  
-_shiftList :: Lens' State ShiftListState
+_shiftList :: Lens' State SL.State
 _shiftList = lens _.shiftList _{shiftList = _}
 
-_ShiftListAction :: Prism' Action ShiftListAction
+_ShiftListAction :: Prism' Action SL.Action
 _ShiftListAction = prism ShiftListAction unwrap
   where
   unwrap (ShiftListAction a) = Right a
   unwrap a = Left a
 
-_currentVolSelector :: Lens' State CurrentVolSelectorState
+_currentVolSelector :: Lens' State CVS.State
 _currentVolSelector = lens _.currentVolSelector _{currentVolSelector = _}
 
-_CurrentVolSelectorAction :: Prism' Action CurrentVolSelectorAction
+_CurrentVolSelectorAction :: Prism' Action CVS.Action
 _CurrentVolSelectorAction = prism CurrentVolSelectorAction unwrap
   where 
   unwrap (CurrentVolSelectorAction a) = Right a
   unwrap a = Left a 
  
-_currentVolDetails :: Lens' State CurrentVolDetailsState
+_currentVolDetails :: Lens' State CVD.State
 _currentVolDetails = lens _.currentVolDetails _{currentVolDetails = _}
 
-_CurrentVolDetailsAction :: Prism' Action CurrentVolDetailsAction
+_CurrentVolDetailsAction :: Prism' Action CVD.Action
 _CurrentVolDetailsAction = prism CurrentVolDetailsAction unwrap
   where 
   unwrap (CurrentVolDetailsAction a) = Right a
@@ -75,10 +74,10 @@ spec :: forall props eff. T.Spec (console :: CONSOLE | eff) State props Action
 spec = container (RD.div [ RP.className "container" ]) $ fold
   [ headerSpec
   , container (RD.div [ RP.className "ui form" ]) $ fold
-      [ T.focus _currentVolSelector _CurrentVolSelectorAction currentVolSelectorSpec
-      , T.focus _currentVolDetails _CurrentVolDetailsAction currentVolDetailsSpec
+      [ T.focus _currentVolSelector _CurrentVolSelectorAction CVS.spec
+      , T.focus _currentVolDetails _CurrentVolDetailsAction CVD.spec
       ]
-  , T.focus _shiftList _ShiftListAction shiftListSpec
+  , T.focus _shiftList _ShiftListAction SL.spec
   ] 
   where 
   container :: forall state action. (Array R.ReactElement -> R.ReactElement) -> T.Spec (console :: CONSOLE | eff) state props action -> T.Spec (console :: CONSOLE | eff) state props action
@@ -94,18 +93,18 @@ spec = container (RD.div [ RP.className "container" ]) $ fold
       ]
      
     performAction :: forall e. T.PerformAction (console :: CONSOLE | e) State _ Action
-    performAction (CurrentVolSelectorAction (ChangeCurrentVol volId)) _ _ =
+    performAction (CurrentVolSelectorAction (CVS.ChangeCurrentVol volId)) _ _ =
       void $ T.modifyState \state -> let vol = volId >>= \id -> find (hasId id) state.vols
                                      in state{ currentVol = vol
-                                             , shiftList = changeCurrentVol vol state.shiftList
-                                             , currentVolDetails = changeCurrentVol' vol state.currentVolDetails
+                                             , shiftList = SL.changeCurrentVol vol state.shiftList
+                                             , currentVolDetails = CVD.changeCurrentVol vol state.currentVolDetails
                                              }
-    performAction (CurrentVolDetailsAction (ChangeCurrentVolName name)) _ _ =
+    performAction (CurrentVolDetailsAction (CVD.ChangeCurrentVolName name)) _ _ =
       void $ T.modifyState \state -> let vol = state.currentVol >>= \(Vol v) -> Just (Vol v{name = name})
                                          vols = maybe state.vols (\cv@(Vol v) -> updateWhere (hasId v.id) cv state.vols) vol
                                      in state{ currentVol = vol
-                                             , shiftList = changeCurrentVol vol state.shiftList
-                                             , currentVolSelector = changeVols vols state.currentVolSelector
+                                             , shiftList = SL.changeCurrentVol vol state.shiftList
+                                             , currentVolSelector = CVS.changeVols vols state.currentVolSelector
                                              }
     performAction _ _ _ = pure unit 
 
@@ -123,10 +122,10 @@ main = unsafePerformEff $ do
   let shifts = []
   let currentVol = Nothing
   let component = T.createClass spec $ { vols
-                                       , shiftList: shiftListInitialState currentVol shifts currentDate
+                                       , shiftList: SL.initialState currentVol shifts currentDate
                                        , currentVol: currentVol
-                                       , currentVolSelector: currentVolSelectorInitialState vols currentVol
-                                       , currentVolDetails: currentVolDetailsInitialState currentVol
+                                       , currentVolSelector: CVS.initialState vols currentVol
+                                       , currentVolDetails: CVD.initialState currentVol
                                        }
   let appEl = R.createFactory component {}
  

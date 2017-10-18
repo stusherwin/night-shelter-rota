@@ -1,4 +1,4 @@
-module App.CurrentVolDetails (CurrentVolDetailsState, CurrentVolDetailsAction(..), currentVolDetailsSpec, currentVolDetailsInitialState, changeCurrentVol') where
+module App.CurrentVolDetails (State, Action(..), spec, initialState, changeCurrentVol) where
 
 import Prelude
 
@@ -14,17 +14,17 @@ import Thermite as T
 
 import App.Data (Volunteer(..), VolId(..), parseVolId)
 
-type CurrentVolDetailsState = { hasCurrentVol :: Boolean
+type State = { hasCurrentVol :: Boolean
                               , name :: String
                               } 
  
-data CurrentVolDetailsAction = UpdateName String
+data Action = UpdateName String
                              | ChangeCurrentVolName String
 
-currentVolDetailsSpec :: T.Spec _ CurrentVolDetailsState _ CurrentVolDetailsAction
-currentVolDetailsSpec = T.simpleSpec performAction render
+spec :: T.Spec _ State _ Action
+spec = T.simpleSpec performAction render
   where 
-  render :: T.Render CurrentVolDetailsState _ CurrentVolDetailsAction
+  render :: T.Render State _ Action
   render dispatch _ state _ =
     if state.hasCurrentVol then [ RD.h4 [ RP.className "ui dividing header" ] [ RD.text "Volunteer Details" ]
                                 , RD.div [ RP.className "field" ]
@@ -45,16 +45,16 @@ currentVolDetailsSpec = T.simpleSpec performAction render
                                 
                            else []
   
-  performAction :: T.PerformAction _ CurrentVolDetailsState _ CurrentVolDetailsAction
+  performAction :: T.PerformAction _ State _ Action
   performAction (UpdateName name) _ _ = void $ T.modifyState \state -> state { name = name }
   performAction _ _ _ = pure unit 
 
-currentVolDetailsInitialState :: Maybe Volunteer -> CurrentVolDetailsState
-currentVolDetailsInitialState currentVol = { hasCurrentVol: isJust currentVol
-                                           , name: maybe "" (\(Vol v) -> v.name) currentVol
-                                           }
+initialState :: Maybe Volunteer -> State
+initialState currentVol = { hasCurrentVol: isJust currentVol
+                          , name: maybe "" (\(Vol v) -> v.name) currentVol
+                          }
 
-changeCurrentVol' :: Maybe Volunteer -> CurrentVolDetailsState -> CurrentVolDetailsState
-changeCurrentVol' currentVol state = state { hasCurrentVol = isJust currentVol
-                                           , name = maybe "" (\(Vol v) -> v.name) currentVol
-                                           }
+changeCurrentVol :: Maybe Volunteer -> State -> State
+changeCurrentVol currentVol state = state { hasCurrentVol = isJust currentVol
+                                          , name = maybe "" (\(Vol v) -> v.name) currentVol
+                                          }

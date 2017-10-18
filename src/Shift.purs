@@ -1,4 +1,4 @@
-module App.Shift (ShiftProps, ShiftState, ShiftType(..), OtherVolState, CurrentVolState, ShiftAction(..), ShiftStatus(..), shiftSpec) where
+module App.Shift (State, ShiftType(..), OtherVolState, CurrentVolState, Action(..), ShiftStatus(..), spec) where
 
 import Prelude
 
@@ -13,8 +13,6 @@ import React (ReactElement)
 import React.DOM as RD
 import React.DOM.Props as RP
 import Thermite as T
-
-type ShiftProps = {  }
 
 data ShiftType = Overnight
                | Evening
@@ -37,7 +35,7 @@ type CurrentVolState = { name :: String
                        , canChangeShiftType :: Boolean
                        }
 
-type ShiftState = { date :: Date
+type State = { date :: Date
                   , status :: ShiftStatus
                   , currentVol :: Maybe CurrentVolState
                   , noOfVols :: Int
@@ -46,14 +44,14 @@ type ShiftState = { date :: Date
                   , loading :: Boolean
                   }
 
-data ShiftAction = AddCurrentVol Date ShiftType
+data Action = AddCurrentVol Date ShiftType
                  | RemoveCurrentVol Date
                  | ChangeCurrentVolShiftType Date ShiftType
 
-shiftSpec :: T.Spec _ ShiftState _ ShiftAction
-shiftSpec = T.simpleSpec performAction render
+spec :: T.Spec _ State _ Action
+spec = T.simpleSpec performAction render
   where
-  render :: T.Render ShiftState _ ShiftAction
+  render :: T.Render State _ Action
   render dispatch _ state _ =
     [ RD.tr [ RP.className $ joinWith " " [ if isWeekend state.date then "weekend" else ""
                                           , if state.loading then "loading" else ""
@@ -84,14 +82,14 @@ shiftSpec = T.simpleSpec performAction render
           )
     ]
 
-  statusClass :: ShiftState -> String
+  statusClass :: State -> String
   statusClass state = case state.loading, state.status of
     false, Good        -> "positive"
     false, (Error _)   -> "negative"
     false, (Warning _) -> "warning"
     _, _               -> ""
 
-  statusIcon :: ShiftState -> Array ReactElement
+  statusIcon :: State -> Array ReactElement
   statusIcon state = case state.loading, state.status of
     true, _           -> [ RD.i [ RP.className "icon-spin animate-spin" ] [] ]
     _,    Good        -> [ RD.i [ RP.className "icon-ok" ] [] ]
@@ -100,7 +98,7 @@ shiftSpec = T.simpleSpec performAction render
     _,    (Info i)    -> [ RD.i [ RP.className "icon-info", RP.title i ] [] ]
     _,    _           -> []
   
-  renderShiftType :: _ -> ShiftState -> Array ReactElement
+  renderShiftType :: _ -> State -> Array ReactElement
   renderShiftType dispatch state@{ date, loading, currentVol: (Just { shiftType: Just Overnight, canChangeShiftType }) } =
     [ RD.span []
             ([ RD.i [ RP.className "icon-bed" ] []
@@ -131,7 +129,7 @@ shiftSpec = T.simpleSpec performAction render
     ]
   renderShiftType _ _ = []
 
-  renderSelected :: _ -> ShiftState -> Array ReactElement
+  renderSelected :: _ -> State -> Array ReactElement
   renderSelected dispatch state@{ date, loading, currentVol: (Just cv@{ shiftType: Nothing }) } =
     [ RD.div [ RP.className "ui fitted checkbox" ]
              [ RD.input [ RP._type "checkbox"
@@ -167,7 +165,7 @@ shiftSpec = T.simpleSpec performAction render
     ]
   renderOtherVol _ = []
 
-  performAction :: T.PerformAction _ ShiftState _ ShiftAction
+  performAction :: T.PerformAction _ State _ Action
   performAction (AddCurrentVol _ _)             _ _ = void $ T.modifyState \state -> state { loading = true }
   performAction (RemoveCurrentVol _)            _ _ = void $ T.modifyState \state -> state { loading = true }
   performAction (ChangeCurrentVolShiftType _ _) _ _ = void $ T.modifyState \state -> state { loading = true }
@@ -185,4 +183,3 @@ shiftSpec = T.simpleSpec performAction render
   changeCurrentVol :: ShiftType -> Maybe CurrentVolState -> Maybe CurrentVolState
   changeCurrentVol st (Just cv@{ shiftType: Just _ }) = Just cv { shiftType = Just st }
   changeCurrentVol _ cv = cv
-

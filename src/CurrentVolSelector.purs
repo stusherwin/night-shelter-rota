@@ -1,4 +1,4 @@
-module App.CurrentVolSelector (CurrentVolSelectorState, VolState, CurrentVolSelectorAction(..), currentVolSelectorSpec, currentVolSelectorInitialState, changeVols) where
+module App.CurrentVolSelector (State, VolState, Action(..), spec, initialState, changeVols) where
 
 import Prelude
 
@@ -18,16 +18,16 @@ type VolState = { id :: VolId
                 , name :: String
                 }
  
-type CurrentVolSelectorState = { vols :: Array VolState
-                               , currentVolId :: Maybe VolId
-                               } 
+type State = { vols :: Array VolState
+             , currentVolId :: Maybe VolId
+             } 
  
-data CurrentVolSelectorAction = ChangeCurrentVol (Maybe VolId)
+data Action = ChangeCurrentVol (Maybe VolId)
 
-currentVolSelectorSpec :: T.Spec _ CurrentVolSelectorState _ CurrentVolSelectorAction
-currentVolSelectorSpec = T.simpleSpec performAction render
+spec :: T.Spec _ State _ Action
+spec = T.simpleSpec performAction render
   where 
-  render :: T.Render CurrentVolSelectorState _ CurrentVolSelectorAction
+  render :: T.Render State _ Action
   render dispatch _ state _ =
     [ RD.div [ RP.className "field" ]
              [ RD.label [ RP.htmlFor "volSelect" ]
@@ -47,14 +47,14 @@ currentVolSelectorSpec = T.simpleSpec performAction render
                                                       ]
                                                       [ RD.text name ]
 
-  performAction :: T.PerformAction _ CurrentVolSelectorState _ CurrentVolSelectorAction
+  performAction :: T.PerformAction _ State _ Action
   performAction (ChangeCurrentVol v) _ _ = void $ T.modifyState \state -> state{ currentVolId = v }
   performAction _ _ _ = pure unit 
 
-currentVolSelectorInitialState :: Array Volunteer -> Maybe Volunteer -> CurrentVolSelectorState
-currentVolSelectorInitialState vols currentVol = { vols: map (unwrap >>> \{id, name} -> {id, name}) vols
-                                                 , currentVolId: map (unwrap >>> _.id) currentVol
-                                                 }
+initialState :: Array Volunteer -> Maybe Volunteer -> State
+initialState vols currentVol = { vols: map (unwrap >>> \{id, name} -> {id, name}) vols
+                               , currentVolId: map (unwrap >>> _.id) currentVol
+                               }
 
-changeVols :: Array Volunteer -> CurrentVolSelectorState -> CurrentVolSelectorState
+changeVols :: Array Volunteer -> State -> State
 changeVols vols state = state { vols = map (unwrap >>> \{id, name} -> {id, name}) vols }
