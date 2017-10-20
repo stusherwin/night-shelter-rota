@@ -1,4 +1,4 @@
-module App.Common (unsafeEventValue, unsafeEventSelectedIndex, lensWithProps, lensOfListWithProps, midnight, tomorrow, toDateString, updateWhere, modifyWhere, updateListWhere, modifyListWhere, surroundIf, justIf) where
+module App.Common (unsafeEventValue, unsafeEventSelectedIndex, lensWithProps, lensOfListWithProps, midnight, tomorrow, toDateString, updateWhere, modifyWhere, updateListWhere, modifyListWhere, surroundIf, justIf, default, onlyIf) where
   
 import Prelude 
 
@@ -78,3 +78,11 @@ surroundIf start end text = start <> text <> end
 
 justIf :: forall a. a -> Boolean -> Maybe a
 justIf a condition = if condition then Just a else Nothing
+
+default :: String -> String -> String
+default defaultVal ""  = defaultVal
+default _          val = val
+
+onlyIf :: Boolean -> String -> String
+onlyIf false _   = ""
+onlyIf true  val = val

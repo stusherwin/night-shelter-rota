@@ -32,10 +32,10 @@ spec = T.simpleSpec performAction render
     [ RD.select [ RP.className "vol-select"
                 , RP.onChange \e -> dispatch (ChangeCurrentVol $ parseVolId $ unsafeEventValue e)
                 ]
-              ( [ RD.option [ RP.value "" ]
+             (  [ RD.option [ RP.value "" ]
                             [ RD.text "All volunteers" ] ]
-                <> map (option dispatch state.currentVolId) state.vols
-              )
+             <> map (option dispatch state.currentVolId) state.vols
+             )
     ]
   
   option :: _ -> Maybe VolId -> VolState -> ReactElement

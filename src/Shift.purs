@@ -1,11 +1,11 @@
 module App.Shift (State, ShiftType(..), OtherVolState, CurrentVolState, Action(..), ShiftStatus(..), spec) where
 
 import Prelude
-
-import App.Common (unsafeEventValue, toDateString, surroundIf)
-import App.Data (OvernightSharingPrefs(..), Volunteer(..), canChangeVolunteerShiftType)
+ 
+import App.Common (unsafeEventValue, toDateString, surroundIf, onlyIf) 
+import App.Data (OvernightSharingPrefs(..), Volunteer(..), VolunteerShift(..), canChangeVolunteerShiftType) as D
 import Data.DateTime (Date, Weekday(..), year, month, day, weekday)
-import Data.Enum (fromEnum) 
+import Data.Enum (fromEnum)
 import Data.Maybe (Maybe(..), maybe)
 import Data.String (take, toUpper, joinWith)
 import Data.Tuple (Tuple(..))
@@ -36,51 +36,51 @@ type CurrentVolState = { name :: String
                        }
 
 type State = { date :: Date
-                  , status :: ShiftStatus
-                  , currentVol :: Maybe CurrentVolState
-                  , noOfVols :: Int
-                  , otherVol1 :: Maybe OtherVolState
-                  , otherVol2 :: Maybe OtherVolState
-                  , loading :: Boolean
-                  }
+             , status :: ShiftStatus
+             , currentVol :: Maybe CurrentVolState
+             , noOfVols :: Int
+             , otherVol1 :: Maybe OtherVolState
+             , otherVol2 :: Maybe OtherVolState
+             , loading :: Boolean
+             }
 
 data Action = AddCurrentVol Date ShiftType
-                 | RemoveCurrentVol Date
-                 | ChangeCurrentVolShiftType Date ShiftType
+            | RemoveCurrentVol Date
+            | ChangeCurrentVolShiftType Date ShiftType
 
 spec :: T.Spec _ State _ Action
 spec = T.simpleSpec performAction render
   where
   render :: T.Render State _ Action
   render dispatch _ state _ =
-    [ RD.tr [ RP.className $ joinWith " " [ if isWeekend state.date then "weekend" else ""
-                                          , if state.loading then "loading" else ""
+    [ RD.tr [ RP.className $ joinWith " " [ onlyIf (isWeekend state.date) "weekend"
+                                          , onlyIf state.loading "loading"
                                           ]
             ]
-          ( [ RD.td  [ RP.className $ "shift-status collapsing " <> statusClass state ]
+         (  [ RD.td  [ RP.className $ "shift-status collapsing " <> statusClass state ]
                      (statusIcon state)
             , RD.td  [ RP.className $ "shift-status collapsing " <> statusClass state ]
                      [ RD.text $ "" <> show state.noOfVols <> "/2" ]
-            , RD.td  [ RP.className $ "shift-date left-border collapsing " ]-- <> statusClass state.status ]
+            , RD.td  [ RP.className $ "shift-date left-border collapsing " ]
                      [ RD.text $ toUpper $ take 3 $ show $ weekday state.date ]
-            , RD.td  [ RP.className $ "shift-date collapsing "] -- <> statusClass state.status ]
+            , RD.td  [ RP.className $ "shift-date collapsing "]
                      [ RD.text $ toDateString state.date ]
-            ] <> case state.currentVol of
-                    (Just _) -> 
-                       [ RD.td  [ RP.className "left-border collapsing" ]
-                                $ renderSelected dispatch state
-                       , RD.td  [ RP.className "collapsing shift-type" ]
-                                $ renderShiftType dispatch state
-                       ]
-                    _ -> []
-            <> [ RD.td  [ RP.className "left-border collapsing" ]
+            ]
+         <> renderCurrentVol dispatch state
+         <> [ RD.td  [ RP.className "left-border collapsing" ]
                      $ renderOtherVol state.otherVol1
             , RD.td  [ RP.className "collapsing" ]
                      $ renderOtherVol state.otherVol2
             , RD.td' []
             ]
-          )
+         )
     ]
+
+  isWeekend :: Date -> Boolean
+  isWeekend date = case weekday date of
+    Saturday -> true
+    Sunday   -> true
+    _ -> false
 
   statusClass :: State -> String
   statusClass state = case state.loading, state.status of
@@ -97,89 +97,81 @@ spec = T.simpleSpec performAction render
     _,    (Warning w) -> [ RD.i [ RP.className "icon-info", RP.title w ] [] ]
     _,    (Info i)    -> [ RD.i [ RP.className "icon-info", RP.title i ] [] ]
     _,    _           -> []
+ 
+  renderCurrentVol :: _ -> State -> Array ReactElement
+  renderCurrentVol dispatch state@{ currentVol: Just _ } =
+    [ RD.td  [ RP.className "left-border collapsing" ]
+             $ renderSelected dispatch state
+    , RD.td  [ RP.className "collapsing shift-type" ]
+             $ renderShiftType dispatch state
+    ]
+      where
+      renderShiftType :: _ -> State -> Array ReactElement
+      renderShiftType dispatch state@{ date, loading, currentVol: (Just { shiftType: Just st, canChangeShiftType }) } | canChangeShiftType =
+        [ RD.span' [ renderIcon st
+                   , RD.text $ description st <> " "
+                   , RD.a [ RP.onClick \_ -> dispatch $ ChangeCurrentVolShiftType date $ other st
+                          , RP.className "action"
+                          , RP.disabled loading
+                          ]
+                          [ RD.text $ "[change to " <> (description $ other st) <> "]" ]
+                   ]
+        ]
+      renderShiftType dispatch state@{ date, loading, currentVol: (Just { shiftType: Just st }) } =
+        [ RD.span' [ renderIcon st
+                   , RD.text $ description st <> " "
+                   ]
+        ]
+      renderShiftType _ _ = []
+      description :: ShiftType -> String
+      description Evening   = "Evening only"
+      description Overnight = "Overnight"
+
+      other :: ShiftType -> ShiftType
+      other Evening   = Overnight
+      other Overnight = Evening
+
+      renderSelected :: _ -> State -> Array ReactElement
+      renderSelected dispatch state@{ date, loading, currentVol: (Just cv@{ shiftType: Nothing }) } =
+        [ RD.div [ RP.className "ui fitted checkbox" ]
+                 [ RD.input [ RP._type "checkbox"
+                            , RP.disabled $ loading || (not cv.canAddOvernight && not cv.canAddEvening)
+                            , RP.checked false
+                            , RP.onChange \_ -> dispatch $ AddCurrentVol date $ if cv.canAddOvernight then Overnight else Evening
+                            ]
+                            []
+                 , RD.label' []
+                 ]
+        ]
+      renderSelected dispatch state@{ date, loading, currentVol: (Just { shiftType: Just st }) } =
+        [ RD.div [ RP.className "ui fitted checkbox" ]
+                 [ RD.input [ RP._type "checkbox"
+                            , RP.disabled $ loading
+                            , RP.checked true
+                            , RP.onChange \_ -> dispatch $ RemoveCurrentVol date
+                            ]
+                            []
+                 , RD.label' []
+                 ]
+        ]
+      renderSelected _ _ = []
+  renderCurrentVol _ _ = []
   
-  renderShiftType :: _ -> State -> Array ReactElement
-  renderShiftType dispatch state@{ date, loading, currentVol: (Just { shiftType: Just Overnight, canChangeShiftType }) } =
-    [ RD.span []
-            ([ RD.i [ RP.className "icon-bed" ] []
-              , RD.text "Overnight " ]
-            <> if canChangeShiftType
-                 then [ RD.a [ RP.onClick \_ -> dispatch $ ChangeCurrentVolShiftType date $ Evening
-                             , RP.className "action"
-                             , RP.disabled loading
-                             ]
-                             [ RD.text "[change to Evening only]" ]
-                      , RD.text ""
-                      ]
-                 else [])
-    ]
-  renderShiftType dispatch state@{ date, loading, currentVol: (Just { shiftType: Just Evening, canChangeShiftType }) } =
-    [ RD.span []
-              ([ RD.i [ RP.className "icon-no-bed" ] []
-              , RD.text "Evening only " ]
-              <> if canChangeShiftType
-                 then [ RD.a [ RP.onClick \_ -> dispatch $ ChangeCurrentVolShiftType date $ Overnight
-                             , RP.className "action"
-                             , RP.disabled loading
-                             ]
-                             [ RD.text "[change to Overnight]" ]
-                      , RD.text ""
-                      ]
-                 else [])
-    ]
-  renderShiftType _ _ = []
-
-  renderSelected :: _ -> State -> Array ReactElement
-  renderSelected dispatch state@{ date, loading, currentVol: (Just cv@{ shiftType: Nothing }) } =
-    [ RD.div [ RP.className "ui fitted checkbox" ]
-             [ RD.input [ RP._type "checkbox"
-                        , RP.disabled $ loading || (not cv.canAddOvernight && not cv.canAddEvening)
-                        , RP.checked false
-                        , RP.onChange \_ -> dispatch $ AddCurrentVol date $ if cv.canAddOvernight then Overnight else Evening
-                        ]
-                        []
-             , RD.label' []
-             ]
-    ]
-  renderSelected dispatch state@{ date, loading, currentVol: (Just { shiftType: Just st }) } =
-    [ RD.div [ RP.className "ui fitted checkbox" ]
-             [ RD.input [ RP._type "checkbox"
-                        , RP.disabled $ loading
-                        , RP.checked true
-                        , RP.onChange \_ -> dispatch $ RemoveCurrentVol date
-                        ]
-                        []
-             , RD.label' []
-             ]
-    ]
-  renderSelected _ _ = []
-
   renderOtherVol :: Maybe OtherVolState -> Array ReactElement
   renderOtherVol (Just v) =
     [ RD.span [ RP.className "other-vol" ]
-              [ RD.i [ RP.className $ case v.shiftType of Overnight -> "icon-bed"
-                                                          _         -> "icon-no-bed" ]
-                     []
+              [ renderIcon v.shiftType
               , RD.text $ v.name <> v.sharingPrefs
               ]
     ]
   renderOtherVol _ = []
 
+  renderIcon :: ShiftType -> ReactElement
+  renderIcon Evening   = RD.i [ RP.className "icon-no-bed" ] []
+  renderIcon Overnight = RD.i [ RP.className "icon-bed" ]    []
+  
   performAction :: T.PerformAction _ State _ Action
   performAction (AddCurrentVol _ _)             _ _ = void $ T.modifyState \state -> state { loading = true }
   performAction (RemoveCurrentVol _)            _ _ = void $ T.modifyState \state -> state { loading = true }
   performAction (ChangeCurrentVolShiftType _ _) _ _ = void $ T.modifyState \state -> state { loading = true }
   performAction _ _ _ = pure unit
-
-  toId :: Date -> String
-  toId date = (show $ fromEnum $ year date) <> (show $ month date) <> (show $ fromEnum $ day date)
-
-  isWeekend :: Date -> Boolean
-  isWeekend date = case weekday date of
-    Saturday -> true
-    Sunday   -> true
-    _ -> false
-  
-  changeCurrentVol :: ShiftType -> Maybe CurrentVolState -> Maybe CurrentVolState
-  changeCurrentVol st (Just cv@{ shiftType: Just _ }) = Just cv { shiftType = Just st }
-  changeCurrentVol _ cv = cv

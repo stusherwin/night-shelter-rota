@@ -85,7 +85,6 @@ spec = container (RD.div [ RP.className "container" ]) $ fold
   handler :: T.Spec _ State _ Action
   handler = T.simpleSpec performAction T.defaultRender
     where 
-     
     performAction :: forall e. T.PerformAction (console :: CONSOLE | e) State _ Action
     performAction (CurrentVolSelectorAction (CVS.ChangeCurrentVol volId)) _ _ =
       void $ T.modifyState \state -> let vol = volId >>= \id -> find (hasId id) state.vols

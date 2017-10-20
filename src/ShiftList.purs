@@ -2,18 +2,17 @@ module App.ShiftList (Action(..), State, spec, initialState, changeCurrentVol) w
  
 import Prelude
 
-import App.Common (lensOfListWithProps, tomorrow, modifyListWhere, surroundIf)
+import App.Common (lensOfListWithProps, tomorrow, modifyListWhere, surroundIf, default)
 import App.Data (OvernightSharingPrefs(..))
 import App.Data (Shift(..), Volunteer(..), VolunteerShift(..), RuleResult(..), canAddVolunteer, addVolunteerShift, changeVolunteerShift, removeVolunteerShift, hasId, hasDate, hasVolWithId, validate, filterOut, canChangeVolunteerShiftType) as D
 import App.Shift (CurrentVolState, OtherVolState, Action(..), State(..), ShiftStatus(..), ShiftType(..), spec) as S
 import Control.Monad.Aff (delay)
 import Control.Monad.Aff.Class (liftAff)
---import Control.Monad.List.Trans (foldl)
 import Control.Monad.Trans.Class (lift)
 import DOM.HTML.HTMLElement (offsetHeight)
 import Data.Array (find, filter, (!!), sortWith, length, take, foldl)
 import Data.Date (diff)
-import Data.DateTime (DateTime(..), Date(..), Time(..), canonicalDate, date, adjust)
+import Data.DateTime (Date(..), DateTime(..), Millisecond, Time(..), adjust, canonicalDate, date)
 import Data.Either (Either(..))
 import Data.Lens (Lens', lens, Prism', prism, over)
 import Data.List (List(..), snoc, last, zipWith) as L
@@ -23,6 +22,7 @@ import Data.Time.Duration (Days(..), Milliseconds(..))
 import Data.Tuple (Tuple(..), uncurry, fst, snd)
 import Math (e)
 import Partial.Unsafe (unsafePartial)
+import React (ReactElement)
 import React as R
 import React.DOM as RD
 import React.DOM.Props as RP
@@ -54,39 +54,40 @@ spec =
   table :: T.Spec eff State props Action -> T.Spec eff State props Action
   table = over T._render \render d p s c ->
     [ RD.table [ RP.className "ui structured unstackable table" ]
-               [ 
-                 RD.thead' [ RD.tr' ([ RD.th [ RP.colSpan 2
-                                             , RP.className ""
-                                             ]
-                                             [ RD.text "" ]
-                                     , RD.th [ RP.colSpan 2
-                                             , RP.className "left-border"
-                                             ]
-                                             [ RD.text "Shift" ]
-                                     ] <> case s.currentVol of
-                                            (Just (D.Vol v)) ->           
-                                              [ RD.th [ RP.colSpan 2
-                                                      , RP.className "left-border collapsing"
-                                                      ]
-                                                      [ RD.text $ if (S.length v.name) > 0 then v.name else "Current volunteer" ]
-                                              , RD.th [ RP.colSpan 2
-                                                      , RP.className "left-border collapsing"
-                                                      ]
-                                                      [ RD.text "Other volunteers" ]
-                                              , RD.th' []
+               [ RD.thead' [ RD.tr' $ [ RD.th [ RP.colSpan 2
+                                              , RP.className ""
                                               ]
-                                            _ ->
-                                              [ RD.th [ RP.colSpan 2
-                                                      , RP.className "left-border collapsing"
-                                                      ]
-                                                      [ RD.text "Volunteers" ]
-                                              , RD.th' []
+                                              [ RD.text "" ]
+                                      , RD.th [ RP.colSpan 2
+                                              , RP.className "left-border"
                                               ]
-                                    )
+                                              [ RD.text "Shift" ]
+                                      ]
+                                      <> 
+                                      volHeadings s.currentVol
                            ]
-               , 
-               RD.tbody' $ render d p s c
+               , RD.tbody' $ render d p s c
                ]
+    ]
+   
+  volHeadings :: Maybe D.Volunteer -> Array ReactElement
+  volHeadings (Just (D.Vol v)) = 
+    [ RD.th [ RP.colSpan 2
+            , RP.className "left-border collapsing"
+            ]
+            [ RD.text $ default "Current volunteer" v.name ]
+    , RD.th [ RP.colSpan 2
+            , RP.className "left-border collapsing"
+            ]
+            [ RD.text "Other volunteers" ]
+    , RD.th' []
+    ]
+  volHeadings _ =
+    [ RD.th [ RP.colSpan 2
+            , RP.className "left-border collapsing"
+            ]
+            [ RD.text "Volunteers" ]
+    , RD.th' []
     ]
  
   footerSpec :: T.Spec _ State _ Action
@@ -97,21 +98,23 @@ spec =
 
     performAction :: T.PerformAction _ State _ Action
     performAction (ShiftAction _ (S.AddCurrentVol shiftDate S.Overnight))             _ { currentVol: Just cv } = void do
-      lift $ liftAff $ delay (Milliseconds 1000.0)
+      delay'
       T.modifyState \state -> modifyShifts state shiftDate $ D.addVolunteerShift shiftDate (D.Overnight cv)
     performAction (ShiftAction _ (S.AddCurrentVol shiftDate S.Evening))               _ { currentVol: Just cv } = void do
-      lift $ liftAff $ delay (Milliseconds 1000.0)
+      delay'
       T.modifyState \state -> modifyShifts state shiftDate $ D.addVolunteerShift shiftDate (D.Evening cv)
     performAction (ShiftAction _ (S.ChangeCurrentVolShiftType shiftDate S.Overnight)) _ { currentVol: Just cv } = void do
-      lift $ liftAff $ delay (Milliseconds 1000.0)
+      delay'
       T.modifyState \state -> modifyShifts state shiftDate $ D.changeVolunteerShift shiftDate (D.Overnight cv)
     performAction (ShiftAction _ (S.ChangeCurrentVolShiftType shiftDate S.Evening))   _ { currentVol: Just cv } = void do
-      lift $ liftAff $ delay (Milliseconds 1000.0)
+      delay'
       T.modifyState \state -> modifyShifts state shiftDate $ D.changeVolunteerShift shiftDate (D.Evening cv)
     performAction (ShiftAction _ (S.RemoveCurrentVol shiftDate))                    _ { currentVol: Just cv } = void do
-      lift $ liftAff $ delay (Milliseconds 1000.0)
+      delay'
       T.modifyState \state -> modifyShifts state shiftDate $ D.removeVolunteerShift shiftDate cv
     performAction _ _ _ = pure unit
+    
+    delay' = lift $ liftAff $ delay (Milliseconds 1000.0)
 
 initialState :: Maybe D.Volunteer -> Array D.Shift -> Date -> State
 initialState currentVol shifts currentDate = 
@@ -147,11 +150,11 @@ buildShift currentVol shifts startDate date =
                                      }
 
   sharingPrefs :: OvernightSharingPrefs -> String
-  sharingPrefs prefs = surroundIf " (" ")" (case prefs of
-                                             None -> "No sharing"
-                                             (OnlyGender gender) -> (show gender) <> " only"
-                                             (Custom text) -> text
-                                             _ -> "")
+  sharingPrefs prefs = surroundIf " (" ")" $ case prefs of
+                                               None -> "No sharing"
+                                               (OnlyGender gender) -> (show gender) <> " only"
+                                               (Custom text) -> text
+                                               _ -> ""
 
   status :: D.Shift -> Date -> S.ShiftStatus
   status s date =
@@ -213,4 +216,3 @@ modifyShifts state date modify =
   in state { shifts = shifts
            , shiftRows = modifyListWhere (\s -> s.date == date) (\s -> s{ loading = false }) $ preserveLoading state.shiftRows $ buildShifts state.currentVol shifts state.currentDate
            }
-
