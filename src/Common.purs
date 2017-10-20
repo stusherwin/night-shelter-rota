@@ -1,19 +1,22 @@
-module App.Common (unsafeEventValue, unsafeEventSelectedIndex, lensWithProps, lensOfListWithProps, midnight, tomorrow, toDateString, updateWhere, modifyWhere, updateListWhere, modifyListWhere, surroundIf, justIf, default, onlyIf) where
+module App.Common (unsafeEventValue, unsafeEventSelectedIndex, lensWithProps, lensOfListWithProps, midnight, tomorrow, toDateString, updateWhere, modifyWhere, updateListWhere, modifyListWhere, surroundIf, justIf, default, onlyIf, className) where
   
 import Prelude 
 
-import Data.Array (findIndex, updateAt, modifyAt)
+import Data.Array (findIndex, updateAt, modifyAt, filter)
 import Data.DateTime (DateTime(..), Date(..), Time(..), canonicalDate, date, adjust)
 import Data.Either (Either(..), fromRight, either)
 import Data.Formatter.DateTime (formatDateTime)
 import Data.Lens (Lens', lens)
 import Data.List (List(..), findIndex, updateAt, modifyAt) as L
 import Data.Maybe (Maybe(..), fromJust, maybe, fromMaybe)
+import Data.String (joinWith, length)
 import Data.Time.Duration (Days(..))
 import Data.Tuple (Tuple(..), snd)
 import Partial.Unsafe (unsafePartial)
 import React.DOM.Dynamic (a)
 import Unsafe.Coerce (unsafeCoerce)
+import React (ReactElement)
+import React.DOM.Props as RP
 
 unsafeEventValue :: forall event. event -> String
 unsafeEventValue e = (unsafeCoerce e).target.value
@@ -86,3 +89,6 @@ default _          val = val
 onlyIf :: Boolean -> String -> String
 onlyIf false _   = ""
 onlyIf true  val = val
+
+className :: Array String -> RP.Props
+className = RP.className <<< joinWith " " <<< (filter $ (_ > 0) <<< length)

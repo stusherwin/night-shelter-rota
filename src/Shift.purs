@@ -1,8 +1,8 @@
 module App.Shift (State, ShiftType(..), OtherVolState, CurrentVolState, Action(..), ShiftStatus(..), spec) where
-
+ 
 import Prelude
  
-import App.Common (unsafeEventValue, toDateString, surroundIf, onlyIf) 
+import App.Common (unsafeEventValue, toDateString, surroundIf, onlyIf, className) 
 import App.Data (OvernightSharingPrefs(..), Volunteer(..), VolunteerShift(..), canChangeVolunteerShiftType) as D
 import Data.DateTime (Date, Weekday(..), year, month, day, weekday)
 import Data.Enum (fromEnum)
@@ -53,17 +53,17 @@ spec = T.simpleSpec performAction render
   where
   render :: T.Render State _ Action
   render dispatch _ state _ =
-    [ RD.tr [ RP.className $ joinWith " " [ onlyIf (isWeekend state.date) "weekend"
-                                          , onlyIf state.loading "loading"
-                                          ]
+    [ RD.tr [ className $ [ onlyIf (isWeekend state.date) "weekend"
+                          , onlyIf state.loading "loading"
+                          ]
             ]
-         (  [ RD.td  [ RP.className $ "shift-status collapsing " <> statusClass state ]
+         (  [ RD.td  [ className [ "shift-status collapsing", statusClass state ] ]
                      (statusIcon state)
-            , RD.td  [ RP.className $ "shift-status collapsing " <> statusClass state ]
+            , RD.td  [ className [ "shift-status collapsing", statusClass state ] ]
                      [ RD.text $ "" <> show state.noOfVols <> "/2" ]
-            , RD.td  [ RP.className $ "shift-date left-border collapsing " ]
+            , RD.td  [ RP.className "shift-date left-border collapsing" ]
                      [ RD.text $ toUpper $ take 3 $ show $ weekday state.date ]
-            , RD.td  [ RP.className $ "shift-date collapsing "]
+            , RD.td  [ RP.className "shift-date collapsing" ]
                      [ RD.text $ toDateString state.date ]
             ]
          <> renderCurrentVol dispatch state
