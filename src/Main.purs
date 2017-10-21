@@ -97,7 +97,7 @@ spec = container (RD.div [ RP.className "container" ]) $ fold
                                           , currentVolDetails = CVD.defineNewVol state.currentVolDetails
                                           }
     performAction (CurrentVolDetailsAction (CVD.ChangeCurrentVolDetails details)) _ _ =
-      void $ T.modifyState \state -> let vol = _{name = details.name} <$> state.currentVol
+      void $ T.modifyState \state -> let vol = _{ name = details.name, overnightSharingPrefs = Custom details.notes } <$> state.currentVol
                                          vols = maybe state.vols  (\cv -> updateWhere (\v -> v.id == cv.id) cv state.vols) vol
                                      in state{ currentVol = vol
                                              , vols = vols

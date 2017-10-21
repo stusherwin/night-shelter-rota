@@ -92,10 +92,20 @@ select.vol-select {
 	border: 1px solid rgba(34,36,38,.15);
 	border-radius: .28571429rem;
 	box-shadow: 0 0 0 0 transparent inset;
-	color: rgba(0,0,0,.87);
+	color: #777;
 	-webkit-transition: color .1s ease,border-color .1s ease;
   transition: color .1s ease,border-color .1s ease;
-  /*margin-left: 5px;*/
+  margin-left: 5px;
   font-family: inherit;
   font-weight: 700;
+}
+
+label .notes {
+  display: block;
+  /* margin-left: 5px; */
+	color: #bbb;
+}
+
+label .notes b {
+	color: #555;
 }
