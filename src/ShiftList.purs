@@ -54,19 +54,19 @@ spec =
   table :: T.Spec eff State props Action -> T.Spec eff State props Action
   table = over T._render \render d p s c ->
     [ RD.table [ RP.className "ui structured unstackable table" ]
-               [ RD.thead' [ RD.tr' $ [ RD.th [ RP.colSpan 2
-                                              , RP.className ""
-                                              ]
-                                              [ RD.text "" ]
-                                      , RD.th [ RP.colSpan 2
-                                              , RP.className "left-border"
-                                              ]
-                                              [ RD.text "Shift" ]
-                                      ]
-                                      <> 
-                                      volHeadings s.currentVol
-                           ]
-               , RD.tbody' $ render d p s c
+              --  [ RD.thead' [ RD.tr' $ [ RD.th [ RP.colSpan 2
+              --                                 , RP.className ""
+              --                                 ]
+              --                                 [ RD.text "" ]
+              --                         , RD.th [ RP.colSpan 2
+              --                                 , RP.className "left-border"
+              --                                 ]
+              --                                 [ RD.text "Shift" ]
+              --                         ]
+              --                         <> 
+              --                         volHeadings s.currentVol
+              --              ]
+               [ RD.tbody' $ render d p s c
                ]
     ]
    

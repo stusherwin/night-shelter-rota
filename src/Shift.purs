@@ -66,13 +66,13 @@ spec = T.simpleSpec performAction render
             , RD.td  [ RP.className "shift-date collapsing" ]
                      [ RD.text $ toDateString state.date ]
             ]
-         <> renderCurrentVol dispatch state
          <> [ RD.td  [ RP.className "left-border collapsing" ]
                      $ renderOtherVol state.otherVol1
             , RD.td  [ RP.className "collapsing" ]
                      $ renderOtherVol state.otherVol2
             , RD.td' []
             ]
+         <> renderCurrentVol dispatch state
          )
     ]
 
@@ -100,29 +100,31 @@ spec = T.simpleSpec performAction render
  
   renderCurrentVol :: _ -> State -> Array ReactElement
   renderCurrentVol dispatch state@{ currentVol: Just _ } =
-    [ RD.td  [ RP.className "left-border collapsing" ]
-             $ renderSelected dispatch state
-    , RD.td  [ RP.className "collapsing shift-type" ]
+    [ RD.td  [ RP.className "collapsing left-border right aligned shift-selected" ]
              $ renderShiftType dispatch state
+            <> renderSelected dispatch state
     ]
       where
       renderShiftType :: _ -> State -> Array ReactElement
       renderShiftType dispatch state@{ date, loading, currentVol: (Just { shiftType: Just st, canChangeShiftType }) } | canChangeShiftType =
-        [ RD.span' [ renderIcon st
-                   , RD.text $ description st <> " "
+        [ RD.span [ RP.className "shift-type" ]
+                  [ renderIcon st
+                   , RD.text $ description st <> " / "
                    , RD.a [ RP.onClick \_ -> dispatch $ ChangeCurrentVolShiftType date $ other st
                           , RP.className "action"
                           , RP.disabled loading
                           ]
-                          [ RD.text $ "[change to " <> (description $ other st) <> "]" ]
+                          [ RD.text $ "[" <> (description $ other st) <> "]" ]
                    ]
         ]
       renderShiftType dispatch state@{ date, loading, currentVol: (Just { shiftType: Just st }) } =
-        [ RD.span' [ renderIcon st
+        [ RD.span [ RP.className "shift-type" ]
+                   [ renderIcon st
                    , RD.text $ description st <> " "
                    ]
         ]
       renderShiftType _ _ = []
+
       description :: ShiftType -> String
       description Evening   = "Evening only"
       description Overnight = "Overnight"
@@ -133,26 +135,26 @@ spec = T.simpleSpec performAction render
 
       renderSelected :: _ -> State -> Array ReactElement
       renderSelected dispatch state@{ date, loading, currentVol: (Just cv@{ shiftType: Nothing }) } =
-        [ RD.div [ RP.className "ui fitted checkbox" ]
-                 [ RD.input [ RP._type "checkbox"
-                            , RP.disabled $ loading || (not cv.canAddOvernight && not cv.canAddEvening)
-                            , RP.checked false
-                            , RP.onChange \_ -> dispatch $ AddCurrentVol date $ if cv.canAddOvernight then Overnight else Evening
-                            ]
-                            []
-                 , RD.label' []
-                 ]
+        [ RD.span [ RP.className "ui fitted checkbox" ]
+                  [ RD.input [ RP._type "checkbox"
+                             , RP.disabled $ loading || (not cv.canAddOvernight && not cv.canAddEvening)
+                             , RP.checked false
+                             , RP.onChange \_ -> dispatch $ AddCurrentVol date $ if cv.canAddOvernight then Overnight else Evening
+                             ]
+                             []
+                  , RD.label' []
+                  ]
         ]
       renderSelected dispatch state@{ date, loading, currentVol: (Just { shiftType: Just st }) } =
-        [ RD.div [ RP.className "ui fitted checkbox" ]
-                 [ RD.input [ RP._type "checkbox"
-                            , RP.disabled $ loading
-                            , RP.checked true
-                            , RP.onChange \_ -> dispatch $ RemoveCurrentVol date
-                            ]
-                            []
-                 , RD.label' []
-                 ]
+        [ RD.span [ RP.className "ui fitted checkbox" ]
+                  [ RD.input [ RP._type "checkbox"
+                             , RP.disabled $ loading
+                             , RP.checked true
+                             , RP.onChange \_ -> dispatch $ RemoveCurrentVol date
+                             ]
+                             []
+                  , RD.label' []
+                  ]
         ]
       renderSelected _ _ = []
   renderCurrentVol _ _ = []
@@ -167,8 +169,8 @@ spec = T.simpleSpec performAction render
   renderOtherVol _ = []
 
   renderIcon :: ShiftType -> ReactElement
-  renderIcon Evening   = RD.i [ RP.className "icon-no-bed" ] []
-  renderIcon Overnight = RD.i [ RP.className "icon-bed" ]    []
+  renderIcon Evening   = RD.i [ RP.className "vol-icon icon-no-bed" ] []
+  renderIcon Overnight = RD.i [ RP.className "vol-icon icon-bed" ]    []
   
   performAction :: T.PerformAction _ State _ Action
   performAction (AddCurrentVol _ _)             _ _ = void $ T.modifyState \state -> state { loading = true }

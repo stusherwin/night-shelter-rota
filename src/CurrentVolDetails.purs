@@ -26,10 +26,12 @@ type State = { volType :: VolType
              , volDetails :: Maybe VolDetails
              , formValid :: Boolean
              , formSubmitted :: Boolean
+             , showDetails :: Boolean
              }
  
 data Action = UpdateName String
             | UpdateNotes String
+            | ToggleDetails
             | SetSubmitted
             | ChangeCurrentVolDetails VolDetails
             | CreateNewVol VolDetails
@@ -38,7 +40,35 @@ spec :: T.Spec _ State _ Action
 spec = T.simpleSpec performAction render
   where 
   render :: T.Render State _ Action
-  render dispatch _ state@{ volDetails: Just v } _ =
+  render dispatch _ state@{ volDetails: Just v, volType: CurrentVol, showDetails } _ | not showDetails =
+    renderToggle dispatch state 
+  render dispatch _ state@{ volDetails: Just v, volType: CurrentVol, showDetails } _ | showDetails =
+    renderToggle dispatch state <> renderForm dispatch state
+  render dispatch _ state@{ volType: NewVol } _ =
+    renderForm dispatch state
+  render _ _ _ _ = []
+
+  renderToggle :: _ -> State -> Array ReactElement
+  renderToggle dispatch { showDetails } | not showDetails =
+    [ RD.div' [ RD.a [ RP.onClick $ const $ dispatch ToggleDetails
+              , RP.className "action"
+              ]
+              [ RD.i [ RP.className "icon-down-open"] []
+              , RD.text "Show details" ]
+              ]
+    ]
+  renderToggle dispatch { showDetails } | showDetails =
+    [ RD.div' [ RD.a [ RP.onClick $ const $ dispatch ToggleDetails
+              , RP.className "action"
+              ]
+              [ RD.i [ RP.className "icon-up-open"] []
+              , RD.text "Hide details" ]
+              ]
+    ]
+  renderToggle _ _ = []
+
+  renderForm :: _ -> State -> Array ReactElement
+  renderForm dispatch state@{ volDetails: Just v } =
     [ RD.form [ className [ "ui form", onlyIf formError "error" ] ]
               [ RD.div [ className [ "required field ", onlyIf formError "error" ] ]
                        [ RD.label [ RP.htmlFor "volName" ]
@@ -91,7 +121,7 @@ spec = T.simpleSpec performAction render
     where
     formError :: Boolean
     formError = state.formSubmitted && not state.formValid
-  render _ _ _ _ = []
+  renderForm _ _ = []
   
   performAction :: T.PerformAction _ State _ Action
   performAction (UpdateName name) _ _ = void $ T.modifyState \state ->
@@ -109,6 +139,7 @@ spec = T.simpleSpec performAction render
              , formValid = isValid volDetails'
              }
   performAction SetSubmitted _ _ = void $ T.modifyState \state -> state { formSubmitted = true }
+  performAction ToggleDetails _ _ = void $ T.modifyState \state -> state { showDetails = not state.showDetails }
   performAction _ _ _ = pure unit 
  
 initialState :: Maybe Volunteer -> State 
@@ -118,6 +149,7 @@ initialState currentVol =
     , volDetails: volDetails
     , formValid: isValid volDetails
     , formSubmitted: false
+    , showDetails: true
     }
 
 changeCurrentVol :: Maybe Volunteer -> State -> State
@@ -127,6 +159,7 @@ changeCurrentVol currentVol state =
            , volDetails = volDetails
            , formValid = isValid volDetails
            , formSubmitted = false
+           , showDetails = false
            }
 
 defineNewVol :: State -> State
@@ -136,6 +169,7 @@ defineNewVol state =
            , volDetails = volDetails
            , formValid = isValid volDetails
            , formSubmitted = false
+           , showDetails = true
            }
 
 isValid :: Maybe VolDetails -> Boolean

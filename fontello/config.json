@@ -111,6 +111,18 @@
       "src": "fontelico"
     },
     {
+      "uid": "ccddff8e8670dcd130e3cb55fdfc2fd0",
+      "css": "down-open",
+      "code": 59426,
+      "src": "fontawesome"
+    },
+    {
+      "uid": "fe6697b391355dec12f3d86d6d490397",
+      "css": "up-open",
+      "code": 59425,
+      "src": "fontawesome"
+    },
+    {
       "uid": "99c58e3837b383dd5375924289db1801",
       "css": "no-bed",
       "code": 59399,
