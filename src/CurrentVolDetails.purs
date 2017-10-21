@@ -1,4 +1,4 @@
-module App.CurrentVolDetails (State, Action(..), spec, initialState, changeCurrentVol) where
+module App.CurrentVolDetails (State, VolType(..), VolDetails, Action(..), spec, initialState, changeCurrentVol, defineNewVol) where
 
 import Prelude 
 
@@ -15,27 +15,33 @@ import React.DOM as RD
 import React.DOM.Props as RP
 import Thermite as T
 
-type State = { hasCurrentVol :: Boolean
-             , name :: String
+data VolType = CurrentVol
+             | NewVol
+
+type VolDetails = { name :: String }
+
+type State = { volType :: VolType
+             , volDetails :: Maybe VolDetails
              , formValid :: Boolean
              , formSubmitted :: Boolean
-             } 
+             }
  
 data Action = UpdateName String
             | SetSubmitted
-            | ChangeCurrentVolName String
+            | ChangeCurrentVolDetails VolDetails
+            | CreateNewVol VolDetails
 
 spec :: T.Spec _ State _ Action
 spec = T.simpleSpec performAction render
   where 
   render :: T.Render State _ Action
-  render dispatch _ state@{ hasCurrentVol } _ | hasCurrentVol =
+  render dispatch _ state@{ volDetails: Just v } _ =
     [ RD.form [ className [ "ui form", onlyIf formError "error" ] ]
               [ RD.div [ className [ "required field ", onlyIf formError "error" ] ]
                        [ RD.label [ RP.htmlFor "volName" ]
                                   [ RD.text "Name" ]
                        , RD.input [ RP._type "text"
-                                  , RP.value state.name
+                                  , RP.value v.name
                                   , RP.onChange $ dispatch <<< UpdateName <<< unsafeEventValue
                                   ]
                                   []
@@ -50,8 +56,10 @@ spec = T.simpleSpec performAction render
                           , RP.disabled formError
                           , RP.onClick \e -> do
                               _ <- preventDefault e
-                              dispatch $ if state.formValid then ChangeCurrentVolName state.name
-                                                            else SetSubmitted
+                              dispatch $ case state.formValid, state.volType of
+                                           true, CurrentVol -> ChangeCurrentVolDetails v
+                                           true, NewVol     -> CreateNewVol v
+                                           _, _             -> SetSubmitted
                           ]
                           [ RD.text "Save" ]
               ]
@@ -60,24 +68,32 @@ spec = T.simpleSpec performAction render
     formError :: Boolean
     formError = state.formSubmitted && not state.formValid
   render _ _ _ _ = []
-
-  
   
   performAction :: T.PerformAction _ State _ Action
-  performAction (UpdateName name) _ _ = void $ T.modifyState \state -> state { name = name, formValid = length name > 0 }
+  performAction (UpdateName name) _ _ = void $ T.modifyState \state -> state { volDetails = case state.volDetails of
+                                                                                              Just d -> Just d{ name = name }
+                                                                                              _ -> Nothing
+                                                                             , formValid = length name > 0 }
   performAction SetSubmitted _ _ = void $ T.modifyState \state -> state { formSubmitted = true }
-  performAction (ChangeCurrentVolName _) _ _ = void $ T.modifyState \state -> state { formSubmitted = false }
   performAction _ _ _ = pure unit 
-
-initialState :: Maybe Volunteer -> State
-initialState currentVol = { hasCurrentVol: isJust currentVol
-                          , name: maybe "" (\(Vol v) -> v.name) currentVol
+ 
+initialState :: Maybe Volunteer -> State 
+initialState currentVol = { volType: CurrentVol
+                          , volDetails: Nothing
                           , formValid: true
                           , formSubmitted: false
                           }
 
 changeCurrentVol :: Maybe Volunteer -> State -> State
-changeCurrentVol currentVol state = state { hasCurrentVol = isJust currentVol
-                                          , name = maybe "" (\(Vol v) -> v.name) currentVol
+changeCurrentVol currentVol state = state { volType = CurrentVol
+                                          , volDetails = (\v -> { name: v.name }) <$> currentVol
+                                          , formValid = true
+                                          , formSubmitted = false
                                           }
 
+defineNewVol :: State -> State
+defineNewVol state = state { volType = NewVol
+                           , volDetails = Just { name: "" }
+                           , formValid = false
+                           , formSubmitted = false
+                           }

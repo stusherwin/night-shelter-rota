@@ -1,9 +1,11 @@
-module App.CurrentVolSelector (State, VolState, Action(..), spec, initialState, changeVols) where
+module App.CurrentVolSelector (State, Action(..), spec, initialState, changeVols) where
 
 import Prelude
 
-import App.Common (unsafeEventValue)
-import Data.Array ((!!))
+import App.Common (unsafeEventSelectedIndex, ifJust)
+import App.Data (Volunteer(..), VolId(..), parseVolId)
+import Data.Array ((!!), find)
+import Data.Int (fromString)
 import Data.Maybe (Maybe(..), maybe)
 import Data.Newtype (unwrap)
 import Data.Tuple (Tuple(..))
@@ -11,18 +13,13 @@ import React (ReactElement)
 import React.DOM as RD
 import React.DOM.Props as RP
 import Thermite as T
- 
-import App.Data (Volunteer(..), VolId(..), parseVolId)
 
-type VolState = { id :: VolId
-                , name :: String
-                }
- 
-type State = { vols :: Array VolState
-             , currentVolId :: Maybe VolId
+type State = { vols :: Array Volunteer
+             , currentVol :: Maybe Volunteer
              } 
  
-data Action = ChangeCurrentVol (Maybe VolId)
+data Action = ChangeCurrentVol (Maybe Volunteer)
+            | DefineNewVol
 
 spec :: T.Spec _ State _ Action
 spec = T.simpleSpec performAction render
@@ -30,28 +27,41 @@ spec = T.simpleSpec performAction render
   render :: T.Render State _ Action
   render dispatch _ state _ =
     [ RD.select [ RP.className "vol-select"
-                , RP.onChange \e -> dispatch (ChangeCurrentVol $ parseVolId $ unsafeEventValue e)
+                , RP.onChange $ dispatch <<< respond state <<< unsafeEventSelectedIndex
                 ]
              (  [ RD.option [ RP.value "" ]
-                            [ RD.text "All volunteers" ] ]
-             <> map (option dispatch state.currentVolId) state.vols
+                            [ RD.text "All volunteers" ]
+                , RD.option [ RP.value "" ]
+                            [ RD.text "New volunteer" ]
+                ]
+             <> map (option dispatch state.currentVol) state.vols
              )
     ]
-  
-  option :: _ -> Maybe VolId -> VolState -> ReactElement
-  option dispatch currentVolId {id, name} = RD.option [ RP.selected (maybe false (_ == id) currentVolId) 
-                                                      , RP.value $ show id
-                                                      ]
-                                                      [ RD.text name ]
+
+  respond :: State -> Int -> Action
+  respond _     1 = DefineNewVol
+  respond state i | i > 1 = ChangeCurrentVol $ state.vols !! (i - 2)
+  respond _ _ = ChangeCurrentVol Nothing
+
+  findVol :: Array Volunteer -> Maybe VolId -> Maybe Volunteer
+  findVol vols = (=<<) \id -> find (\v -> v.id == id) vols
+
+  option :: _ -> Maybe Volunteer -> Volunteer -> ReactElement
+  option dispatch currentVolId v = RD.option [ RP.selected $ ifJust (\cv -> cv.id == v.id) currentVolId
+                                             , RP.value $ show v.id
+                                             ]
+                                             [ RD.text v.name ]
 
   performAction :: T.PerformAction _ State _ Action
-  performAction (ChangeCurrentVol v) _ _ = void $ T.modifyState \state -> state{ currentVolId = v }
+  performAction (ChangeCurrentVol v) _ _ = void $ T.modifyState \state -> state{ currentVol = v }
   performAction _ _ _ = pure unit 
 
 initialState :: Array Volunteer -> Maybe Volunteer -> State
-initialState vols currentVol = { vols: map (unwrap >>> \{id, name} -> {id, name}) vols
-                               , currentVolId: map (unwrap >>> _.id) currentVol
+initialState vols currentVol = { vols: vols
+                               , currentVol: currentVol
                                }
 
-changeVols :: Array Volunteer -> State -> State
-changeVols vols state = state { vols = map (unwrap >>> \{id, name} -> {id, name}) vols }
+changeVols :: Array Volunteer -> Maybe Volunteer -> State -> State
+changeVols vols currentVol state = state { vols = vols
+                                         , currentVol = currentVol
+                                         }

@@ -2,10 +2,10 @@ module App.Main where
    
 import Prelude
 
-import App.Common (lensWithProps, modifyWhere, updateWhere)
+import App.Common (lensWithProps, modifyWhere, updateWhere) 
 import App.CurrentVolSelector (State, Action(..), spec, initialState, changeVols) as CVS
-import App.CurrentVolDetails (State, Action(..), spec, initialState, changeCurrentVol) as CVD
-import App.Data (OvernightSharingPrefs(..), Shift(..), Volunteer(..), VolId(..), Gender(..), hasId)
+import App.CurrentVolDetails (State, Action(..), spec, initialState, changeCurrentVol, defineNewVol) as CVD
+import App.Data (OvernightSharingPrefs(..), Shift(..), Volunteer(..), VolId(..), Gender(..), nextVolId)
 import App.ShiftList (State, Action(..), spec, initialState, changeCurrentVol) as SL
 import Control.Monad.Aff.Class (liftAff)
 import Control.Monad.Eff (Eff)
@@ -15,13 +15,13 @@ import Control.Monad.Eff.Now (nowDate)
 import Control.Monad.Eff.Unsafe (unsafePerformEff)
 import Control.Monad.Trans.Class (lift)
 import DOM.Node.Types (Element)
-import Data.Array (find, cons, (!!), length)
+import Data.Array (find, cons, (!!), length, sortWith, snoc, last)
 import Data.DateTime (Date)
 import Data.DateTime.Locale (LocalValue(..))
 import Data.Either (Either(..))
 import Data.Foldable (fold) 
 import Data.Lens (Lens', lens, Prism', prism, over)
-import Data.Maybe (Maybe(..), fromJust, maybe)
+import Data.Maybe (Maybe(..), fromJust, maybe, fromMaybe)
 import Data.Newtype (unwrap)
 import Data.String (joinWith)
 import Data.Tuple (Tuple(..), uncurry)
@@ -86,31 +86,45 @@ spec = container (RD.div [ RP.className "container" ]) $ fold
   handler = T.simpleSpec performAction T.defaultRender
     where 
     performAction :: forall e. T.PerformAction (console :: CONSOLE | e) State _ Action
-    performAction (CurrentVolSelectorAction (CVS.ChangeCurrentVol volId)) _ _ =
-      void $ T.modifyState \state -> let vol = volId >>= \id -> find (hasId id) state.vols
+    performAction (CurrentVolSelectorAction (CVS.ChangeCurrentVol vol)) _ _ =
+      void $ T.modifyState \state -> state{ currentVol = vol
+                                          , shiftList = SL.changeCurrentVol vol state.shiftList
+                                          , currentVolDetails = CVD.changeCurrentVol vol state.currentVolDetails
+                                          }
+    performAction (CurrentVolSelectorAction CVS.DefineNewVol) _ _ =
+      void $ T.modifyState \state -> state{ currentVol = Nothing
+                                          , shiftList = SL.changeCurrentVol Nothing state.shiftList
+                                          , currentVolDetails = CVD.defineNewVol state.currentVolDetails
+                                          }
+    performAction (CurrentVolDetailsAction (CVD.ChangeCurrentVolDetails details)) _ _ =
+      void $ T.modifyState \state -> let vol = _{name = details.name} <$> state.currentVol
+                                         vols = maybe state.vols  (\cv -> updateWhere (\v -> v.id == cv.id) cv state.vols) vol
                                      in state{ currentVol = vol
+                                             , vols = vols
                                              , shiftList = SL.changeCurrentVol vol state.shiftList
-                                             , currentVolDetails = CVD.changeCurrentVol vol state.currentVolDetails
+                                             , currentVolSelector = CVS.changeVols vols state.currentVol state.currentVolSelector
                                              }
-    performAction (CurrentVolDetailsAction (CVD.ChangeCurrentVolName name)) _ _ =
-      void $ T.modifyState \state -> let vol = state.currentVol >>= \(Vol v) -> Just (Vol v{name = name})
-                                         vols = maybe state.vols (\cv@(Vol v) -> updateWhere (hasId v.id) cv state.vols) vol
-                                     in state{ currentVol = vol
-                                             , shiftList = SL.changeCurrentVol vol state.shiftList
-                                             , currentVolSelector = CVS.changeVols vols state.currentVolSelector
+    performAction (CurrentVolDetailsAction (CVD.CreateNewVol details)) _ _ =
+      void $ T.modifyState \state -> let maxId = maybe (VolId 0) (_.id) $ last $ sortWith (\v -> v.id) state.vols
+                                         newVol = { id: nextVolId maxId, name: details.name, gender: Nothing, overnightSharingPrefs: Any }
+                                         vols = snoc state.vols newVol
+                                     in state{ currentVol = Just newVol
+                                             , vols = vols
+                                             , shiftList = SL.changeCurrentVol (Just newVol) state.shiftList
+                                             , currentVolSelector = CVS.changeVols vols (Just newVol) state.currentVolSelector
                                              }
     performAction _ _ _ = pure unit 
-
  
+
 main :: Unit
 main = unsafePerformEff $ do 
   (LocalValue _ currentDate) <- nowDate 
-  let vols = [ Vol { id: VolId 1, name: "Fred",    gender: Just Male,           overnightSharingPrefs: Any }
-             , Vol { id: VolId 2, name: "Alice",   gender: Just Female,         overnightSharingPrefs: (OnlyGender Female) }
-             , Vol { id: VolId 3, name: "Jim",     gender: Nothing,             overnightSharingPrefs: None }
-             , Vol { id: VolId 4, name: "Mary",    gender: Just Female,         overnightSharingPrefs: (Custom "Only nice people") }
-             , Vol { id: VolId 5, name: "Smoo 1",  gender: Just (Other "Smoo"), overnightSharingPrefs: (OnlyGender (Other "Smoo")) }
-             , Vol { id: VolId 6, name: "Smoo 2",  gender: Just (Other "Smoo"), overnightSharingPrefs: (OnlyGender (Other "Smoo")) }
+  let vols = [ { id: VolId 1, name: "Fred",    gender: Just Male,           overnightSharingPrefs: Any }
+             , { id: VolId 2, name: "Alice",   gender: Just Female,         overnightSharingPrefs: (OnlyGender Female) }
+             , { id: VolId 3, name: "Jim",     gender: Nothing,             overnightSharingPrefs: None }
+             , { id: VolId 4, name: "Mary",    gender: Just Female,         overnightSharingPrefs: (Custom "Only nice people") }
+             , { id: VolId 5, name: "Smoo 1",  gender: Just (Other "Smoo"), overnightSharingPrefs: (OnlyGender (Other "Smoo")) }
+             , { id: VolId 6, name: "Smoo 2",  gender: Just (Other "Smoo"), overnightSharingPrefs: (OnlyGender (Other "Smoo")) }
              ]
   let shifts = []
   let currentVol = Nothing
@@ -121,7 +135,7 @@ main = unsafePerformEff $ do
                                        , currentVolDetails: CVD.initialState currentVol
                                        }
   let appEl = R.createFactory component {}
- 
+  
   if isServerSide
      then void (log (RDOM.renderToString appEl)) 
      else void (getElementById "app" >>= RDOM.render appEl)

@@ -4,7 +4,7 @@ import Prelude
 
 import App.Common (lensOfListWithProps, tomorrow, modifyListWhere, surroundIf, default)
 import App.Data (OvernightSharingPrefs(..))
-import App.Data (Shift(..), Volunteer(..), VolunteerShift(..), RuleResult(..), canAddVolunteer, addVolunteerShift, changeVolunteerShift, removeVolunteerShift, hasId, hasDate, hasVolWithId, validate, filterOut, canChangeVolunteerShiftType) as D
+import App.Data (Shift(..), Volunteer(..), VolunteerShift(..), RuleResult(..), canAddVolunteer, addVolunteerShift, changeVolunteerShift, removeVolunteerShift, hasVolWithId, validate, filterOut, canChangeVolunteerShiftType) as D
 import App.Shift (CurrentVolState, OtherVolState, Action(..), State(..), ShiftStatus(..), ShiftType(..), spec) as S
 import Control.Monad.Aff (delay)
 import Control.Monad.Aff.Class (liftAff)
@@ -71,7 +71,7 @@ spec =
     ]
    
   volHeadings :: Maybe D.Volunteer -> Array ReactElement
-  volHeadings (Just (D.Vol v)) = 
+  volHeadings (Just v) = 
     [ RD.th [ RP.colSpan 2
             , RP.className "left-border collapsing"
             ]
@@ -126,12 +126,12 @@ initialState currentVol shifts currentDate =
 
 buildShift :: Maybe D.Volunteer -> Array D.Shift -> Date -> Date -> S.State
 buildShift currentVol shifts startDate date =
-  let shift@(D.Shift s) = maybe (D.Shift {date: date, volunteers: []}) id $ find (D.hasDate date) shifts
+  let shift = maybe {date: date, volunteers: []} id $ find (\s -> s.date == date) shifts
       otherVols = sortWith _.name $ map buildVol $ case currentVol of
-                                                      (Just cv@(D.Vol v)) -> filter (not <<< D.hasVolWithId $ v.id) s.volunteers
-                                                      _ -> s.volunteers
+                                                      Just cv -> filter (not <<< D.hasVolWithId $ cv.id) shift.volunteers
+                                                      _ -> shift.volunteers
   in { date 
-     , noOfVols: length s.volunteers
+     , noOfVols: length shift.volunteers
      , status: status shift startDate
      , loading: false
      , currentVol: buildCurrentVol shift
@@ -140,14 +140,14 @@ buildShift currentVol shifts startDate date =
      }
   where
   buildVol :: D.VolunteerShift -> S.OtherVolState
-  buildVol (D.Overnight (D.Vol v)) = { name: v.name
-                                     , shiftType: S.Overnight
-                                     , sharingPrefs: sharingPrefs v.overnightSharingPrefs
-                                     } 
-  buildVol (D.Evening (D.Vol v))   = { name: v.name
-                                     , shiftType: S.Evening
-                                     , sharingPrefs: sharingPrefs v.overnightSharingPrefs
-                                     }
+  buildVol (D.Overnight v) = { name: v.name
+                             , shiftType: S.Overnight
+                             , sharingPrefs: sharingPrefs v.overnightSharingPrefs
+                             } 
+  buildVol (D.Evening v)   = { name: v.name
+                             , shiftType: S.Evening
+                             , sharingPrefs: sharingPrefs v.overnightSharingPrefs
+                             }
 
   sharingPrefs :: OvernightSharingPrefs -> String
   sharingPrefs prefs = surroundIf " (" ")" $ case prefs of
@@ -177,17 +177,17 @@ buildShift currentVol shifts startDate date =
     in firstErrorStatus $ foldl concat "" $ map extractMsg errors
   
   buildCurrentVol :: D.Shift -> Maybe S.CurrentVolState
-  buildCurrentVol shift@(D.Shift s) = case currentVol of
-    (Just cv@(D.Vol v)) -> Just { name: v.name 
-                                , shiftType: currentVolShiftType cv s.volunteers
-                                , canAddOvernight: D.canAddVolunteer (D.Overnight cv) shift
-                                , canAddEvening: D.canAddVolunteer (D.Evening cv) shift
-                                , canChangeShiftType: D.canChangeVolunteerShiftType cv shift
-                                }
-    _                   -> Nothing
+  buildCurrentVol shift = case currentVol of
+    (Just cv) -> Just { name: cv.name 
+                      , shiftType: currentVolShiftType cv shift.volunteers
+                      , canAddOvernight: D.canAddVolunteer (D.Overnight cv) shift
+                      , canAddEvening: D.canAddVolunteer (D.Evening cv) shift
+                      , canChangeShiftType: D.canChangeVolunteerShiftType cv shift
+                      }
+    _         -> Nothing
 
   currentVolShiftType :: D.Volunteer -> Array D.VolunteerShift -> Maybe S.ShiftType
-  currentVolShiftType (D.Vol v) vols = 
+  currentVolShiftType v vols = 
     find (D.hasVolWithId v.id) vols >>= case _ of
       D.Overnight _ -> Just S.Overnight
       D.Evening   _ -> Just S.Evening
