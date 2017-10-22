@@ -123,6 +123,18 @@
       "src": "fontawesome"
     },
     {
+      "uid": "44e04715aecbca7f266a17d5a7863c68",
+      "css": "add",
+      "code": 59400,
+      "src": "fontawesome"
+    },
+    {
+      "uid": "d35a1d35efeb784d1dc9ac18b9b6c2b6",
+      "css": "edit",
+      "code": 59401,
+      "src": "fontawesome"
+    },
+    {
       "uid": "99c58e3837b383dd5375924289db1801",
       "css": "no-bed",
       "code": 59399,

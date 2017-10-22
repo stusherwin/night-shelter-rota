@@ -19,7 +19,6 @@ type State = { vols :: Array Volunteer
              } 
  
 data Action = ChangeCurrentVol (Maybe Volunteer)
-            | DefineNewVol
 
 spec :: T.Spec _ State _ Action
 spec = T.simpleSpec performAction render
@@ -31,16 +30,14 @@ spec = T.simpleSpec performAction render
                 ]
              (  [ RD.option [ RP.value "" ]
                             [ RD.text "All volunteers" ]
-                , RD.option [ RP.value "" ]
-                            [ RD.text "New volunteer" ]
                 ]
              <> map (option dispatch state.currentVol) state.vols
              )
     ]
 
   respond :: State -> Int -> Action
-  respond _     1 = DefineNewVol
-  respond state i | i > 1 = ChangeCurrentVol $ state.vols !! (i - 2)
+  -- respond _     1 = DefineNewVol
+  respond state i | i > 0 = ChangeCurrentVol $ state.vols !! (i - 1)
   respond _ _ = ChangeCurrentVol Nothing
 
   findVol :: Array Volunteer -> Maybe VolId -> Maybe Volunteer
