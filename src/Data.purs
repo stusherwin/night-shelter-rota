@@ -146,16 +146,21 @@ canChangeVolunteerShiftType v s =
 isLooming :: Shift -> Date -> Boolean
 isLooming shift currentDate =
   let (Days d) = shift.date `diff` currentDate
-  in d < config.urgentPeriodDays
+  in d >= 0.0 && d < config.urgentPeriodDays
+
+isPast :: Shift -> Date -> Boolean
+isPast shift currentDate =
+  let (Days d) = shift.date `diff` currentDate
+  in d < 0.0
 
 validate :: Shift -> Date -> Array RuleResult
 validate shift currentDate =
-  collectViolations params [ should <<< notExceedMaxVolunteers
-                           , must <<< notHaveSameVolunteerTwice
-                           , mustIf (isLooming shift currentDate) <<< haveAtLeastOneVolunteer
-                           , could <<< haveMoreThanOneVolunteer
-                           , mustIf (isLooming shift currentDate) <<< haveAnOvernightVolunteer
-                           , should <<< notViolateAnyVolsSharingPrefs
+  collectViolations params [ must <<< notHaveSameVolunteerTwice
+                           , ignoreIf (isPast shift currentDate) <<< should <<< notExceedMaxVolunteers
+                           , ignoreIf (isPast shift currentDate) <<< mustIf (isLooming shift currentDate) <<< haveAtLeastOneVolunteer
+                           , ignoreIf (isPast shift currentDate) <<< could <<< haveMoreThanOneVolunteer
+                           , ignoreIf (isPast shift currentDate) <<< mustIf (isLooming shift currentDate) <<< haveAnOvernightVolunteer
+                           , ignoreIf (isPast shift currentDate) <<< should <<< notViolateAnyVolsSharingPrefs
                            ]
   where
   params = { shift
@@ -168,7 +173,8 @@ validate shift currentDate =
   must   = map Error
   should = map Warning
   could  = map Info
-  mustIf condition = map $ if condition then Error else const Neutral
+  mustIf condition   = map $ if condition then Error else const Neutral
+  ignoreIf condition = map $ if condition then const Neutral else id
 
   priority :: RuleResult -> Int
   priority (Error   _) = 0

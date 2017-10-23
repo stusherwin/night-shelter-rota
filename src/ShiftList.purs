@@ -34,6 +34,8 @@ type State = { currentVol :: Maybe D.Volunteer
              , shifts :: Array D.Shift
              , shiftRows :: L.List S.State
              , currentDate :: Date
+             , startDate :: Date
+             , noOfRows :: Int
              }
 
 _shiftRows :: Lens' State (L.List S.State)
@@ -54,18 +56,6 @@ spec =
   table :: T.Spec eff State props Action -> T.Spec eff State props Action
   table = over T._render \render d p s c ->
     [ RD.table [ RP.className "ui structured unstackable table" ]
-              --  [ RD.thead' [ RD.tr' $ [ RD.th [ RP.colSpan 2
-              --                                 , RP.className ""
-              --                                 ]
-              --                                 [ RD.text "" ]
-              --                         , RD.th [ RP.colSpan 2
-              --                                 , RP.className "left-border"
-              --                                 ]
-              --                                 [ RD.text "Shift" ]
-              --                         ]
-              --                         <> 
-              --                         volHeadings s.currentVol
-              --              ]
                [ RD.tbody' $ render d p s c
                ]
     ]
@@ -116,23 +106,32 @@ spec =
     
     delay' = lift $ liftAff $ delay (Milliseconds 1000.0)
 
-initialState :: Maybe D.Volunteer -> Array D.Shift -> Date -> State
-initialState currentVol shifts currentDate = 
+initialState :: Maybe D.Volunteer -> Array D.Shift -> Date -> Date -> Int -> State
+initialState currentVol shifts currentDate startDate noOfRows = 
   { currentVol
   , shifts
-  , shiftRows: buildShifts currentVol shifts currentDate
+  , shiftRows: buildShifts currentVol shifts currentDate startDate noOfRows
   , currentDate
+  , startDate
+  , noOfRows
   }
 
+buildShifts :: Maybe D.Volunteer -> Array D.Shift -> Date -> Date -> Int -> L.List S.State
+buildShifts currentVol shifts currentDate startDate noOfRows = buildShifts' currentDate startDate noOfRows
+  where 
+  buildShifts' :: Date -> Date -> Int -> L.List S.State
+  buildShifts' _ _ 0 = L.Nil
+  buildShifts' currentDate date n = L.Cons (buildShift currentVol shifts currentDate date) $ buildShifts' currentDate (tomorrow date) (n - 1)
+
 buildShift :: Maybe D.Volunteer -> Array D.Shift -> Date -> Date -> S.State
-buildShift currentVol shifts startDate date =
+buildShift currentVol shifts currentDate date =
   let shift = maybe {date: date, volunteers: []} id $ find (\s -> s.date == date) shifts
       otherVols = sortWith _.name $ map buildVol $ case currentVol of
                                                       Just cv -> filter (not <<< D.hasVolWithId $ cv.id) shift.volunteers
                                                       _ -> shift.volunteers
   in { date 
      , noOfVols: length shift.volunteers
-     , status: status shift startDate
+     , status: status shift currentDate
      , loading: false
      , currentVol: buildCurrentVol shift
      , otherVol1: otherVols !! 0
@@ -157,8 +156,8 @@ buildShift currentVol shifts startDate date =
                                                _ -> ""
 
   status :: D.Shift -> Date -> S.ShiftStatus
-  status s date =
-    let errors = D.validate s date
+  status s currentDate =
+    let errors = D.validate s currentDate
         firstErrorStatus = case take 1 errors of
           [D.Error e]   -> S.Error
           [D.Warning w] -> S.Warning
@@ -192,14 +191,6 @@ buildShift currentVol shifts startDate date =
       D.Overnight _ -> Just S.Overnight
       D.Evening   _ -> Just S.Evening
 
-
-buildShifts :: Maybe D.Volunteer -> Array D.Shift -> Date -> L.List S.State
-buildShifts currentVol shifts startDate = buildShifts' startDate 28
-  where 
-  buildShifts' :: Date -> Int -> L.List S.State
-  buildShifts' _ 0 = L.Nil
-  buildShifts' date n = L.Cons (buildShift currentVol shifts startDate date) $ buildShifts' (tomorrow date) (n - 1)
-
 preserveLoading :: L.List S.State -> L.List S.State -> L.List S.State
 preserveLoading = L.zipWith \old new ->
   new { loading = old.loading }
@@ -207,12 +198,12 @@ preserveLoading = L.zipWith \old new ->
 changeCurrentVol :: Maybe D.Volunteer -> State -> State
 changeCurrentVol currentVol state =
   state { currentVol = currentVol
-        , shiftRows = preserveLoading state.shiftRows $ buildShifts currentVol state.shifts state.currentDate
+        , shiftRows = preserveLoading state.shiftRows $ buildShifts currentVol state.shifts state.currentDate state.startDate state.noOfRows
         }
 
 modifyShifts :: State -> Date -> (Array D.Shift -> Array D.Shift) -> State
 modifyShifts state date modify =
   let shifts = modify state.shifts
   in state { shifts = shifts
-           , shiftRows = modifyListWhere (\s -> s.date == date) (\s -> s{ loading = false }) $ preserveLoading state.shiftRows $ buildShifts state.currentVol shifts state.currentDate
+           , shiftRows = modifyListWhere (\s -> s.date == date) (\s -> s{ loading = false }) $ preserveLoading state.shiftRows $ buildShifts state.currentVol shifts state.currentDate state.startDate state.noOfRows
            }

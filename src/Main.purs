@@ -1,8 +1,8 @@
 module App.Main where 
    
 import Prelude
-
-import App.Common (lensWithProps, modifyWhere, updateWhere)
+ 
+import App.Common (lensWithProps, modifyWhere, updateWhere, addDays)
 import App.CurrentVolDetails (State, Action(..), spec, initialState) as CVD
 import App.CurrentVolSelector (State, Action(..), spec, initialState, changeVols) as CVS
 import App.Data (OvernightSharingPrefs(..), Shift(..), Volunteer(..), VolId(..), Gender(..), nextVolId)
@@ -197,7 +197,7 @@ main = unsafePerformEff $ do
   let shifts = []
   let currentVol = Nothing
   let component = T.createClass spec $ { vols
-                                       , shiftList: SL.initialState currentVol shifts currentDate
+                                       , shiftList: SL.initialState currentVol shifts currentDate (addDays (-1) currentDate) 28
                                        , currentVol: currentVol
                                        , currentVolSelector: CVS.initialState vols currentVol
                                        , volDetailsEditState: Nothing

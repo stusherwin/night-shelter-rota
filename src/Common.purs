@@ -1,4 +1,4 @@
-module App.Common (unsafeEventValue, unsafeEventSelectedIndex, lensWithProps, lensOfListWithProps, midnight, tomorrow, toDateString, updateWhere, modifyWhere, updateListWhere, modifyListWhere, surroundIf, justIf, default, onlyIf, className, ifJust) where
+module App.Common (unsafeEventValue, unsafeEventSelectedIndex, lensWithProps, lensOfListWithProps, midnight, tomorrow, toDateString, updateWhere, modifyWhere, updateListWhere, modifyListWhere, surroundIf, justIf, default, onlyIf, className, ifJust, addDays) where
   
 import Prelude 
 
@@ -6,6 +6,7 @@ import Data.Array (findIndex, updateAt, modifyAt, filter)
 import Data.DateTime (DateTime(..), Date(..), Time(..), canonicalDate, date, adjust)
 import Data.Either (Either(..), fromRight, either)
 import Data.Formatter.DateTime (formatDateTime)
+import Data.Int (toNumber)
 import Data.Lens (Lens', lens)
 import Data.List (List(..), findIndex, updateAt, modifyAt) as L
 import Data.Maybe (Maybe(..), fromJust, maybe, fromMaybe)
@@ -45,8 +46,11 @@ lensOfListWithProps get set props = lens getter setter
 midnight :: Time
 midnight = unsafePartial fromJust $ Time <$> pure bottom <*> pure bottom <*> pure bottom <*> pure bottom
 
+addDays :: Int -> Date -> Date
+addDays d dt = maybe dt date $ adjust (Days $ toNumber d) (DateTime dt bottom)
+
 tomorrow :: Date -> Date
-tomorrow dt = maybe dt date $ adjust (Days 1.0) (DateTime dt bottom)
+tomorrow dt = addDays 1 dt
 
 toDateString :: Date -> String
 toDateString date = unsafePartial $ fromRight $ formatDateTime "D MMMM YYYY" $ DateTime date midnight
