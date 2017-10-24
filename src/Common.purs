@@ -1,12 +1,14 @@
-module App.Common (unsafeEventValue, unsafeEventSelectedIndex, lensWithProps, lensOfListWithProps, midnight, tomorrow, toDateString, updateWhere, modifyWhere, updateListWhere, modifyListWhere, surroundIf, justIf, default, onlyIf, className, ifJust, addDays) where
+module App.Common (unsafeEventValue, unsafeEventSelectedIndex, lensWithProps, lensOfListWithProps, midnight, tomorrow, toDateString, updateWhere, modifyWhere, updateListWhere, modifyListWhere, surroundIf, justIf, default, onlyIf, className, ifJust, addDays, toMonthYearString, isFirstDayOfMonth, daysLeftInMonth, toDayString) where
   
 import Prelude 
 
 import Data.Array (findIndex, updateAt, modifyAt, filter)
-import Data.DateTime (DateTime(..), Date(..), Time(..), canonicalDate, date, adjust)
+import Data.DateTime (DateTime(..), Date(..), Time(..), canonicalDate, date, adjust, month, year, day)
+import Data.Date (lastDayOfMonth, diff)
 import Data.Either (Either(..), fromRight, either)
+import Data.Enum (fromEnum, toEnum)
 import Data.Formatter.DateTime (formatDateTime)
-import Data.Int (toNumber)
+import Data.Int (toNumber, floor)
 import Data.Lens (Lens', lens)
 import Data.List (List(..), findIndex, updateAt, modifyAt) as L
 import Data.Maybe (Maybe(..), fromJust, maybe, fromMaybe)
@@ -99,3 +101,26 @@ onlyIf true  val = val
 
 className :: Array String -> RP.Props
 className = RP.className <<< joinWith " " <<< (filter $ (_ > 0) <<< length)
+
+toMonthYearString :: Date -> String 
+toMonthYearString date = show (month date) <> " " <> (show $ fromEnum $ year date)
+
+toDayString :: Date -> String 
+toDayString date = let d = fromEnum $ day date
+                       postFix = case d of
+                                   n | n `mod` 10 == 1 -> "st"
+                                   n | n `mod` 10 == 2 -> "nd"
+                                   n | n `mod` 10 == 3 -> "rd"
+                                   _ -> "th"
+                   in show d <> postFix
+
+isFirstDayOfMonth :: Date -> Boolean
+isFirstDayOfMonth date = case toEnum 1 of
+                           Just d | day date == d -> true
+                           _ -> false
+
+daysLeftInMonth :: Date -> Int
+daysLeftInMonth date = (floor daysDiff) + 1
+  where
+  lastDay = canonicalDate (year date) (month date) $ lastDayOfMonth (year date) (month date)
+  (Days daysDiff) = diff lastDay date

@@ -83,8 +83,8 @@ spec :: forall props eff. T.Spec (console :: CONSOLE | eff) State props Action
 spec = container (RD.div [ RP.className "container" ]) $ fold
   [ editCurrentVol
   , newVol
-  , container (\c -> RD.h2' ([ RD.text "Night Shelter Rota for " ] <> c)) $
-      T.focus _currentVolSelector _CurrentVolSelectorAction CVS.spec
+  , container (\c -> RD.h2' ([ RD.span [ RP.dangerouslySetInnerHTML { __html: "Night Shelter Rota for &nbsp;" } ] [] ] <> c)) $
+      T.focus _currentVolSelector _CurrentVolSelectorAction CVS.spec 
   , T.focus _currentVolDetails _CurrentVolDetailsAction $
       T.split _Just CVD.spec
   , T.focus _shiftList _ShiftListAction SL.spec

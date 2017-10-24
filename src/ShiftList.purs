@@ -2,7 +2,7 @@ module App.ShiftList (Action(..), State, spec, initialState, changeCurrentVol) w
  
 import Prelude
 
-import App.Common (lensOfListWithProps, tomorrow, modifyListWhere, surroundIf, default)
+import App.Common (lensOfListWithProps, tomorrow, modifyListWhere, surroundIf, default, toMonthYearString, daysLeftInMonth, isFirstDayOfMonth)
 import App.Data (OvernightSharingPrefs(..))
 import App.Data (Shift(..), Volunteer(..), VolunteerShift(..), RuleResult(..), canAddVolunteer, addVolunteerShift, changeVolunteerShift, removeVolunteerShift, hasVolWithId, validate, filterOut, canChangeVolunteerShiftType) as D
 import App.Shift (CurrentVolState, OtherVolState, Action(..), State(..), ShiftStatus(..), ShiftType(..), spec) as S
@@ -11,9 +11,11 @@ import Control.Monad.Aff.Class (liftAff)
 import Control.Monad.Trans.Class (lift)
 import DOM.HTML.HTMLElement (offsetHeight)
 import Data.Array (find, filter, (!!), sortWith, length, take, foldl)
-import Data.Date (diff)
-import Data.DateTime (Date(..), DateTime(..), Millisecond, Time(..), adjust, canonicalDate, date)
+import Data.Date (diff, lastDayOfMonth, canonicalDate)
+import Data.DateTime (Date(..), DateTime(..), Millisecond, Time(..), adjust, canonicalDate, date, day, month, year, Day(..), Year(..))
 import Data.Either (Either(..))
+import Data.Enum (fromEnum, toEnum)
+import Data.Int (floor)
 import Data.Lens (Lens', lens, Prism', prism, over)
 import Data.List (List(..), snoc, last, zipWith) as L
 import Data.Maybe (Maybe(..), fromJust, maybe, isJust)
@@ -27,6 +29,7 @@ import React as R
 import React.DOM as RD
 import React.DOM.Props as RP
 import Thermite as T
+
 data Action = AddShift
             | ShiftAction Int S.Action
 
@@ -121,23 +124,29 @@ buildShifts currentVol shifts currentDate startDate noOfRows = buildShifts' curr
   where 
   buildShifts' :: Date -> Date -> Int -> L.List S.State
   buildShifts' _ _ 0 = L.Nil
-  buildShifts' currentDate date n = L.Cons (buildShift currentVol shifts currentDate date) $ buildShifts' currentDate (tomorrow date) (n - 1)
+  buildShifts' currentDate date n = L.Cons (buildShift currentVol shifts currentDate date n noOfRows) $ buildShifts' currentDate (tomorrow date) (n - 1)
 
-buildShift :: Maybe D.Volunteer -> Array D.Shift -> Date -> Date -> S.State
-buildShift currentVol shifts currentDate date =
-  let shift = maybe {date: date, volunteers: []} id $ find (\s -> s.date == date) shifts
-      otherVols = sortWith _.name $ map buildVol $ case currentVol of
+buildShift :: Maybe D.Volunteer -> Array D.Shift -> Date -> Date -> Int -> Int -> S.State
+buildShift currentVol shifts currentDate date row noOfRows =
+  { date 
+  , noOfVols: length shift.volunteers
+  , status: status shift currentDate
+  , loading: false
+  , currentVol: buildCurrentVol shift
+  , otherVol1: otherVols !! 0
+  , otherVol2: otherVols !! 1
+  , month: if (isFirstDayOfMonth date) || row == noOfRows
+             then Just { name: toMonthYearString date
+                       , noOfDays: min row (daysLeftInMonth date)
+                       }
+             else Nothing
+  }
+  where
+  shift = maybe {date: date, volunteers: []} id $ find (\s -> s.date == date) shifts
+  otherVols = sortWith _.name $ map buildVol $ case currentVol of
                                                       Just cv -> filter (not <<< D.hasVolWithId $ cv.id) shift.volunteers
                                                       _ -> shift.volunteers
-  in { date 
-     , noOfVols: length shift.volunteers
-     , status: status shift currentDate
-     , loading: false
-     , currentVol: buildCurrentVol shift
-     , otherVol1: otherVols !! 0
-     , otherVol2: otherVols !! 1
-     }
-  where
+
   buildVol :: D.VolunteerShift -> S.OtherVolState
   buildVol (D.Overnight v) = { name: v.name
                              , shiftType: S.Overnight

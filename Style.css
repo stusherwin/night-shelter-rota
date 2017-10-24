@@ -110,7 +110,7 @@ select.vol-select {
 	color: #777;
 	-webkit-transition: color .1s ease,border-color .1s ease;
   transition: color .1s ease,border-color .1s ease;
-  margin-left: 5px;
+  margin-top: 5px; 
   font-family: inherit;
   font-weight: 700;
 }
@@ -131,4 +131,13 @@ form {
   margin-top: 10px;
   border: 1px solid #ddd;
   border-radius: 3px;
+}
+
+.month-name {
+  vertical-align: top;
+}
+
+.month-name div {
+  -webkit-transform: rotate(90deg);
+  width: 20px;
 }

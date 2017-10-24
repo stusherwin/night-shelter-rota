@@ -1,8 +1,8 @@
-module App.Shift (State, ShiftType(..), OtherVolState, CurrentVolState, Action(..), ShiftStatus(..), spec) where
+module App.Shift (State, MonthInfo, ShiftType(..), OtherVolState, CurrentVolState, Action(..), ShiftStatus(..), spec) where
  
 import Prelude
  
-import App.Common (unsafeEventValue, toDateString, surroundIf, onlyIf, className) 
+import App.Common (unsafeEventValue, toDateString, surroundIf, onlyIf, className, toDayString) 
 import App.Data (OvernightSharingPrefs(..), Volunteer(..), VolunteerShift(..), canChangeVolunteerShiftType) as D
 import Data.DateTime (Date, Weekday(..), year, month, day, weekday)
 import Data.Enum (fromEnum)
@@ -35,6 +35,10 @@ type CurrentVolState = { name :: String
                        , canChangeShiftType :: Boolean
                        }
 
+type MonthInfo = { name :: String
+                 , noOfDays :: Int
+                 }
+
 type State = { date :: Date
              , status :: ShiftStatus
              , currentVol :: Maybe CurrentVolState
@@ -42,8 +46,9 @@ type State = { date :: Date
              , otherVol1 :: Maybe OtherVolState
              , otherVol2 :: Maybe OtherVolState
              , loading :: Boolean
+             , month :: Maybe MonthInfo
              }
-
+ 
 data Action = AddCurrentVol Date ShiftType
             | RemoveCurrentVol Date
             | ChangeCurrentVolShiftType Date ShiftType
@@ -57,14 +62,22 @@ spec = T.simpleSpec performAction render
                           , onlyIf state.loading "loading"
                           ]
             ]
-         (  [ RD.td  [ className [ "shift-status collapsing", statusClass state ] ]
+         ( case state.month of
+             Just { name, noOfDays } -> [ RD.td [ RP.rowSpan noOfDays
+                                                , className [ "collapsing month-name" ]
+                                                ]
+                                                [ RD.div' [ RD.text name ]
+                                                ]
+                                        ]
+             _ -> []
+         <> [ RD.td  [ className [ "shift-status left-border collapsing", statusClass state ] ]
                      (statusIcon state)
             , RD.td  [ className [ "shift-status collapsing", statusClass state ] ]
                      [ RD.text $ "" <> show state.noOfVols <> "/2" ]
             , RD.td  [ RP.className "shift-date left-border collapsing" ]
                      [ RD.text $ toUpper $ take 3 $ show $ weekday state.date ]
             , RD.td  [ RP.className "shift-date collapsing" ]
-                     [ RD.text $ toDateString state.date ]
+                     [ RD.text $ toDayString state.date ]
             ]
          <> [ RD.td  [ RP.className "left-border collapsing" ]
                      $ renderOtherVol state.otherVol1
