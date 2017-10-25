@@ -1,7 +1,7 @@
 module App.Main where 
    
 import Prelude
- 
+
 import App.Common (lensWithProps, modifyWhere, updateWhere, addDays)
 import App.CurrentVolDetails (State, Action(..), spec, initialState) as CVD
 import App.CurrentVolSelector (State, Action(..), spec, initialState, changeVols) as CVS
@@ -51,7 +51,7 @@ type State = { vols :: Array Volunteer
              , currentVolDetails :: Maybe CVD.State
              , volDetailsEditState :: Maybe VolDetailsEditState
              }
- 
+
 _shiftList :: Lens' State SL.State
 _shiftList = lens _.shiftList _{shiftList = _}
 

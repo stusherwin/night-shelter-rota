@@ -1,4 +1,4 @@
-module App.Shift (State, MonthInfo, ShiftType(..), OtherVolState, CurrentVolState, Action(..), ShiftStatus(..), spec) where
+module App.ShiftRow (State, MonthInfo, ShiftType(..), OtherVolState, CurrentVolState, Action(..), ShiftStatus(..), spec) where
  
 import Prelude
  

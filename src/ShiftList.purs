@@ -3,9 +3,8 @@ module App.ShiftList (Action(..), State, spec, initialState, changeCurrentVol) w
 import Prelude
 
 import App.Common (lensOfListWithProps, tomorrow, modifyListWhere, surroundIf, default, toMonthYearString, daysLeftInMonth, isFirstDayOfMonth)
-import App.Data (OvernightSharingPrefs(..))
-import App.Data (Shift(..), Volunteer(..), VolunteerShift(..), RuleResult(..), canAddVolunteer, addVolunteerShift, changeVolunteerShift, removeVolunteerShift, hasVolWithId, validate, filterOut, canChangeVolunteerShiftType) as D
-import App.Shift (CurrentVolState, OtherVolState, Action(..), State(..), ShiftStatus(..), ShiftType(..), spec) as S
+import App.Data (OvernightSharingPrefs(..), Shift(..), Volunteer(..), VolunteerShift(..), RuleResult(..), canAddVolunteer, addVolunteerShift, changeVolunteerShift, removeVolunteerShift, hasVolWithId, validate, filterOut, canChangeVolunteerShiftType) as D
+import App.ShiftRow (CurrentVolState, OtherVolState, Action(..), State(..), ShiftStatus(..), ShiftType(..), spec) as SR
 import Control.Monad.Aff (delay)
 import Control.Monad.Aff.Class (liftAff)
 import Control.Monad.Trans.Class (lift)
@@ -31,21 +30,21 @@ import React.DOM.Props as RP
 import Thermite as T
 
 data Action = AddShift
-            | ShiftAction Int S.Action
+            | ShiftAction Int SR.Action
 
 type State = { currentVol :: Maybe D.Volunteer
              , shifts :: Array D.Shift
-             , shiftRows :: L.List S.State
+             , shiftRows :: L.List SR.State
              , currentDate :: Date
              , startDate :: Date
              , noOfRows :: Int
              }
 
-_shiftRows :: Lens' State (L.List S.State)
+_shiftRows :: Lens' State (L.List SR.State)
 _shiftRows = lens (\s -> s.shiftRows)
                   (\s a -> s{shiftRows = a})
 
-_ShiftAction :: Prism' Action (Tuple Int S.Action)
+_ShiftAction :: Prism' Action (Tuple Int SR.Action)
 _ShiftAction = prism (uncurry ShiftAction) \ta ->
   case ta of
     ShiftAction i a -> Right (Tuple i a)
@@ -53,7 +52,7 @@ _ShiftAction = prism (uncurry ShiftAction) \ta ->
 
 spec :: forall props eff. T.Spec eff State props Action
 spec = 
-  (table $ T.focus _shiftRows _ShiftAction $ T.foreach \_ -> S.spec)
+  (table $ T.focus _shiftRows _ShiftAction $ T.foreach \_ -> SR.spec)
   <> footerSpec
   where
   table :: T.Spec eff State props Action -> T.Spec eff State props Action
@@ -90,19 +89,19 @@ spec =
     render dispatch _ state _ = []
 
     performAction :: T.PerformAction _ State _ Action
-    performAction (ShiftAction _ (S.AddCurrentVol shiftDate S.Overnight))             _ { currentVol: Just cv } = void do
+    performAction (ShiftAction _ (SR.AddCurrentVol shiftDate SR.Overnight))             _ { currentVol: Just cv } = void do
       delay'
       T.modifyState \state -> modifyShifts state shiftDate $ D.addVolunteerShift shiftDate (D.Overnight cv)
-    performAction (ShiftAction _ (S.AddCurrentVol shiftDate S.Evening))               _ { currentVol: Just cv } = void do
+    performAction (ShiftAction _ (SR.AddCurrentVol shiftDate SR.Evening))               _ { currentVol: Just cv } = void do
       delay'
       T.modifyState \state -> modifyShifts state shiftDate $ D.addVolunteerShift shiftDate (D.Evening cv)
-    performAction (ShiftAction _ (S.ChangeCurrentVolShiftType shiftDate S.Overnight)) _ { currentVol: Just cv } = void do
+    performAction (ShiftAction _ (SR.ChangeCurrentVolShiftType shiftDate SR.Overnight)) _ { currentVol: Just cv } = void do
       delay'
       T.modifyState \state -> modifyShifts state shiftDate $ D.changeVolunteerShift shiftDate (D.Overnight cv)
-    performAction (ShiftAction _ (S.ChangeCurrentVolShiftType shiftDate S.Evening))   _ { currentVol: Just cv } = void do
+    performAction (ShiftAction _ (SR.ChangeCurrentVolShiftType shiftDate SR.Evening))   _ { currentVol: Just cv } = void do
       delay'
       T.modifyState \state -> modifyShifts state shiftDate $ D.changeVolunteerShift shiftDate (D.Evening cv)
-    performAction (ShiftAction _ (S.RemoveCurrentVol shiftDate))                    _ { currentVol: Just cv } = void do
+    performAction (ShiftAction _ (SR.RemoveCurrentVol shiftDate))                    _ { currentVol: Just cv } = void do
       delay'
       T.modifyState \state -> modifyShifts state shiftDate $ D.removeVolunteerShift shiftDate cv
     performAction _ _ _ = pure unit
@@ -119,14 +118,14 @@ initialState currentVol shifts currentDate startDate noOfRows =
   , noOfRows
   }
 
-buildShifts :: Maybe D.Volunteer -> Array D.Shift -> Date -> Date -> Int -> L.List S.State
+buildShifts :: Maybe D.Volunteer -> Array D.Shift -> Date -> Date -> Int -> L.List SR.State
 buildShifts currentVol shifts currentDate startDate noOfRows = buildShifts' currentDate startDate noOfRows
   where 
-  buildShifts' :: Date -> Date -> Int -> L.List S.State
+  buildShifts' :: Date -> Date -> Int -> L.List SR.State
   buildShifts' _ _ 0 = L.Nil
   buildShifts' currentDate date n = L.Cons (buildShift currentVol shifts currentDate date n noOfRows) $ buildShifts' currentDate (tomorrow date) (n - 1)
 
-buildShift :: Maybe D.Volunteer -> Array D.Shift -> Date -> Date -> Int -> Int -> S.State
+buildShift :: Maybe D.Volunteer -> Array D.Shift -> Date -> Date -> Int -> Int -> SR.State
 buildShift currentVol shifts currentDate date row noOfRows =
   { date 
   , noOfVols: length shift.volunteers
@@ -147,32 +146,32 @@ buildShift currentVol shifts currentDate date row noOfRows =
                                                       Just cv -> filter (not <<< D.hasVolWithId $ cv.id) shift.volunteers
                                                       _ -> shift.volunteers
 
-  buildVol :: D.VolunteerShift -> S.OtherVolState
+  buildVol :: D.VolunteerShift -> SR.OtherVolState
   buildVol (D.Overnight v) = { name: v.name
-                             , shiftType: S.Overnight
+                             , shiftType: SR.Overnight
                              , sharingPrefs: sharingPrefs v.overnightSharingPrefs
                              } 
   buildVol (D.Evening v)   = { name: v.name
-                             , shiftType: S.Evening
+                             , shiftType: SR.Evening
                              , sharingPrefs: sharingPrefs v.overnightSharingPrefs
                              }
 
-  sharingPrefs :: OvernightSharingPrefs -> String
+  sharingPrefs :: D.OvernightSharingPrefs -> String
   sharingPrefs prefs = surroundIf " (" ")" $ case prefs of
-                                               None -> "No sharing"
-                                               (OnlyGender gender) -> (show gender) <> " only"
-                                               (Custom text) -> text
+                                               D.None -> "No sharing"
+                                               (D.OnlyGender gender) -> (show gender) <> " only"
+                                               (D.Custom text) -> text
                                                _ -> ""
 
-  status :: D.Shift -> Date -> S.ShiftStatus
+  status :: D.Shift -> Date -> SR.ShiftStatus
   status s currentDate =
     let errors = D.validate s currentDate
         firstErrorStatus = case take 1 errors of
-          [D.Error e]   -> S.Error
-          [D.Warning w] -> S.Warning
-          [D.Info i]    -> S.Info
-          [D.Neutral]   -> const S.OK
-          _             -> const S.Good
+          [D.Error e]   -> SR.Error
+          [D.Warning w] -> SR.Warning
+          [D.Info i]    -> SR.Info
+          [D.Neutral]   -> const SR.OK
+          _             -> const SR.Good
         
         extractMsg (D.Error e)   = Just e
         extractMsg (D.Warning w) = Just w
@@ -184,7 +183,7 @@ buildShift currentVol shifts currentDate date row noOfRows =
         concat msg Nothing  = msg
     in firstErrorStatus $ foldl concat "" $ map extractMsg errors
   
-  buildCurrentVol :: D.Shift -> Maybe S.CurrentVolState
+  buildCurrentVol :: D.Shift -> Maybe SR.CurrentVolState
   buildCurrentVol shift = case currentVol of
     (Just cv) -> Just { name: cv.name 
                       , shiftType: currentVolShiftType cv shift.volunteers
@@ -194,13 +193,13 @@ buildShift currentVol shifts currentDate date row noOfRows =
                       }
     _         -> Nothing
 
-  currentVolShiftType :: D.Volunteer -> Array D.VolunteerShift -> Maybe S.ShiftType
+  currentVolShiftType :: D.Volunteer -> Array D.VolunteerShift -> Maybe SR.ShiftType
   currentVolShiftType v vols = 
     find (D.hasVolWithId v.id) vols >>= case _ of
-      D.Overnight _ -> Just S.Overnight
-      D.Evening   _ -> Just S.Evening
+      D.Overnight _ -> Just SR.Overnight
+      D.Evening   _ -> Just SR.Evening
 
-preserveLoading :: L.List S.State -> L.List S.State -> L.List S.State
+preserveLoading :: L.List SR.State -> L.List SR.State -> L.List SR.State
 preserveLoading = L.zipWith \old new ->
   new { loading = old.loading }
 
