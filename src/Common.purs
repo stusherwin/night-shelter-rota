@@ -1,8 +1,9 @@
-module App.Common (unsafeEventValue, unsafeEventSelectedIndex, lensWithProps, lensOfListWithProps, midnight, tomorrow, toDateString, updateWhere, modifyWhere, updateListWhere, modifyListWhere, surroundIf, justIf, default, onlyIf, className, ifJust, addDays, toMonthYearString, isFirstDayOfMonth, daysLeftInMonth, toDayString) where
+module App.Common (unsafeEventValue, unsafeEventSelectedIndex, lensWithProps, lensOfListWithProps, midnight, tomorrow, toDateString, updateWhere, modifyWhere, updateListWhere, modifyListWhere, surroundIf, justIf, default, onlyIf, className, ifJust, addDays, toMonthYearString, isFirstDayOfMonth, daysLeftInMonth, toDayString, sortWith) where
   
 import Prelude 
 
-import Data.Array (findIndex, updateAt, modifyAt, filter)
+import Data.Array (filter) as A
+import Data.List (List(..), findIndex, updateAt, modifyAt, sortBy, findIndex, updateAt, modifyAt, filter)
 import Data.DateTime (DateTime(..), Date(..), Time(..), canonicalDate, date, adjust, month, year, day)
 import Data.Date (lastDayOfMonth, diff)
 import Data.Either (Either(..), fromRight, either)
@@ -10,7 +11,6 @@ import Data.Enum (fromEnum, toEnum)
 import Data.Formatter.DateTime (formatDateTime)
 import Data.Int (toNumber, floor)
 import Data.Lens (Lens', lens)
-import Data.List (List(..), findIndex, updateAt, modifyAt) as L
 import Data.Maybe (Maybe(..), fromJust, maybe, fromMaybe)
 import Data.String (joinWith, length)
 import Data.Time.Duration (Days(..))
@@ -36,13 +36,13 @@ lensWithProps get set props = lens getter setter
   setter :: s -> Tuple p t -> s
   setter s (Tuple _ a) = set s a
 
-lensOfListWithProps :: forall s t p. (s -> L.List t) -> (s -> L.List t -> s) -> (s -> p) -> Lens' s (L.List (Tuple p t))
+lensOfListWithProps :: forall s t p. (s -> List t) -> (s -> List t -> s) -> (s -> p) -> Lens' s (List (Tuple p t))
 lensOfListWithProps get set props = lens getter setter
   where 
-  getter :: s -> L.List (Tuple p t)
+  getter :: s -> List (Tuple p t)
   getter s = map (Tuple (props s)) (get s)
   
-  setter :: s -> L.List (Tuple p t) -> s
+  setter :: s -> List (Tuple p t) -> s
   setter s a = set s $ map snd a
 
 midnight :: Time
@@ -57,28 +57,28 @@ tomorrow dt = addDays 1 dt
 toDateString :: Date -> String
 toDateString date = unsafePartial $ fromRight $ formatDateTime "D MMMM YYYY" $ DateTime date midnight
 
-updateWhere :: forall a. (a -> Boolean) -> a -> Array a -> Array a
+updateWhere :: forall a. (a -> Boolean) -> a -> List a -> List a
 updateWhere predicate item list = fromMaybe list $ do
   i <- findIndex predicate list
   result <- updateAt i item list
   pure result
 
-modifyWhere :: forall a. (a -> Boolean) -> (a -> a) -> Array a -> Array a
+modifyWhere :: forall a. (a -> Boolean) -> (a -> a) -> List a -> List a
 modifyWhere predicate item list = fromMaybe list $ do
   i <- findIndex predicate list
   result <- modifyAt i item list
   pure result
 
-updateListWhere :: forall a. (a -> Boolean) -> a -> L.List a -> L.List a
+updateListWhere :: forall a. (a -> Boolean) -> a -> List a -> List a
 updateListWhere predicate item list = fromMaybe list $ do
-  i <- L.findIndex predicate list
-  result <- L.updateAt i item list
+  i <- findIndex predicate list
+  result <- updateAt i item list
   pure result 
 
-modifyListWhere :: forall a. (a -> Boolean) -> (a -> a) -> L.List a -> L.List a
+modifyListWhere :: forall a. (a -> Boolean) -> (a -> a) -> List a -> List a
 modifyListWhere predicate item list = fromMaybe list $ do
-  i <- L.findIndex predicate list
-  result <- L.modifyAt i item list
+  i <- findIndex predicate list
+  result <- modifyAt i item list
   pure result
 
 surroundIf :: String -> String -> String -> String
@@ -100,7 +100,7 @@ onlyIf false _   = ""
 onlyIf true  val = val
 
 className :: Array String -> RP.Props
-className = RP.className <<< joinWith " " <<< (filter $ (_ > 0) <<< length)
+className = RP.className <<< joinWith " " <<< (A.filter $ (_ > 0) <<< length)
 
 toMonthYearString :: Date -> String 
 toMonthYearString date = show (month date) <> " " <> (show $ fromEnum $ year date)
@@ -124,3 +124,6 @@ daysLeftInMonth date = (floor daysDiff) + 1
   where
   lastDay = canonicalDate (year date) (month date) $ lastDayOfMonth (year date) (month date)
   (Days daysDiff) = diff lastDay date
+
+sortWith :: forall a b. Ord b => (a -> b) -> List a -> List a
+sortWith fn = sortBy $ comparing fn

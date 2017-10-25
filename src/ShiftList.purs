@@ -2,14 +2,14 @@ module App.ShiftList (Action(..), State, spec, initialState, changeCurrentVol) w
  
 import Prelude
 
-import App.Common (lensOfListWithProps, tomorrow, modifyListWhere, surroundIf, default, toMonthYearString, daysLeftInMonth, isFirstDayOfMonth)
+import App.Common (lensOfListWithProps, tomorrow, modifyListWhere, surroundIf, default, toMonthYearString, daysLeftInMonth, isFirstDayOfMonth, sortWith)
 import App.Data (OvernightSharingPrefs(..), Shift(..), Volunteer(..), VolunteerShift(..), RuleResult(..), canAddVolunteer, addVolunteerShift, changeVolunteerShift, removeVolunteerShift, hasVolWithId, validate, filterOut, canChangeVolunteerShiftType) as D
 import App.ShiftRow (CurrentVolState, OtherVolState, Action(..), State(..), ShiftStatus(..), ShiftType(..), spec) as SR
 import Control.Monad.Aff (delay)
 import Control.Monad.Aff.Class (liftAff)
 import Control.Monad.Trans.Class (lift)
 import DOM.HTML.HTMLElement (offsetHeight)
-import Data.Array (find, filter, (!!), sortWith, length, take, foldl)
+import Data.List (List(..), find, filter, (!!), length, take, foldl, head)
 import Data.Date (diff, lastDayOfMonth, canonicalDate)
 import Data.DateTime (Date(..), DateTime(..), Millisecond, Time(..), adjust, canonicalDate, date, day, month, year, Day(..), Year(..))
 import Data.Either (Either(..))
@@ -33,7 +33,7 @@ data Action = AddShift
             | ShiftAction Int SR.Action
 
 type State = { currentVol :: Maybe D.Volunteer
-             , shifts :: Array D.Shift
+             , shifts :: List D.Shift
              , shiftRows :: L.List SR.State
              , currentDate :: Date
              , startDate :: Date
@@ -108,7 +108,7 @@ spec =
     
     delay' = lift $ liftAff $ delay (Milliseconds 1000.0)
 
-initialState :: Maybe D.Volunteer -> Array D.Shift -> Date -> Date -> Int -> State
+initialState :: Maybe D.Volunteer -> List D.Shift -> Date -> Date -> Int -> State
 initialState currentVol shifts currentDate startDate noOfRows = 
   { currentVol
   , shifts
@@ -118,14 +118,14 @@ initialState currentVol shifts currentDate startDate noOfRows =
   , noOfRows
   }
 
-buildShifts :: Maybe D.Volunteer -> Array D.Shift -> Date -> Date -> Int -> L.List SR.State
+buildShifts :: Maybe D.Volunteer -> List D.Shift -> Date -> Date -> Int -> L.List SR.State
 buildShifts currentVol shifts currentDate startDate noOfRows = buildShifts' currentDate startDate noOfRows
   where 
   buildShifts' :: Date -> Date -> Int -> L.List SR.State
   buildShifts' _ _ 0 = L.Nil
   buildShifts' currentDate date n = L.Cons (buildShift currentVol shifts currentDate date n noOfRows) $ buildShifts' currentDate (tomorrow date) (n - 1)
 
-buildShift :: Maybe D.Volunteer -> Array D.Shift -> Date -> Date -> Int -> Int -> SR.State
+buildShift :: Maybe D.Volunteer -> List D.Shift -> Date -> Date -> Int -> Int -> SR.State
 buildShift currentVol shifts currentDate date row noOfRows =
   { date 
   , noOfVols: length shift.volunteers
@@ -141,7 +141,7 @@ buildShift currentVol shifts currentDate date row noOfRows =
              else Nothing
   }
   where
-  shift = maybe {date: date, volunteers: []} id $ find (\s -> s.date == date) shifts
+  shift = maybe {date: date, volunteers: Nil} id $ find (\s -> s.date == date) shifts
   otherVols = sortWith _.name $ map buildVol $ case currentVol of
                                                       Just cv -> filter (not <<< D.hasVolWithId $ cv.id) shift.volunteers
                                                       _ -> shift.volunteers
@@ -166,11 +166,11 @@ buildShift currentVol shifts currentDate date row noOfRows =
   status :: D.Shift -> Date -> SR.ShiftStatus
   status s currentDate =
     let errors = D.validate s currentDate
-        firstErrorStatus = case take 1 errors of
-          [D.Error e]   -> SR.Error
-          [D.Warning w] -> SR.Warning
-          [D.Info i]    -> SR.Info
-          [D.Neutral]   -> const SR.OK
+        firstErrorStatus = case head errors of
+          Just (D.Error e)   -> SR.Error
+          Just (D.Warning w) -> SR.Warning
+          Just (D.Info i)    -> SR.Info
+          Just (D.Neutral)   -> const SR.OK
           _             -> const SR.Good
         
         extractMsg (D.Error e)   = Just e
@@ -193,7 +193,7 @@ buildShift currentVol shifts currentDate date row noOfRows =
                       }
     _         -> Nothing
 
-  currentVolShiftType :: D.Volunteer -> Array D.VolunteerShift -> Maybe SR.ShiftType
+  currentVolShiftType :: D.Volunteer -> List D.VolunteerShift -> Maybe SR.ShiftType
   currentVolShiftType v vols = 
     find (D.hasVolWithId v.id) vols >>= case _ of
       D.Overnight _ -> Just SR.Overnight
@@ -209,7 +209,7 @@ changeCurrentVol currentVol state =
         , shiftRows = preserveLoading state.shiftRows $ buildShifts currentVol state.shifts state.currentDate state.startDate state.noOfRows
         }
 
-modifyShifts :: State -> Date -> (Array D.Shift -> Array D.Shift) -> State
+modifyShifts :: State -> Date -> (List D.Shift -> List D.Shift) -> State
 modifyShifts state date modify =
   let shifts = modify state.shifts
   in state { shifts = shifts

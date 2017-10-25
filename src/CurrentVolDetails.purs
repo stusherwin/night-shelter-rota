@@ -4,7 +4,7 @@ import Prelude
 
 import App.Common (unsafeEventValue, className, onlyIf)
 import App.Data (OvernightSharingPrefs(..), VolId(..), Volunteer(..), parseVolId)
-import Data.Array ((!!))
+import Data.List ((!!))
 import Data.Maybe (Maybe(..), isJust, maybe)
 import Data.Newtype (unwrap)
 import Data.String (length)

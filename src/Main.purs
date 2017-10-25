@@ -1,8 +1,9 @@
 module App.Main where 
-   
+ 
 import Prelude
 
-import App.Common (lensWithProps, modifyWhere, updateWhere, addDays)
+import Data.Array (toUnfoldable)
+import App.Common (lensWithProps, modifyWhere, updateWhere, addDays, sortWith)
 import App.CurrentVolDetails (State, Action(..), spec, initialState) as CVD
 import App.CurrentVolSelector (State, Action(..), spec, initialState, changeVols) as CVS
 import App.Data (OvernightSharingPrefs(..), Shift(..), Volunteer(..), VolId(..), Gender(..), nextVolId)
@@ -17,7 +18,7 @@ import Control.Monad.Gen (frequency)
 import Control.Monad.Trans.Class (lift)
 import DOM.HTML.History (state)
 import DOM.Node.Types (Element)
-import Data.Array (find, cons, (!!), length, sortWith, snoc, last)
+import Data.List (List(..), find, (:), (!!), length, snoc, last)
 import Data.DateTime (Date)
 import Data.DateTime.Locale (LocalValue(..))
 import Data.Either (Either(..))
@@ -44,7 +45,7 @@ data Action = ShiftListAction SL.Action
 data VolDetailsEditState = EditingNewVol
                          | EditingCurrentVol
 
-type State = { vols :: Array Volunteer
+type State = { vols :: List Volunteer
              , shiftList :: SL.State
              , currentVol :: Maybe Volunteer
              , currentVolSelector :: CVS.State
@@ -110,7 +111,7 @@ spec = container (RD.div [ RP.className "container" ]) $ fold
                   ]
       ]
     render dispatch _ _ _ = []
-
+ 
     performAction :: forall e. T.PerformAction (console :: CONSOLE | e) State _ Action
     performAction NewVol _ _ =
       void $ T.modifyState \state -> state{ currentVol = Nothing
@@ -187,14 +188,14 @@ spec = container (RD.div [ RP.className "container" ]) $ fold
 main :: Unit
 main = unsafePerformEff $ do 
   (LocalValue _ currentDate) <- nowDate 
-  let vols = [ { id: VolId 1, name: "Fred",    gender: Just Male,           overnightSharingPrefs: Any }
-             , { id: VolId 2, name: "Alice",   gender: Just Female,         overnightSharingPrefs: (OnlyGender Female) }
-             , { id: VolId 3, name: "Jim",     gender: Nothing,             overnightSharingPrefs: None }
-             , { id: VolId 4, name: "Mary",    gender: Just Female,         overnightSharingPrefs: (Custom "Only nice people") }
-             , { id: VolId 5, name: "Smoo 1",  gender: Just (Other "Smoo"), overnightSharingPrefs: (OnlyGender (Other "Smoo")) }
-             , { id: VolId 6, name: "Smoo 2",  gender: Just (Other "Smoo"), overnightSharingPrefs: (OnlyGender (Other "Smoo")) }
-             ]
-  let shifts = []
+  let vols = toUnfoldable [ { id: VolId 1, name: "Fred",    gender: Just Male,           overnightSharingPrefs: Any }
+                          , { id: VolId 2, name: "Alice",   gender: Just Female,         overnightSharingPrefs: (OnlyGender Female) }
+                          , { id: VolId 3, name: "Jim",     gender: Nothing,             overnightSharingPrefs: None }
+                          , { id: VolId 4, name: "Mary",    gender: Just Female,         overnightSharingPrefs: (Custom "Only nice people") }
+                          , { id: VolId 5, name: "Smoo 1",  gender: Just (Other "Smoo"), overnightSharingPrefs: (OnlyGender (Other "Smoo")) }
+                          , { id: VolId 6, name: "Smoo 2",  gender: Just (Other "Smoo"), overnightSharingPrefs: (OnlyGender (Other "Smoo")) }
+                          ]
+  let shifts = Nil
   let currentVol = Nothing
   let component = T.createClass spec $ { vols
                                        , shiftList: SL.initialState currentVol shifts currentDate (addDays (-1) currentDate) 28

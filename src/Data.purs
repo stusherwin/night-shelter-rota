@@ -2,8 +2,9 @@ module App.Data (Shift (..), Volunteer(..), VolId(..), Gender(..), OvernightShar
 
 import Prelude
 
-import App.Common (toDateString, justIf)
-import Data.Array (findIndex, find, modifyAt, snoc, updateAt, deleteAt, length, all, nub, nubBy, (:), filter, catMaybes, sortWith, any)
+import Data.Array (toUnfoldable)
+import App.Common (toDateString, justIf, sortWith)
+import Data.List (List(..), findIndex, find, modifyAt, snoc, updateAt, deleteAt, length, all, nub, nubBy, (:), filter, catMaybes, any, singleton)
 import Data.Date (diff)
 import Data.DateTime (DateTime(..), Date(..), Time(..), canonicalDate, date, adjust)
 import Data.Either (Either(..))
@@ -50,7 +51,7 @@ data VolunteerShift = Overnight Volunteer
                     | Evening Volunteer
 
 type Shift = { date :: Date
-             , volunteers :: Array VolunteerShift
+             , volunteers :: List VolunteerShift
              }
 
 hasVolWithId :: VolId -> VolunteerShift -> Boolean
@@ -65,13 +66,13 @@ volId :: VolunteerShift -> VolId
 volId (Overnight v) = v.id
 volId (Evening v) = v.id
 
-addVolunteerShift :: Date -> VolunteerShift -> Array Shift -> Array Shift
+addVolunteerShift :: Date -> VolunteerShift -> List Shift -> List Shift
 addVolunteerShift date vol shifts =
   case findIndex (\s -> s.date == date) shifts of
     Just i -> fromMaybe shifts $ modifyAt i (\s -> s{ volunteers = (flip snoc) vol s.volunteers }) shifts
-    _      -> snoc shifts $ { date, volunteers: [vol] }
+    _      -> snoc shifts $ { date, volunteers: singleton vol }
 
-changeVolunteerShift :: Date -> VolunteerShift -> Array Shift -> Array Shift
+changeVolunteerShift :: Date -> VolunteerShift -> List Shift -> List Shift
 changeVolunteerShift date vol shifts =
   case findIndex (\s -> s.date == date) shifts of
     Just i -> fromMaybe shifts $ modifyAt i (\s ->
@@ -80,7 +81,7 @@ changeVolunteerShift date vol shifts =
                   _      -> s) shifts
     _      -> shifts
 
-removeVolunteerShift :: Date -> Volunteer -> Array Shift -> Array Shift
+removeVolunteerShift :: Date -> Volunteer -> List Shift -> List Shift
 removeVolunteerShift date vol shifts =
   case findIndex (\s -> s.date == date) shifts of
     Just i -> fromMaybe shifts $ modifyAt i (\s ->
@@ -107,12 +108,12 @@ isOvernight (Overnight _) = true
 isOvernight _ = false
 
 hasGender :: Gender -> Volunteer -> Boolean
-hasGender Male   { gender: Just Male }   = true
+hasGender Male   { gender: Just Male }   = true 
 hasGender Female { gender: Just Female } = true
 hasGender (Other o1)  { gender: Just (Other o2)} = o1 == o2
 hasGender _ _ = false
 
-filterOut :: Volunteer -> Array VolunteerShift -> Array VolunteerShift
+filterOut :: Volunteer -> List VolunteerShift -> List VolunteerShift
 filterOut v = filter (not <<< hasVolWithId $ v.id)
 
 config :: _
@@ -121,10 +122,10 @@ config = { maxVolsPerShift: 2
          }
 
 isAllowed :: forall r. { shift :: Shift | r } -> Boolean
-isAllowed params = satisfies params [ notHaveSameVolunteerTwice
-                                    ]
+isAllowed params = satisfies params $ toUnfoldable [ notHaveSameVolunteerTwice
+                                                   ]
   where
-  satisfies :: RuleParams r -> Array (Rule r) -> Boolean
+  satisfies :: RuleParams r -> List (Rule r) -> Boolean
   satisfies p = all id <<< map (not <<< isJust) <<< (flip flap) p
 
 canAddVolunteer :: VolunteerShift -> Shift -> Boolean
@@ -153,21 +154,21 @@ isPast shift currentDate =
   let (Days d) = shift.date `diff` currentDate
   in d < 0.0
 
-validate :: Shift -> Date -> Array RuleResult
+validate :: Shift -> Date -> List RuleResult
 validate shift currentDate =
-  collectViolations params [ must <<< notHaveSameVolunteerTwice
-                           , ignoreIf (isPast shift currentDate) <<< should <<< notExceedMaxVolunteers
-                           , ignoreIf (isPast shift currentDate) <<< mustIf (isLooming shift currentDate) <<< haveAtLeastOneVolunteer
-                           , ignoreIf (isPast shift currentDate) <<< could <<< haveMoreThanOneVolunteer
-                           , ignoreIf (isPast shift currentDate) <<< mustIf (isLooming shift currentDate) <<< haveAnOvernightVolunteer
-                           , ignoreIf (isPast shift currentDate) <<< should <<< notViolateAnyVolsSharingPrefs
-                           ]
+  collectViolations params $ toUnfoldable [ must <<< notHaveSameVolunteerTwice
+                                          , ignoreIf (isPast shift currentDate) <<< should <<< notExceedMaxVolunteers
+                                          , ignoreIf (isPast shift currentDate) <<< mustIf (isLooming shift currentDate) <<< haveAtLeastOneVolunteer
+                                          , ignoreIf (isPast shift currentDate) <<< could <<< haveMoreThanOneVolunteer
+                                          , ignoreIf (isPast shift currentDate) <<< mustIf (isLooming shift currentDate) <<< haveAnOvernightVolunteer
+                                          , ignoreIf (isPast shift currentDate) <<< should <<< notViolateAnyVolsSharingPrefs
+                                          ]
   where
   params = { shift
            , currentDate
            }
 
-  collectViolations :: forall r. RuleParams r -> Array (RuleParams r -> Maybe RuleResult) -> Array RuleResult
+  collectViolations :: forall r. RuleParams r -> List (RuleParams r -> Maybe RuleResult) -> List RuleResult
   collectViolations params = sortWith priority <<< catMaybes <<< (flip flap) params
 
   must   = map Error

@@ -4,7 +4,7 @@ import Prelude
 
 import App.Common (unsafeEventSelectedIndex, ifJust)
 import App.Data (Volunteer(..), VolId(..), parseVolId)
-import Data.Array ((!!), find)
+import Data.List (List(..), (!!), find, toUnfoldable)
 import Data.Int (fromString)
 import Data.Maybe (Maybe(..), maybe)
 import Data.Newtype (unwrap)
@@ -14,7 +14,7 @@ import React.DOM as RD
 import React.DOM.Props as RP
 import Thermite as T
 
-type State = { vols :: Array Volunteer
+type State = { vols :: List Volunteer
              , currentVol :: Maybe Volunteer
              } 
  
@@ -31,7 +31,7 @@ spec = T.simpleSpec performAction render
              (  [ RD.option [ RP.value "" ]
                             [ RD.text "All volunteers" ]
                 ]
-             <> map (option dispatch state.currentVol) state.vols
+             <> map (option dispatch state.currentVol) (toUnfoldable state.vols)
              )
     ]
 
@@ -40,7 +40,7 @@ spec = T.simpleSpec performAction render
   respond state i | i > 0 = ChangeCurrentVol $ state.vols !! (i - 1)
   respond _ _ = ChangeCurrentVol Nothing
 
-  findVol :: Array Volunteer -> Maybe VolId -> Maybe Volunteer
+  findVol :: List Volunteer -> Maybe VolId -> Maybe Volunteer
   findVol vols = (=<<) \id -> find (\v -> v.id == id) vols
 
   option :: _ -> Maybe Volunteer -> Volunteer -> ReactElement
@@ -53,12 +53,12 @@ spec = T.simpleSpec performAction render
   performAction (ChangeCurrentVol v) _ _ = void $ T.modifyState \state -> state{ currentVol = v }
   performAction _ _ _ = pure unit 
 
-initialState :: Array Volunteer -> Maybe Volunteer -> State
+initialState :: List Volunteer -> Maybe Volunteer -> State
 initialState vols currentVol = { vols: vols
                                , currentVol: currentVol
                                }
 
-changeVols :: Array Volunteer -> Maybe Volunteer -> State -> State
+changeVols :: List Volunteer -> Maybe Volunteer -> State -> State
 changeVols vols currentVol state = state { vols = vols
                                          , currentVol = currentVol
                                          }
