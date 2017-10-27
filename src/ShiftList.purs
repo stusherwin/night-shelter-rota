@@ -3,7 +3,7 @@ module App.ShiftList (Action(..), State, spec, initialState, changeCurrentVol) w
 import Prelude
 
 import App.Common (lensOfListWithProps, tomorrow, modifyListWhere, surroundIf, default, toMonthYearString, daysLeftInMonth, isFirstDayOfMonth, sortWith)
-import App.Data (OvernightSharingPrefs(..), Shift(..), Volunteer(..), VolunteerShift(..), RuleResult(..), canAddVolunteer, addVolunteerShift, changeVolunteerShift, removeVolunteerShift, hasVolWithId, validate, filterOut, canChangeVolunteerShiftType) as D
+import App.Data (OvernightSharingPrefs(..), Shift(..), Volunteer(..), VolunteerShift(..), RuleResult(..), canAddVolunteer, addVolunteerShift, changeVolunteerShift, removeVolunteerShift, hasVolWithId, validate, filterOut, canChangeVolunteerShiftType, updateVolunteer) as D
 import App.ShiftRow (CurrentVolState, OtherVolState, Action(..), State(..), ShiftStatus(..), ShiftType(..), spec) as SR
 import Control.Monad.Aff (delay)
 import Control.Monad.Aff.Class (liftAff)
@@ -202,12 +202,14 @@ buildShift currentVol shifts currentDate date row noOfRows =
 preserveLoading :: L.List SR.State -> L.List SR.State -> L.List SR.State
 preserveLoading = L.zipWith \old new ->
   new { loading = old.loading }
-
+ 
 changeCurrentVol :: Maybe D.Volunteer -> State -> State
 changeCurrentVol currentVol state =
-  state { currentVol = currentVol
-        , shiftRows = preserveLoading state.shiftRows $ buildShifts currentVol state.shifts state.currentDate state.startDate state.noOfRows
-        }
+  let shifts = maybe state.shifts (\vol -> D.updateVolunteer vol state.shifts) currentVol
+  in state { currentVol = currentVol
+           , shifts = shifts
+           , shiftRows = preserveLoading state.shiftRows $ buildShifts currentVol shifts state.currentDate state.startDate state.noOfRows
+           }
 
 modifyShifts :: State -> Date -> (List D.Shift -> List D.Shift) -> State
 modifyShifts state date modify =

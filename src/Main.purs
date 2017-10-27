@@ -4,7 +4,7 @@ import Prelude
 
 import Data.Array (toUnfoldable)
 import App.Common (lensWithProps, modifyWhere, updateWhere, addDays, sortWith)
-import App.CurrentVolDetails (State, Action(..), spec, initialState) as CVD
+import App.CurrentVolDetails (State, Action(..), VolDetails, spec, initialState) as CVD
 import App.CurrentVolSelector (State, Action(..), spec, initialState, changeVols) as CVS
 import App.Data (OvernightSharingPrefs(..), Shift(..), Volunteer(..), VolId(..), Gender(..), nextVolId)
 import App.ShiftList (State, Action(..), spec, initialState, changeCurrentVol) as SL
@@ -90,7 +90,7 @@ spec = container (RD.div [ RP.className "container" ]) $ fold
       T.split _Just CVD.spec
   , T.focus _shiftList _ShiftListAction SL.spec
   , handler
-  ] 
+  ]
   where 
   container :: forall state action. (Array R.ReactElement -> R.ReactElement) -> T.Spec (console :: CONSOLE | eff) state props action -> T.Spec (console :: CONSOLE | eff) state props action
   container elem = over T._render \render d p s c -> [ elem $ render d p s c ]
@@ -152,38 +152,53 @@ spec = container (RD.div [ RP.className "container" ]) $ fold
     where 
     performAction :: forall e. T.PerformAction (console :: CONSOLE | e) State _ Action
     performAction (CurrentVolSelectorAction (CVS.ChangeCurrentVol vol)) _ _ =
-      void $ T.modifyState \state -> state{ currentVol = vol
-                                          , shiftList = SL.changeCurrentVol vol state.shiftList
-                                          , currentVolDetails = Nothing
-                                          , volDetailsEditState = Nothing
-                                          }
+      void $ T.modifyState $ changeCurrentVol vol
     performAction (CurrentVolDetailsAction (CVD.Save details)) _ { volDetailsEditState: Just EditingCurrentVol } =
-      void $ T.modifyState \state -> let vol  = _{ name = details.name, overnightSharingPrefs = Custom details.notes } <$> state.currentVol
-                                         vols = maybe state.vols  (\cv -> updateWhere (\v -> v.id == cv.id) cv state.vols) vol
-                                     in state{ currentVol = vol
-                                             , vols = vols
-                                             , shiftList = SL.changeCurrentVol vol state.shiftList
-                                             , currentVolSelector = CVS.changeVols vols state.currentVol state.currentVolSelector
-                                             , volDetailsEditState = Nothing
-                                             , currentVolDetails = Nothing
-                                             }
+      void $ T.modifyState $ updateCurrentVolDetails details
     performAction (CurrentVolDetailsAction (CVD.Save details)) _ { volDetailsEditState: Just EditingNewVol } =
-      void $ T.modifyState \state -> let maxId  = maybe (VolId 0) (_.id) $ last $ sortWith (\v -> v.id) state.vols
-                                         newVol = { id: nextVolId maxId, name: details.name, gender: Nothing, overnightSharingPrefs: Custom details.notes }
-                                         vols   = snoc state.vols newVol
-                                     in state{ currentVol = Just newVol
-                                             , vols = vols
-                                             , shiftList = SL.changeCurrentVol (Just newVol) state.shiftList
-                                             , currentVolSelector = CVS.changeVols vols (Just newVol) state.currentVolSelector
-                                             , volDetailsEditState = Nothing
-                                             , currentVolDetails = Nothing
-                                             }
+      void $ T.modifyState $ addNewVol details
     performAction (CurrentVolDetailsAction CVD.Cancel) _ { volDetailsEditState: Just _ } =
-      void $ T.modifyState \state -> state{ volDetailsEditState = Nothing
-                                          , currentVolDetails = Nothing
-                                          }
-    performAction _ _ _ = pure unit 
- 
+      void $ T.modifyState cancelEditingCurrentVol
+    performAction _ _ _ = pure unit
+
+changeCurrentVol :: Maybe Volunteer -> State -> State
+changeCurrentVol vol state = state{ currentVol = vol
+                                  , shiftList = SL.changeCurrentVol vol state.shiftList
+                                  , currentVolDetails = Nothing
+                                  , volDetailsEditState = Nothing
+                                  }
+
+updateCurrentVolDetails :: CVD.VolDetails -> State -> State
+updateCurrentVolDetails details state@{ currentVol: Just cv } =
+  let vol  = cv{ name = details.name, overnightSharingPrefs = Custom details.notes }
+      vols = updateWhere (\v -> v.id == cv.id) vol state.vols
+      currentVol = Just vol
+  in  state{ currentVol = currentVol
+           , vols = vols
+           , shiftList = SL.changeCurrentVol currentVol state.shiftList
+           , currentVolSelector = CVS.changeVols vols state.currentVol state.currentVolSelector
+           , volDetailsEditState = Nothing
+           , currentVolDetails = Nothing
+           }
+updateCurrentVolDetails _ state = state
+
+addNewVol :: CVD.VolDetails -> State -> State
+addNewVol details state =
+  let maxId  = maybe (VolId 0) (_.id) $ last $ sortWith (\v -> v.id) state.vols
+      newVol = { id: nextVolId maxId, name: details.name, gender: Nothing, overnightSharingPrefs: Custom details.notes }
+      vols   = snoc state.vols newVol
+  in  state{ currentVol = Just newVol
+           , vols = vols
+           , shiftList = SL.changeCurrentVol (Just newVol) state.shiftList
+           , currentVolSelector = CVS.changeVols vols (Just newVol) state.currentVolSelector
+           , volDetailsEditState = Nothing
+           , currentVolDetails = Nothing
+           }
+
+cancelEditingCurrentVol :: State -> State
+cancelEditingCurrentVol = _{ volDetailsEditState = Nothing
+                           , currentVolDetails = Nothing
+                           }
 
 main :: Unit
 main = unsafePerformEff $ do 

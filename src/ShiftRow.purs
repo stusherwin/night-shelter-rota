@@ -16,6 +16,7 @@ import Thermite as T
 
 data ShiftType = Overnight
                | Evening
+derive instance shiftTypeEq :: Eq ShiftType
 
 data ShiftStatus = Good
                  | Warning String

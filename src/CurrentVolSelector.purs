@@ -1,8 +1,8 @@
 module App.CurrentVolSelector (State, Action(..), spec, initialState, changeVols) where
 
-import Prelude
+import Prelude 
 
-import App.Common (unsafeEventSelectedIndex, ifJust)
+import App.Common (unsafeEventSelectedIndex, isJustWith)
 import App.Data (Volunteer(..), VolId(..), parseVolId)
 import Data.List (List(..), (!!), find, toUnfoldable)
 import Data.Int (fromString)
@@ -44,7 +44,7 @@ spec = T.simpleSpec performAction render
   findVol vols = (=<<) \id -> find (\v -> v.id == id) vols
 
   option :: _ -> Maybe Volunteer -> Volunteer -> ReactElement
-  option dispatch currentVolId v = RD.option [ RP.selected $ ifJust (\cv -> cv.id == v.id) currentVolId
+  option dispatch currentVolId v = RD.option [ RP.selected $ isJustWith (\cv -> cv.id == v.id) currentVolId
                                              , RP.value $ show v.id
                                              ]
                                              [ RD.text v.name ]

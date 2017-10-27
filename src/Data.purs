@@ -1,4 +1,4 @@
-module App.Data (Shift (..), Volunteer(..), VolId(..), Gender(..), OvernightSharingPrefs(..), VolunteerShift(..), RuleResult(..), addVolunteerShift, changeVolunteerShift, removeVolunteerShift, canAddVolunteer, hasVolWithId, validate, filterOut, canChangeVolunteerShiftType, parseVolId, nextVolId) where
+module App.Data (Shift (..), Volunteer(..), VolId(..), Gender(..), OvernightSharingPrefs(..), VolunteerShift(..), RuleResult(..), addVolunteerShift, changeVolunteerShift, removeVolunteerShift, canAddVolunteer, hasVolWithId, validate, filterOut, canChangeVolunteerShiftType, parseVolId, nextVolId, updateVolunteer) where
 
 import Prelude
 
@@ -89,6 +89,15 @@ removeVolunteerShift date vol shifts =
                   Just j -> s{ volunteers = fromMaybe s.volunteers $ deleteAt j s.volunteers }
                   _      -> s) shifts
     _      -> shifts
+
+updateVolunteer :: Volunteer -> List Shift -> List Shift
+updateVolunteer vol = map updateShift
+  where
+  updateShift s = s { volunteers = map updateVol s.volunteers }
+  updateVol (Overnight v) | v.id == vol.id = Overnight vol
+  updateVol (Evening   v) | v.id == vol.id = Evening vol
+  updateVol v = v
+
   
 type RuleParams r = { shift :: Shift | r }
 

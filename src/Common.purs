@@ -1,4 +1,4 @@
-module App.Common (unsafeEventValue, unsafeEventSelectedIndex, lensWithProps, lensOfListWithProps, midnight, tomorrow, toDateString, updateWhere, modifyWhere, updateListWhere, modifyListWhere, surroundIf, justIf, default, onlyIf, className, ifJust, addDays, toMonthYearString, isFirstDayOfMonth, daysLeftInMonth, toDayString, sortWith) where
+module App.Common (unsafeEventValue, unsafeEventSelectedIndex, lensWithProps, lensOfListWithProps, midnight, tomorrow, toDateString, updateWhere, modifyWhere, updateListWhere, modifyListWhere, surroundIf, justIf, default, onlyIf, className, isJustWith, addDays, toMonthYearString, isFirstDayOfMonth, daysLeftInMonth, toDayString, sortWith) where
   
 import Prelude 
 
@@ -88,8 +88,8 @@ surroundIf start end text = start <> text <> end
 justIf :: forall a. a -> Boolean -> Maybe a
 justIf a condition = if condition then Just a else Nothing
 
-ifJust :: forall a. (a -> Boolean) -> Maybe a ->Boolean 
-ifJust = maybe false
+isJustWith :: forall a. (a -> Boolean) -> Maybe a -> Boolean 
+isJustWith = maybe false
 
 default :: String -> String -> String
 default defaultVal ""  = defaultVal

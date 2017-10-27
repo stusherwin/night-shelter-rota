@@ -9,13 +9,15 @@
   "dependencies": {
     "purescript-prelude": "^3.1.0",
     "purescript-console": "^3.0.0",
-    "purescript-assert": "^3.0.0",
     "purescript-thermite": "^4.1.1",
     "purescript-datetime": "^3.2.0",
     "purescript-formatters": "^1.0.0",
-    "purescript-now": "^3.0.0"
+    "purescript-now": "^3.0.0",
+    "purescript-test-unit": "^13.0.0",
+    "purescript-assert": "^3.0.0",
+    "purescript-quickcheck": "^4.3.0"
   },
   "devDependencies": {
     "purescript-psci-support": "^3.0.0"
-  }
+ }
 }
