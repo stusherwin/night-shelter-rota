@@ -79,7 +79,7 @@ _CurrentVolDetailsAction = prism CurrentVolDetailsAction unwrap
   where 
   unwrap (CurrentVolDetailsAction a) = Right a
   unwrap a = Left a 
-
+ 
 spec :: forall props eff. T.Spec (console :: CONSOLE | eff) State props Action
 spec = container (RD.div [ RP.className "container" ]) $ fold
   [ editCurrentVol
@@ -173,8 +173,8 @@ updateCurrentVolDetails details state@{ currentVol: Just cv } =
   let vol  = cv{ name = details.name, overnightSharingPrefs = Custom details.notes }
       vols = updateWhere (\v -> v.id == cv.id) vol state.vols
       currentVol = Just vol
-  in  state{ currentVol = currentVol
-           , vols = vols
+  in  state{ currentVol = currentVol 
+           , vols = vols 
            , shiftList = SL.changeCurrentVol currentVol state.shiftList
            , currentVolSelector = CVS.changeVols vols state.currentVol state.currentVolSelector
            , volDetailsEditState = Nothing

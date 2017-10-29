@@ -1,4 +1,4 @@
-module App.ShiftList (Action(..), State, spec, initialState, changeCurrentVol) where
+module App.ShiftList (Action(..), RowAction(..), Row(..), State, spec, initialState, changeCurrentVol) where
  
 import Prelude
 
@@ -9,13 +9,13 @@ import Control.Monad.Aff (delay)
 import Control.Monad.Aff.Class (liftAff)
 import Control.Monad.Trans.Class (lift)
 import DOM.HTML.HTMLElement (offsetHeight)
-import Data.List (List(..), find, filter, (!!), length, take, foldl, head)
 import Data.Date (diff, lastDayOfMonth, canonicalDate)
 import Data.DateTime (Date(..), DateTime(..), Millisecond, Time(..), adjust, canonicalDate, date, day, month, year, Day(..), Year(..))
 import Data.Either (Either(..))
 import Data.Enum (fromEnum, toEnum)
 import Data.Int (floor)
 import Data.Lens (Lens', lens, Prism', prism, over)
+import Data.List (List(..), find, filter, (!!), length, take, foldl, head)
 import Data.List (List(..), snoc, last, zipWith) as L
 import Data.Maybe (Maybe(..), fromJust, maybe, isJust)
 import Data.String (length) as S
@@ -29,30 +29,60 @@ import React.DOM as RD
 import React.DOM.Props as RP
 import Thermite as T
 
+data RowAction = ShiftRowAction SR.Action
+               | MonthHeaderRowAction Unit
+
 data Action = AddShift
-            | ShiftAction Int SR.Action
+            | RowAction Int RowAction
+
+data Row = ShiftRow SR.State
+         | MonthHeaderRow String
 
 type State = { currentVol :: Maybe D.Volunteer
              , shifts :: List D.Shift
-             , shiftRows :: L.List SR.State
+             , rows :: L.List Row
              , currentDate :: Date
              , startDate :: Date
              , noOfRows :: Int
              }
 
-_shiftRows :: Lens' State (L.List SR.State)
-_shiftRows = lens (\s -> s.shiftRows)
-                  (\s a -> s{shiftRows = a})
+_rows :: Lens' State (L.List Row)
+_rows = lens (\s -> s.rows)
+             (\s a -> s{rows = a})
 
-_ShiftAction :: Prism' Action (Tuple Int SR.Action)
-_ShiftAction = prism (uncurry ShiftAction) \ta ->
+_RowAction :: Prism' Action (Tuple Int RowAction)
+_RowAction = prism (uncurry RowAction) \ta ->
   case ta of
-    ShiftAction i a -> Right (Tuple i a)
-    _ -> Left ta 
+    RowAction i a -> Right (Tuple i a)
+    _ -> Left ta
+
+_ShiftRowAction :: Prism' RowAction SR.Action
+_ShiftRowAction = prism ShiftRowAction \ra ->
+  case ra of
+    ShiftRowAction a -> Right a
+    _ -> Left ra
+
+_MonthHeaderRowAction :: Prism' RowAction Unit
+_MonthHeaderRowAction = prism MonthHeaderRowAction \ra ->
+  case ra of
+    MonthHeaderRowAction a -> Right a
+    _ -> Left ra
+
+_MonthHeaderRow :: Prism' Row String
+_MonthHeaderRow = prism MonthHeaderRow $ \r ->
+  case r of
+    MonthHeaderRow s -> Right s
+    _ -> Left r
+
+_ShiftRow :: Prism' Row SR.State
+_ShiftRow = prism ShiftRow $ \r ->
+  case r of
+    ShiftRow s -> Right s
+    _ -> Left r
 
 spec :: forall props eff. T.Spec eff State props Action
 spec = 
-  (table $ T.focus _shiftRows _ShiftAction $ T.foreach \_ -> SR.spec)
+  (table $ T.focus _rows _RowAction $ T.foreach \_ -> ((T.split _ShiftRow $ T.match _ShiftRowAction SR.spec) <> (T.split _MonthHeaderRow $ T.match _MonthHeaderRowAction monthHeaderRow)))
   <> footerSpec
   where
   table :: T.Spec eff State props Action -> T.Spec eff State props Action
@@ -61,27 +91,13 @@ spec =
                [ RD.tbody' $ render d p s c
                ]
     ]
+
+  monthHeaderRow :: forall props eff. T.Spec eff String props Unit
+  monthHeaderRow = T.simpleSpec T.defaultPerformAction render
+    where
+    render :: T.Render String _ Unit
+    render dispatch _ text _ = [ RD.tr' [ RD.td [RP.colSpan 9] [ RD.text text ] ] ]
    
-  volHeadings :: Maybe D.Volunteer -> Array ReactElement
-  volHeadings (Just v) = 
-    [ RD.th [ RP.colSpan 2
-            , RP.className "left-border collapsing"
-            ]
-            [ RD.text $ default "Current volunteer" v.name ]
-    , RD.th [ RP.colSpan 2
-            , RP.className "left-border collapsing"
-            ]
-            [ RD.text "Other volunteers" ]
-    , RD.th' []
-    ]
-  volHeadings _ =
-    [ RD.th [ RP.colSpan 2
-            , RP.className "left-border collapsing"
-            ]
-            [ RD.text "Volunteers" ]
-    , RD.th' []
-    ]
- 
   footerSpec :: T.Spec _ State _ Action
   footerSpec = T.simpleSpec performAction render
     where
@@ -89,19 +105,19 @@ spec =
     render dispatch _ state _ = []
 
     performAction :: T.PerformAction _ State _ Action
-    performAction (ShiftAction _ (SR.AddCurrentVol shiftDate SR.Overnight))             _ { currentVol: Just cv } = void do
+    performAction (RowAction _ (ShiftRowAction (SR.AddCurrentVol shiftDate SR.Overnight)))             _ { currentVol: Just cv } = void do
       delay'
       T.modifyState \state -> modifyShifts state shiftDate $ D.addVolunteerShift shiftDate (D.Overnight cv)
-    performAction (ShiftAction _ (SR.AddCurrentVol shiftDate SR.Evening))               _ { currentVol: Just cv } = void do
+    performAction (RowAction _ (ShiftRowAction (SR.AddCurrentVol shiftDate SR.Evening)))               _ { currentVol: Just cv } = void do
       delay'
       T.modifyState \state -> modifyShifts state shiftDate $ D.addVolunteerShift shiftDate (D.Evening cv)
-    performAction (ShiftAction _ (SR.ChangeCurrentVolShiftType shiftDate SR.Overnight)) _ { currentVol: Just cv } = void do
+    performAction (RowAction _ (ShiftRowAction (SR.ChangeCurrentVolShiftType shiftDate SR.Overnight))) _ { currentVol: Just cv } = void do
       delay'
       T.modifyState \state -> modifyShifts state shiftDate $ D.changeVolunteerShift shiftDate (D.Overnight cv)
-    performAction (ShiftAction _ (SR.ChangeCurrentVolShiftType shiftDate SR.Evening))   _ { currentVol: Just cv } = void do
+    performAction (RowAction _ (ShiftRowAction (SR.ChangeCurrentVolShiftType shiftDate SR.Evening)))   _ { currentVol: Just cv } = void do
       delay'
       T.modifyState \state -> modifyShifts state shiftDate $ D.changeVolunteerShift shiftDate (D.Evening cv)
-    performAction (ShiftAction _ (SR.RemoveCurrentVol shiftDate))                    _ { currentVol: Just cv } = void do
+    performAction (RowAction _ (ShiftRowAction (SR.RemoveCurrentVol shiftDate)))                    _ { currentVol: Just cv } = void do
       delay'
       T.modifyState \state -> modifyShifts state shiftDate $ D.removeVolunteerShift shiftDate cv
     performAction _ _ _ = pure unit
@@ -112,21 +128,22 @@ initialState :: Maybe D.Volunteer -> List D.Shift -> Date -> Date -> Int -> Stat
 initialState currentVol shifts currentDate startDate noOfRows = 
   { currentVol
   , shifts
-  , shiftRows: buildShifts currentVol shifts currentDate startDate noOfRows
+  , rows: buildShifts currentVol shifts currentDate startDate noOfRows
   , currentDate
   , startDate
   , noOfRows
   }
 
-buildShifts :: Maybe D.Volunteer -> List D.Shift -> Date -> Date -> Int -> L.List SR.State
-buildShifts currentVol shifts currentDate startDate noOfRows = buildShifts' currentDate startDate noOfRows
+buildShifts :: Maybe D.Volunteer -> List D.Shift -> Date -> Date -> Int -> L.List Row
+buildShifts currentVol shifts currentDate startDate noOfShifts = buildShifts' startDate noOfShifts
   where 
-  buildShifts' :: Date -> Date -> Int -> L.List SR.State
-  buildShifts' _ _ 0 = L.Nil
-  buildShifts' currentDate date n = L.Cons (buildShift currentVol shifts currentDate date n noOfRows) $ buildShifts' currentDate (tomorrow date) (n - 1)
+  buildShifts' :: Date -> Int -> L.List Row
+  buildShifts' _ 0 = L.Nil
+  buildShifts' date n | n == noOfShifts || isFirstDayOfMonth date = L.Cons (MonthHeaderRow $ toMonthYearString date) $ L.Cons (ShiftRow $ buildShift currentVol shifts currentDate date) $ buildShifts' (tomorrow date) (n - 1)
+  buildShifts' date n = L.Cons (ShiftRow $ buildShift currentVol shifts currentDate date) $ buildShifts' (tomorrow date) (n - 1)
 
-buildShift :: Maybe D.Volunteer -> List D.Shift -> Date -> Date -> Int -> Int -> SR.State
-buildShift currentVol shifts currentDate date row noOfRows =
+buildShift :: Maybe D.Volunteer -> List D.Shift -> Date -> Date -> SR.State
+buildShift currentVol shifts currentDate date =
   { date 
   , noOfVols: length shift.volunteers
   , status: status shift currentDate
@@ -134,11 +151,6 @@ buildShift currentVol shifts currentDate date row noOfRows =
   , currentVol: buildCurrentVol shift
   , otherVol1: otherVols !! 0
   , otherVol2: otherVols !! 1
-  , month: if (isFirstDayOfMonth date) || row == noOfRows
-             then Just { name: toMonthYearString date
-                       , noOfDays: min row (daysLeftInMonth date)
-                       }
-             else Nothing
   }
   where
   shift = maybe {date: date, volunteers: Nil} id $ find (\s -> s.date == date) shifts
@@ -199,21 +211,31 @@ buildShift currentVol shifts currentDate date row noOfRows =
       D.Overnight _ -> Just SR.Overnight
       D.Evening   _ -> Just SR.Evening
 
-preserveLoading :: L.List SR.State -> L.List SR.State -> L.List SR.State
-preserveLoading = L.zipWith \old new ->
-  new { loading = old.loading }
+preserveLoading :: L.List Row -> L.List Row -> L.List Row
+preserveLoading = L.zipWith row
+  where
+  row (ShiftRow old) (ShiftRow new) = ShiftRow new { loading = old.loading }
+  row _ new = new
  
 changeCurrentVol :: Maybe D.Volunteer -> State -> State
 changeCurrentVol currentVol state =
   let shifts = maybe state.shifts (\vol -> D.updateVolunteer vol state.shifts) currentVol
   in state { currentVol = currentVol
            , shifts = shifts
-           , shiftRows = preserveLoading state.shiftRows $ buildShifts currentVol shifts state.currentDate state.startDate state.noOfRows
+           , rows = preserveLoading state.rows $ buildShifts currentVol shifts state.currentDate state.startDate state.noOfRows
            }
 
 modifyShifts :: State -> Date -> (List D.Shift -> List D.Shift) -> State
 modifyShifts state date modify =
   let shifts = modify state.shifts
+      isShiftOnDate :: Row -> Boolean
+      isShiftOnDate (ShiftRow s) = s.date == date
+      isShiftOnDate _ = false
+
+      cancelLoading :: Row -> Row
+      cancelLoading (ShiftRow s) = ShiftRow s{ loading = false }
+      cancelLoading r = r 
   in state { shifts = shifts
-           , shiftRows = modifyListWhere (\s -> s.date == date) (\s -> s{ loading = false }) $ preserveLoading state.shiftRows $ buildShifts state.currentVol shifts state.currentDate state.startDate state.noOfRows
+           , rows = modifyListWhere isShiftOnDate cancelLoading $ preserveLoading state.rows $ buildShifts state.currentVol shifts state.currentDate state.startDate state.noOfRows
            }
+
