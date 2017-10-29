@@ -47,42 +47,45 @@ type State = { currentVol :: Maybe D.Volunteer
              }
 
 _rows :: Lens' State (L.List Row)
-_rows = lens (\s -> s.rows)
-             (\s a -> s{rows = a})
+_rows = lens _.rows _{rows = _}
 
 _RowAction :: Prism' Action (Tuple Int RowAction)
-_RowAction = prism (uncurry RowAction) \ta ->
-  case ta of
-    RowAction i a -> Right (Tuple i a)
-    _ -> Left ta
-
-_ShiftRowAction :: Prism' RowAction SR.Action
-_ShiftRowAction = prism ShiftRowAction \ra ->
-  case ra of
-    ShiftRowAction a -> Right a
-    _ -> Left ra
+_RowAction = prism (uncurry RowAction) unwrap
+  where
+  unwrap (RowAction i a) = Right (Tuple i a)
+  unwrap ta = Left ta
 
 _MonthHeaderRowAction :: Prism' RowAction Unit
-_MonthHeaderRowAction = prism MonthHeaderRowAction \ra ->
-  case ra of
-    MonthHeaderRowAction a -> Right a
-    _ -> Left ra
+_MonthHeaderRowAction = prism MonthHeaderRowAction unwrap
+  where
+  unwrap (MonthHeaderRowAction a) = Right a
+  unwrap ra = Left ra
+
+_ShiftRowAction :: Prism' RowAction SR.Action
+_ShiftRowAction = prism ShiftRowAction unwrap
+  where
+  unwrap (ShiftRowAction a) = Right a
+  unwrap ra = Left ra
 
 _MonthHeaderRow :: Prism' Row String
-_MonthHeaderRow = prism MonthHeaderRow $ \r ->
-  case r of
-    MonthHeaderRow s -> Right s
-    _ -> Left r
+_MonthHeaderRow = prism MonthHeaderRow unwrap
+  where
+  unwrap (MonthHeaderRow s) = Right s
+  unwrap r = Left r
 
 _ShiftRow :: Prism' Row SR.State
-_ShiftRow = prism ShiftRow $ \r ->
-  case r of
-    ShiftRow s -> Right s
-    _ -> Left r
+_ShiftRow = prism ShiftRow unwrap
+  where
+  unwrap (ShiftRow s) = Right s
+  unwrap r = Left r
 
 spec :: forall props eff. T.Spec eff State props Action
 spec = 
-  (table $ T.focus _rows _RowAction $ T.foreach \_ -> ((T.split _ShiftRow $ T.match _ShiftRowAction SR.spec) <> (T.split _MonthHeaderRow $ T.match _MonthHeaderRowAction monthHeaderRow)))
+  ( table $ T.focus _rows _RowAction $ T.foreach \_ ->
+    (  T.split _MonthHeaderRow (T.match _MonthHeaderRowAction monthHeaderRow)
+    <> T.split _ShiftRow (T.match _ShiftRowAction SR.spec)
+    )
+  )
   <> footerSpec
   where
   table :: T.Spec eff State props Action -> T.Spec eff State props Action
@@ -92,11 +95,15 @@ spec =
                ]
     ]
 
-  monthHeaderRow :: forall props eff. T.Spec eff String props Unit
+  monthHeaderRow :: T.Spec _ String _ Unit
   monthHeaderRow = T.simpleSpec T.defaultPerformAction render
     where
     render :: T.Render String _ Unit
-    render dispatch _ text _ = [ RD.tr' [ RD.td [RP.colSpan 9] [ RD.text text ] ] ]
+    render dispatch _ text _ = [ RD.tr [ RP.className "month-header-row" ]
+                                       [ RD.td [ RP.colSpan 9 ]
+                                               [ RD.text text ]
+                                       ]
+                               ]
    
   footerSpec :: T.Spec _ State _ Action
   footerSpec = T.simpleSpec performAction render
@@ -238,4 +245,3 @@ modifyShifts state date modify =
   in state { shifts = shifts
            , rows = modifyListWhere isShiftOnDate cancelLoading $ preserveLoading state.rows $ buildShifts state.currentVol shifts state.currentDate state.startDate state.noOfRows
            }
-
