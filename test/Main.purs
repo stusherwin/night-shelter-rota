@@ -34,7 +34,13 @@ findVol id shift = find (\v -> v.id == id) $ map extractVol shift.volunteers
   extractVol (Evening v) = v
 
 findShiftRow :: Date -> M.State -> Maybe SR.State
-findShiftRow date state = find (\s -> s.date == date) state.shiftList.shiftRows
+findShiftRow date state = extract =<< find predicate state.shiftList.rows
+  where
+  predicate (SL.ShiftRow s) = s.date == date
+  predicate _ = false
+
+  extract (SL.ShiftRow s) = Just s
+  extract _ = Nothing
 
 hasName :: forall a. String -> { name :: String | a } -> Boolean
 hasName name o = name == o.name

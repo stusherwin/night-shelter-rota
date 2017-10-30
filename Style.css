@@ -56,7 +56,7 @@
   border-bottom: 1px dotted rgba(65, 131, 196, 1) !important;
 }
 
-.ui.table td.shift-type {
+.shift-type {
   margin-right: 10px;
   vertical-align: bottom;
 }

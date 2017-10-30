@@ -2,7 +2,7 @@ module App.ShiftList (Action(..), RowAction(..), Row(..), State, spec, initialSt
  
 import Prelude
 
-import App.Common (lensOfListWithProps, tomorrow, modifyListWhere, surroundIf, default, toMonthYearString, daysLeftInMonth, isFirstDayOfMonth, sortWith)
+import App.Common (lensOfListWithProps, tomorrow, modifyListWhere, surroundIf, default, toMonthYearString, daysLeftInMonth, isFirstDayOfMonth, sortWith, addDays)
 import App.Data (OvernightSharingPrefs(..), Shift(..), Volunteer(..), VolunteerShift(..), RuleResult(..), canAddVolunteer, addVolunteerShift, changeVolunteerShift, removeVolunteerShift, hasVolWithId, validate, filterOut, canChangeVolunteerShiftType, updateVolunteer) as D
 import App.ShiftRow (CurrentVolState, OtherVolState, Action(..), State(..), ShiftStatus(..), ShiftType(..), spec) as SR
 import Control.Monad.Aff (delay)
@@ -15,8 +15,7 @@ import Data.Either (Either(..))
 import Data.Enum (fromEnum, toEnum)
 import Data.Int (floor)
 import Data.Lens (Lens', lens, Prism', prism, over)
-import Data.List (List(..), find, filter, (!!), length, take, foldl, head)
-import Data.List (List(..), snoc, last, zipWith) as L
+import Data.List (List(..), find, filter, (!!), length, take, foldl, head, snoc, last, zipWith)
 import Data.Maybe (Maybe(..), fromJust, maybe, isJust)
 import Data.String (length) as S
 import Data.Time.Duration (Days(..), Milliseconds(..))
@@ -40,13 +39,13 @@ data Row = ShiftRow SR.State
 
 type State = { currentVol :: Maybe D.Volunteer
              , shifts :: List D.Shift
-             , rows :: L.List Row
+             , rows :: List Row
              , currentDate :: Date
              , startDate :: Date
-             , noOfRows :: Int
+             , endDate :: Date
              }
 
-_rows :: Lens' State (L.List Row)
+_rows :: Lens' State (List Row)
 _rows = lens _.rows _{rows = _}
 
 _RowAction :: Prism' Action (Tuple Int RowAction)
@@ -132,38 +131,43 @@ spec =
     delay' = lift $ liftAff $ delay (Milliseconds 1000.0)
 
 initialState :: Maybe D.Volunteer -> List D.Shift -> Date -> Date -> Int -> State
-initialState currentVol shifts currentDate startDate noOfRows = 
-  { currentVol
-  , shifts
-  , rows: buildShifts currentVol shifts currentDate startDate noOfRows
-  , currentDate
-  , startDate
-  , noOfRows
-  }
+initialState currentVol shifts currentDate startDate shiftCount = 
+  let endDate = addDays (shiftCount - 1) startDate
+  in { currentVol
+     , shifts
+     , rows: rows currentVol shifts currentDate startDate endDate
+     , currentDate
+     , startDate
+     , endDate
+     }
 
-buildShifts :: Maybe D.Volunteer -> List D.Shift -> Date -> Date -> Int -> L.List Row
-buildShifts currentVol shifts currentDate startDate noOfShifts = buildShifts' startDate noOfShifts
+rows :: Maybe D.Volunteer -> List D.Shift -> Date -> Date -> Date -> List Row
+rows currentVol shifts currentDate startDate endDate = rows' startDate
   where 
-  buildShifts' :: Date -> Int -> L.List Row
-  buildShifts' _ 0 = L.Nil
-  buildShifts' date n | n == noOfShifts || isFirstDayOfMonth date = L.Cons (MonthHeaderRow $ toMonthYearString date) $ L.Cons (ShiftRow $ buildShift currentVol shifts currentDate date) $ buildShifts' (tomorrow date) (n - 1)
-  buildShifts' date n = L.Cons (ShiftRow $ buildShift currentVol shifts currentDate date) $ buildShifts' (tomorrow date) (n - 1)
+  rows' :: Date -> List Row
+  rows' date | date > endDate = Nil
+  rows' date | date == startDate || isFirstDayOfMonth date =
+    Cons (monthHeaderRow date) $ Cons (shiftRow date) $ rows' $ tomorrow date
+  rows' date = Cons (shiftRow date) $ rows' $ tomorrow date
 
-buildShift :: Maybe D.Volunteer -> List D.Shift -> Date -> Date -> SR.State
-buildShift currentVol shifts currentDate date =
-  { date 
-  , noOfVols: length shift.volunteers
-  , status: status shift currentDate
-  , loading: false
-  , currentVol: buildCurrentVol shift
-  , otherVol1: otherVols !! 0
-  , otherVol2: otherVols !! 1
-  }
-  where
-  shift = maybe {date: date, volunteers: Nil} id $ find (\s -> s.date == date) shifts
-  otherVols = sortWith _.name $ map buildVol $ case currentVol of
-                                                      Just cv -> filter (not <<< D.hasVolWithId $ cv.id) shift.volunteers
-                                                      _ -> shift.volunteers
+  monthHeaderRow :: Date -> Row
+  monthHeaderRow = MonthHeaderRow <<< toMonthYearString
+
+  shiftRow :: Date -> Row
+  shiftRow date = 
+    ShiftRow { date 
+             , noOfVols: length shift.volunteers
+             , status: status shift currentDate
+             , loading: false
+             , currentVol: buildCurrentVol shift
+             , otherVol1: otherVols !! 0
+             , otherVol2: otherVols !! 1
+             }
+    where
+    shift = maybe {date: date, volunteers: Nil} id $ find (\s -> s.date == date) shifts
+    otherVols = sortWith _.name $ map buildVol $ case currentVol of
+                                                   Just cv -> filter (not <<< D.hasVolWithId $ cv.id) shift.volunteers
+                                                   _ -> shift.volunteers
 
   buildVol :: D.VolunteerShift -> SR.OtherVolState
   buildVol (D.Overnight v) = { name: v.name
@@ -218,8 +222,8 @@ buildShift currentVol shifts currentDate date =
       D.Overnight _ -> Just SR.Overnight
       D.Evening   _ -> Just SR.Evening
 
-preserveLoading :: L.List Row -> L.List Row -> L.List Row
-preserveLoading = L.zipWith row
+preserveLoading :: List Row -> List Row -> List Row
+preserveLoading = zipWith row
   where
   row (ShiftRow old) (ShiftRow new) = ShiftRow new { loading = old.loading }
   row _ new = new
@@ -229,7 +233,7 @@ changeCurrentVol currentVol state =
   let shifts = maybe state.shifts (\vol -> D.updateVolunteer vol state.shifts) currentVol
   in state { currentVol = currentVol
            , shifts = shifts
-           , rows = preserveLoading state.rows $ buildShifts currentVol shifts state.currentDate state.startDate state.noOfRows
+           , rows = preserveLoading state.rows $ rows currentVol shifts state.currentDate state.startDate state.endDate
            }
 
 modifyShifts :: State -> Date -> (List D.Shift -> List D.Shift) -> State
@@ -243,5 +247,5 @@ modifyShifts state date modify =
       cancelLoading (ShiftRow s) = ShiftRow s{ loading = false }
       cancelLoading r = r 
   in state { shifts = shifts
-           , rows = modifyListWhere isShiftOnDate cancelLoading $ preserveLoading state.rows $ buildShifts state.currentVol shifts state.currentDate state.startDate state.noOfRows
+           , rows = modifyListWhere isShiftOnDate cancelLoading $ preserveLoading state.rows $ rows state.currentVol shifts state.currentDate state.startDate state.endDate
            }
