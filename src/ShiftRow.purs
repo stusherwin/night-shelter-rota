@@ -1,8 +1,8 @@
 module App.ShiftRow (State, ShiftType(..), OtherVolState, CurrentVolState, Action(..), ShiftStatus(..), spec) where
  
 import Prelude
- 
-import App.Common (unsafeEventValue, toDateString, surroundIf, onlyIf, className, toDayString) 
+
+import App.Common (unsafeEventValue, toDateString, surroundIf, onlyIf, className, toDayString)
 import App.Data (OvernightSharingPrefs(..), Volunteer(..), VolunteerShift(..), canChangeVolunteerShiftType) as D
 import Data.DateTime (Date, Weekday(..), year, month, day, weekday)
 import Data.Enum (fromEnum)

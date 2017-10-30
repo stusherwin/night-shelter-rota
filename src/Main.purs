@@ -202,7 +202,7 @@ cancelEditingCurrentVol = _{ volDetailsEditState = Nothing
 
 main :: Unit
 main = unsafePerformEff $ do 
-  (LocalValue _ currentDate) <- nowDate 
+  (LocalValue _ currentDate) <- nowDate
   let vols = toUnfoldable [ { id: VolId 1, name: "Fred",    gender: Just Male,           overnightSharingPrefs: Any }
                           , { id: VolId 2, name: "Alice",   gender: Just Female,         overnightSharingPrefs: (OnlyGender Female) }
                           , { id: VolId 3, name: "Jim",     gender: Nothing,             overnightSharingPrefs: None }

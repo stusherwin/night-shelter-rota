@@ -11,7 +11,7 @@ import Partial.Unsafe (unsafePartial)
 import Test.Assert (assert', ASSERT)
 import Control.Monad.Eff (Eff)
 
-import App.Common
+import App.Commonimport App.Common
 import App.Data
 import App.Main as M
 import App.CurrentVolSelector as CVS
