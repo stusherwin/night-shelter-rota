@@ -108,6 +108,22 @@ i.vol-icon {
   border-left: 1px solid #555;
 }
 
+.ui.table tr.month-header-row .action {
+  color: #ddd;
+}
+
+.ui.table tr.month-header-row .action:hover {
+  color: #fff;
+}
+
+.ui.table tr.month-header-row .action span {
+  border-bottom: 1px dashed #aaa;
+}
+
+.ui.table tr.month-header-row .action:hover span {
+  border-bottom: 1px dashed #ddd;
+}
+
 .ui.checkbox input[type="checkbox"][disabled] {
   cursor: default;
 }

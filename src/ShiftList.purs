@@ -1,4 +1,4 @@
-module App.ShiftList (Action(..), RowAction(..), Row(..), State, spec, initialState, changeCurrentVol) where
+module App.ShiftList (Action(..), RowAction(..), HeaderRowAction(..), Row(..), State, spec, initialState, changeCurrentVol) where
  
 import Prelude
 
@@ -28,14 +28,19 @@ import React.DOM as RD
 import React.DOM.Props as RP
 import Thermite as T
 
+data HeaderRowAction = PrevPeriod
+                     | NextPeriod
+
 data RowAction = ShiftRowAction SR.Action
-               | MonthHeaderRowAction Unit
+               | HeaderRowAction HeaderRowAction
 
 data Action = AddShift
             | RowAction Int RowAction
 
 data Row = ShiftRow SR.State
+         | StartRow String
          | MonthHeaderRow String
+         | EndRow
 
 type State = { currentVol :: Maybe D.Volunteer
              , shifts :: List D.Shift
@@ -54,10 +59,10 @@ _RowAction = prism (uncurry RowAction) unwrap
   unwrap (RowAction i a) = Right (Tuple i a)
   unwrap ta = Left ta
 
-_MonthHeaderRowAction :: Prism' RowAction Unit
-_MonthHeaderRowAction = prism MonthHeaderRowAction unwrap
+_HeaderRowAction :: Prism' RowAction HeaderRowAction
+_HeaderRowAction = prism HeaderRowAction unwrap
   where
-  unwrap (MonthHeaderRowAction a) = Right a
+  unwrap (HeaderRowAction a) = Right a
   unwrap ra = Left ra
 
 _ShiftRowAction :: Prism' RowAction SR.Action
@@ -66,10 +71,22 @@ _ShiftRowAction = prism ShiftRowAction unwrap
   unwrap (ShiftRowAction a) = Right a
   unwrap ra = Left ra
 
+_StartRow :: Prism' Row String
+_StartRow = prism StartRow unwrap
+  where
+  unwrap (StartRow s) = Right s
+  unwrap r = Left r
+
 _MonthHeaderRow :: Prism' Row String
 _MonthHeaderRow = prism MonthHeaderRow unwrap
   where
   unwrap (MonthHeaderRow s) = Right s
+  unwrap r = Left r
+
+_EndRow :: Prism' Row Unit
+_EndRow = prism (const EndRow) unwrap
+  where
+  unwrap EndRow = Right unit
   unwrap r = Left r
 
 _ShiftRow :: Prism' Row SR.State
@@ -81,8 +98,10 @@ _ShiftRow = prism ShiftRow unwrap
 spec :: forall props eff. T.Spec eff State props Action
 spec = 
   ( table $ T.focus _rows _RowAction $ T.foreach \_ ->
-    (  T.split _MonthHeaderRow (T.match _MonthHeaderRowAction monthHeaderRow)
+    (  T.split _StartRow (T.match _HeaderRowAction startRow)
+    <> T.split _MonthHeaderRow (T.match _HeaderRowAction monthHeaderRow)
     <> T.split _ShiftRow (T.match _ShiftRowAction SR.spec)
+    <> T.split _EndRow (T.match _HeaderRowAction endRow)
     )
   )
   <> footerSpec
@@ -94,16 +113,54 @@ spec =
                ]
     ]
 
-  monthHeaderRow :: T.Spec _ String _ Unit
-  monthHeaderRow = T.simpleSpec T.defaultPerformAction render
+  startRow :: T.Spec _ String _ HeaderRowAction
+  startRow = T.simpleSpec T.defaultPerformAction render
     where
-    render :: T.Render String _ Unit
+    render :: T.Render String _ HeaderRowAction
     render dispatch _ text _ = [ RD.tr [ RP.className "month-header-row" ]
                                        [ RD.td [ RP.colSpan 9 ]
-                                               [ RD.text text ]
+                                               [ RD.text text
+                                               , RD.a [ RP.style { float: "right" }
+                                                      , RP.href "#"
+                                                      , RP.className "action"
+                                                      , RP.onClick \_ -> dispatch PrevPeriod
+                                                      ]
+                                                      [ RD.i [ RP.className "icon-up-open"] []
+                                                      , RD.span' [ RD.text "previous 4 weeks" ]
+                                                      ]
+                                               ]
+                                       ]
+                               ]
+  
+  monthHeaderRow :: T.Spec _ String _ HeaderRowAction
+  monthHeaderRow = T.simpleSpec T.defaultPerformAction render
+    where
+    render :: T.Render String _ HeaderRowAction
+    render dispatch _ text _ = [ RD.tr [ RP.className "month-header-row" ]
+                                       [ RD.td [ RP.colSpan 9 ]
+                                               [ RD.text text
+                                               ]
                                        ]
                                ]
    
+  endRow :: T.Spec _ Unit _ HeaderRowAction
+  endRow = T.simpleSpec T.defaultPerformAction render
+    where
+    render :: T.Render Unit _ HeaderRowAction
+    render dispatch _ _ _ = [ RD.tr [ RP.className "month-header-row" ]
+                                    [ RD.td [ RP.colSpan 9 ]
+                                            [ RD.a [ RP.style { float: "right" }
+                                                   , RP.href "#"
+                                                   , RP.className "action"
+                                                   , RP.onClick \_ -> dispatch NextPeriod
+                                                   ]
+                                                   [ RD.i [ RP.className "icon-down-open"] []
+                                                   , RD.span' [ RD.text "next 4 weeks" ]
+                                                   ]
+                                            ]
+                                    ]
+                            ]
+  
   footerSpec :: T.Spec _ State _ Action
   footerSpec = T.simpleSpec performAction render
     where
@@ -111,21 +168,27 @@ spec =
     render dispatch _ state _ = []
 
     performAction :: T.PerformAction _ State _ Action
-    performAction (RowAction _ (ShiftRowAction (SR.AddCurrentVol shiftDate SR.Overnight)))             _ { currentVol: Just cv } = void do
+    performAction (RowAction _ (ShiftRowAction (SR.AddCurrentVol shiftDate SR.Overnight))) _ { currentVol: Just cv } = void do
       delay'
       T.modifyState \state -> modifyShifts state shiftDate $ D.addVolunteerShift shiftDate (D.Overnight cv)
-    performAction (RowAction _ (ShiftRowAction (SR.AddCurrentVol shiftDate SR.Evening)))               _ { currentVol: Just cv } = void do
+    performAction (RowAction _ (ShiftRowAction (SR.AddCurrentVol shiftDate SR.Evening))) _ { currentVol: Just cv } = void do
       delay'
       T.modifyState \state -> modifyShifts state shiftDate $ D.addVolunteerShift shiftDate (D.Evening cv)
     performAction (RowAction _ (ShiftRowAction (SR.ChangeCurrentVolShiftType shiftDate SR.Overnight))) _ { currentVol: Just cv } = void do
       delay'
       T.modifyState \state -> modifyShifts state shiftDate $ D.changeVolunteerShift shiftDate (D.Overnight cv)
-    performAction (RowAction _ (ShiftRowAction (SR.ChangeCurrentVolShiftType shiftDate SR.Evening)))   _ { currentVol: Just cv } = void do
+    performAction (RowAction _ (ShiftRowAction (SR.ChangeCurrentVolShiftType shiftDate SR.Evening))) _ { currentVol: Just cv } = void do
       delay'
       T.modifyState \state -> modifyShifts state shiftDate $ D.changeVolunteerShift shiftDate (D.Evening cv)
-    performAction (RowAction _ (ShiftRowAction (SR.RemoveCurrentVol shiftDate)))                    _ { currentVol: Just cv } = void do
+    performAction (RowAction _ (ShiftRowAction (SR.RemoveCurrentVol shiftDate))) _ { currentVol: Just cv } = void do
       delay'
       T.modifyState \state -> modifyShifts state shiftDate $ D.removeVolunteerShift shiftDate cv
+    performAction (RowAction _ (HeaderRowAction PrevPeriod)) _ _ = void do
+      delay'
+      T.modifyState \state -> adjustPeriod (-28) state
+    performAction (RowAction _ (HeaderRowAction NextPeriod)) _ _ = void do
+      delay'
+      T.modifyState \state -> adjustPeriod 28 state
     performAction _ _ _ = pure unit
     
     delay' = lift $ liftAff $ delay (Milliseconds 1000.0)
@@ -145,13 +208,20 @@ rows :: Maybe D.Volunteer -> List D.Shift -> Date -> Date -> Date -> List Row
 rows currentVol shifts currentDate startDate endDate = rows' startDate
   where 
   rows' :: Date -> List Row
-  rows' date | date > endDate = Nil
-  rows' date | date == startDate || isFirstDayOfMonth date =
-    Cons (monthHeaderRow date) $ Cons (shiftRow date) $ rows' $ tomorrow date
-  rows' date = Cons (shiftRow date) $ rows' $ tomorrow date
-
-  monthHeaderRow :: Date -> Row
-  monthHeaderRow = MonthHeaderRow <<< toMonthYearString
+  rows' date | date > endDate = 
+      Cons EndRow
+    $ Nil
+  rows' date | date == startDate =
+      Cons (StartRow $ toMonthYearString date)
+    $ Cons (shiftRow date)
+    $ rows' $ tomorrow date
+  rows' date | isFirstDayOfMonth date =
+      Cons (MonthHeaderRow $ toMonthYearString date)
+    $ Cons (shiftRow date)
+    $ rows' $ tomorrow date
+  rows' date =
+      Cons (shiftRow date)
+    $ rows' $ tomorrow date
 
   shiftRow :: Date -> Row
   shiftRow date = 
@@ -234,6 +304,15 @@ changeCurrentVol currentVol state =
   in state { currentVol = currentVol
            , shifts = shifts
            , rows = preserveLoading state.rows $ rows currentVol shifts state.currentDate state.startDate state.endDate
+           }
+
+adjustPeriod :: Int -> State -> State
+adjustPeriod adj state = 
+  let startDate' = addDays adj state.startDate
+      endDate' = addDays adj state.endDate
+  in state { startDate = startDate'
+           , endDate = endDate'
+           , rows = rows state.currentVol state.shifts state.currentDate startDate' endDate'
            }
 
 modifyShifts :: State -> Date -> (List D.Shift -> List D.Shift) -> State
