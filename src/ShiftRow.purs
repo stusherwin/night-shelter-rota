@@ -58,7 +58,7 @@ spec = T.simpleSpec performAction render
                           , onlyIf state.loading "loading"
                           ]
             ]
-         (  [ RD.td  [ RP.className "shift-date left-border collapsing" ]
+         (  [ RD.td  [ RP.className "shift-date collapsing" ]
                      [ RD.text $ toUpper $ take 3 $ show $ weekday state.date ]
             , RD.td  [ RP.className "shift-date collapsing" ]
                      [ RD.text $ toDayString state.date ]

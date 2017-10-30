@@ -6,6 +6,10 @@
   margin: 10px;
 }
 
+.ui.table {
+  /* border: 1px solid #555; */
+}
+
 .ui.table tr {
   background: #fdfdfd;
 }
@@ -75,6 +79,10 @@ i.vol-icon {
   border-left: 1px solid rgba(34,36,38,.15);
 }
 
+.ui.table td.left-border:first-child, .ui.table thead th.left-border:first-child {
+  /* border-left-color: #555; */
+}
+
 /* .ui.table td.loading i {
   margin-left: -15px;
   margin-right: -5px;
@@ -92,7 +100,12 @@ i.vol-icon {
 }
 
 .ui.table tr.month-header-row td {
-  border-color: #555;
+  border-top: 1px solid #555;
+  border-bottom: 1px solid #555;
+}
+
+.ui.table tr.month-header-row td:first-child {
+  border-left: 1px solid #555;
 }
 
 .ui.checkbox input[type="checkbox"][disabled] {
@@ -140,13 +153,4 @@ form {
   margin-top: 10px;
   border: 1px solid #ddd;
   border-radius: 3px;
-}
-
-.month-name {
-  vertical-align: top;
-}
-
-.month-name div {
-  -webkit-transform: rotate(90deg);
-  width: 20px;
 }
