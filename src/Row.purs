@@ -1,4 +1,4 @@
-module App.Row (State(..), Action(..), HeaderRowAction(..), spec) where
+module App.Row (State(..), StartRowState, EndRowState, Action(..), HeaderRowAction(..), spec) where
 
 import Prelude
 
@@ -18,10 +18,17 @@ data HeaderRowAction = PrevPeriod
 data Action = ShiftRowAction SR.Action
             | HeaderRowAction HeaderRowAction
 
+type StartRowState = { monthName :: String
+                     , loading :: Boolean
+                     }
+
+type EndRowState = { loading :: Boolean
+                   }
+
 data State = ShiftRow SR.State
-           | StartRow String
+           | StartRow StartRowState
            | MonthHeaderRow String
-           | EndRow
+           | EndRow EndRowState
 
 _HeaderRowAction :: Prism' Action HeaderRowAction
 _HeaderRowAction = prism HeaderRowAction unwrap
@@ -35,7 +42,7 @@ _ShiftRowAction = prism ShiftRowAction unwrap
   unwrap (ShiftRowAction a) = Right a
   unwrap ra = Left ra
 
-_StartRow :: Prism' State String
+_StartRow :: Prism' State StartRowState
 _StartRow = prism StartRow unwrap
   where
   unwrap (StartRow s) = Right s
@@ -47,10 +54,10 @@ _MonthHeaderRow = prism MonthHeaderRow unwrap
   unwrap (MonthHeaderRow s) = Right s
   unwrap r = Left r
 
-_EndRow :: Prism' State Unit
-_EndRow = prism (const EndRow) unwrap
+_EndRow :: Prism' State EndRowState
+_EndRow = prism EndRow unwrap
   where
-  unwrap EndRow = Right unit
+  unwrap (EndRow s) = Right s
   unwrap r = Left r
 
 _ShiftRow :: Prism' State SR.State
@@ -68,24 +75,34 @@ spec =
   )
 
   where
-  startRow :: T.Spec _ String _ HeaderRowAction
-  startRow = T.simpleSpec T.defaultPerformAction render
+  startRow :: T.Spec _ StartRowState _ HeaderRowAction
+  startRow = T.simpleSpec performAction render
     where
-    render :: T.Render String _ HeaderRowAction
-    render dispatch _ text _ = [ RD.tr [ RP.className "month-header-row" ]
-                                       [ RD.td [ RP.colSpan 9 ]
-                                               [ RD.text text
-                                               , RD.a [ RP.style { float: "right" }
-                                                      , RP.href "#"
-                                                      , RP.className "action"
-                                                      , RP.onClick \_ -> dispatch PrevPeriod
-                                                      ]
-                                                      [ RD.i [ RP.className "icon-up-open"] []
-                                                      , RD.span' [ RD.text "previous 4 weeks" ]
-                                                      ]
-                                               ]
-                                       ]
-                               ]
+    render :: T.Render StartRowState _ HeaderRowAction
+    render dispatch _ state _ = [ RD.tr [ RP.className "month-header-row" ]
+                                        [ RD.td [ RP.colSpan 9 ]
+                                                [ RD.text state.monthName
+                                                , ( if state.loading
+                                                      then RD.i [ RP.className "icon-spin animate-spin loading"
+                                                                , RP.style { float: "right" }
+                                                                ]
+                                                                []
+                                                      else RD.a [ RP.style { float: "right" }
+                                                        , RP.href "#"
+                                                        , RP.className "action"
+                                                        , RP.onClick \_ -> dispatch PrevPeriod
+                                                        ]
+                                                        [ RD.i [ RP.className "icon-up-open"] []
+                                                        , RD.span' [ RD.text "previous 4 weeks" ]
+                                                        ]
+                                                  )
+                                                ]
+                                        ]
+                                ]
+
+  performAction :: T.PerformAction _ StartRowState _ HeaderRowAction
+  -- performAction PrevPeriod _ _ = void $ T.modifyState \state -> state { loading = true }
+  performAction _ _ _ = pure unit
   
   monthHeaderRow :: T.Spec _ String _ HeaderRowAction
   monthHeaderRow = T.simpleSpec T.defaultPerformAction render
@@ -98,20 +115,29 @@ spec =
                                        ]
                                ]
    
-  endRow :: T.Spec _ Unit _ HeaderRowAction
-  endRow = T.simpleSpec T.defaultPerformAction render
+  endRow :: T.Spec _ EndRowState _ HeaderRowAction
+  endRow = T.simpleSpec performAction render
     where
-    render :: T.Render Unit _ HeaderRowAction
-    render dispatch _ _ _ = [ RD.tr [ RP.className "month-header-row" ]
-                                    [ RD.td [ RP.colSpan 9 ]
-                                            [ RD.a [ RP.style { float: "right" }
-                                                   , RP.href "#"
-                                                   , RP.className "action"
-                                                   , RP.onClick \_ -> dispatch NextPeriod
-                                                   ]
-                                                   [ RD.i [ RP.className "icon-down-open"] []
-                                                   , RD.span' [ RD.text "next 4 weeks" ]
-                                                   ]
-                                            ]
-                                    ]
-                            ]
+    render :: T.Render EndRowState _ HeaderRowAction
+    render dispatch _ state _ = [ RD.tr [ RP.className "month-header-row" ]
+                                        [ RD.td [ RP.colSpan 9 ]
+                                                [ if state.loading
+                                                    then RD.i [ RP.className "icon-spin animate-spin loading"
+                                                              , RP.style { float: "right" }
+                                                              ]
+                                                              []
+                                                    else RD.a [ RP.style { float: "right" }
+                                                              , RP.href "#"
+                                                              , RP.className "action"
+                                                              , RP.onClick \_ -> dispatch NextPeriod
+                                                              ]
+                                                              [ RD.i [ RP.className "icon-down-open"] []
+                                                              , RD.span' [ RD.text "next 4 weeks" ]
+                                                              ]
+                                                ]
+                                        ]
+                                ]
+
+    performAction :: T.PerformAction _ EndRowState _ HeaderRowAction
+    -- performAction NextPeriod _ _ = void $ T.modifyState \state -> state { loading = true }
+    performAction _ _ _ = pure unit

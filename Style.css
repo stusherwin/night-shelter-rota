@@ -6,10 +6,6 @@
   margin: 10px;
 }
 
-.ui.table {
-  /* border: 1px solid #555; */
-}
-
 .ui.table tr {
   background: #fdfdfd;
 }
@@ -79,19 +75,14 @@ i.vol-icon {
   border-left: 1px solid rgba(34,36,38,.15);
 }
 
-.ui.table td.left-border:first-child, .ui.table thead th.left-border:first-child {
-  /* border-left-color: #555; */
-}
-
-/* .ui.table td.loading i {
-  margin-left: -15px;
-  margin-right: -5px;
-  opacity: 0.4;
-} */
-
 .ui.table tr.loading td {
   opacity: 0.6;
   background-color: #f9f9f9;
+}
+
+.ui.table tr.loading td.shift-selected {
+  padding-left: 10px;
+  padding-right: 10px;
 }
 
 .ui.table tr.month-header-row {
@@ -170,3 +161,9 @@ form {
   border: 1px solid #ddd;
   border-radius: 3px;
 }
+
+i.loading {
+  margin-left: -2px;
+}
+
+.month

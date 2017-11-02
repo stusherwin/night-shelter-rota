@@ -1,15 +1,15 @@
 module App.ShiftList (Action(..), State, spec, initialState, changeCurrentVol) where
  
 import Prelude
- 
+
 import App.Common (lensOfListWithProps, tomorrow, modifyListWhere, surroundIf, default, toMonthYearString, daysLeftInMonth, isFirstDayOfMonth, sortWith, addDays)
 import App.Data (OvernightSharingPrefs(..), Shift(..), Volunteer(..), VolunteerShift(..), RuleResult(..), canAddVolunteer, addVolunteerShift, changeVolunteerShift, removeVolunteerShift, hasVolWithId, validate, filterOut, canChangeVolunteerShiftType, updateVolunteer) as D
 import App.ShiftRow (CurrentVolState, OtherVolState, Action(..), State(..), ShiftStatus(..), ShiftType(..), spec) as SR
-import App.Row (State(..), Action(..), HeaderRowAction(..), spec) as R
+import App.Row (State(..), StartRowState, EndRowState, Action(..), HeaderRowAction(..), spec) as R
 import Control.Monad.Aff (delay)
 import Control.Monad.Aff.Class (liftAff)
 import Control.Monad.Trans.Class (lift)
-import DOM.HTML.HTMLElement (offsetHeight)
+import DOM.HTML.HTMLElement (offsetHeight) 
 import Data.Date (diff, lastDayOfMonth, canonicalDate)
 import Data.DateTime (Date(..), DateTime(..), Millisecond, Time(..), adjust, canonicalDate, date, day, month, year, Day(..), Year(..))
 import Data.Either (Either(..))
@@ -38,6 +38,7 @@ type State = { currentVol :: Maybe D.Volunteer
              , currentDate :: Date
              , startDate :: Date
              , endDate :: Date
+             , loading :: Boolean
              }
 
 _rows :: Lens' State (List R.State)
@@ -84,35 +85,40 @@ spec =
       delay'
       T.modifyState \state -> modifyShifts state shiftDate $ D.removeVolunteerShift shiftDate cv
     performAction (RowAction _ (R.HeaderRowAction R.PrevPeriod)) _ _ = void do
+      _ <- T.modifyState \state -> state { loading = true, rows = (rows state.currentVol state.shifts state.currentDate state.startDate state.endDate true) }
       delay'
       T.modifyState \state -> adjustPeriod (-28) state
     performAction (RowAction _ (R.HeaderRowAction R.NextPeriod)) _ _ = void do
+      _ <- T.modifyState \state -> state { loading = true, rows = rows state.currentVol state.shifts state.currentDate state.startDate state.endDate true }
       delay'
       T.modifyState \state -> adjustPeriod 28 state
     performAction _ _ _ = pure unit
     
-    delay' = lift $ liftAff $ delay (Milliseconds 1000.0)
+    delay' = lift $ liftAff $ delay (Milliseconds 500.0)
 
 initialState :: Maybe D.Volunteer -> List D.Shift -> Date -> Date -> Int -> State
 initialState currentVol shifts currentDate startDate shiftCount = 
   let endDate = addDays (shiftCount - 1) startDate
   in { currentVol
      , shifts
-     , rows: rows currentVol shifts currentDate startDate endDate
+     , rows: rows currentVol shifts currentDate startDate endDate false
      , currentDate
      , startDate
      , endDate
+     , loading: false
      }
 
-rows :: Maybe D.Volunteer -> List D.Shift -> Date -> Date -> Date -> List R.State
-rows currentVol shifts currentDate startDate endDate = rows' startDate
+rows :: Maybe D.Volunteer -> List D.Shift -> Date -> Date -> Date -> Boolean -> List R.State
+rows currentVol shifts currentDate startDate endDate loading = rows' startDate
   where 
   rows' :: Date -> List R.State
   rows' date | date > endDate = 
-      Cons R.EndRow
+      Cons (R.EndRow { loading: false })
     $ Nil
   rows' date | date == startDate =
-      Cons (R.StartRow $ toMonthYearString date)
+      Cons (R.StartRow { monthName: toMonthYearString date
+                       , loading: loading
+                       })
     $ Cons (shiftRow date)
     $ rows' $ tomorrow date
   rows' date | isFirstDayOfMonth date =
@@ -203,7 +209,7 @@ changeCurrentVol currentVol state =
   let shifts = maybe state.shifts (\vol -> D.updateVolunteer vol state.shifts) currentVol
   in state { currentVol = currentVol
            , shifts = shifts
-           , rows = preserveLoading state.rows $ rows currentVol shifts state.currentDate state.startDate state.endDate
+           , rows = preserveLoading state.rows $ rows currentVol shifts state.currentDate state.startDate state.endDate false
            }
 
 adjustPeriod :: Int -> State -> State
@@ -212,7 +218,7 @@ adjustPeriod adj state =
       endDate' = addDays adj state.endDate
   in state { startDate = startDate'
            , endDate = endDate'
-           , rows = rows state.currentVol state.shifts state.currentDate startDate' endDate'
+           , rows = rows state.currentVol state.shifts state.currentDate startDate' endDate' false
            }
 
 modifyShifts :: State -> Date -> (List D.Shift -> List D.Shift) -> State
@@ -226,5 +232,5 @@ modifyShifts state date modify =
       cancelLoading (R.ShiftRow s) = R.ShiftRow s{ loading = false }
       cancelLoading r = r 
   in state { shifts = shifts
-           , rows = modifyListWhere isShiftOnDate cancelLoading $ preserveLoading state.rows $ rows state.currentVol shifts state.currentDate state.startDate state.endDate
+           , rows = modifyListWhere isShiftOnDate cancelLoading $ preserveLoading state.rows $ rows state.currentVol shifts state.currentDate state.startDate state.endDate false
            }

@@ -91,7 +91,6 @@ spec = T.simpleSpec performAction render
 
   statusIcon :: State -> Array ReactElement
   statusIcon state = case state.loading, state.status of
-    true, _           -> [ RD.i [ RP.className "icon-spin animate-spin" ] [] ]
     _,    Good        -> [ RD.i [ RP.className "icon-ok" ] [] ]
     _,    (Error e)   -> [ RD.i [ RP.className "icon-warning", RP.title e ] [] ]
     _,    (Warning w) -> [ RD.i [ RP.className "icon-info", RP.title w ] [] ]
@@ -134,7 +133,7 @@ spec = T.simpleSpec performAction render
       other Overnight = Evening
 
       renderSelected :: _ -> State -> Array ReactElement
-      renderSelected dispatch state@{ date, loading, currentVol: (Just cv@{ shiftType: Nothing }) } =
+      renderSelected dispatch state@{ date, loading, currentVol: (Just cv@{ shiftType: Nothing }) } | not loading =
         [ RD.span [ RP.className "ui fitted checkbox" ]
                   [ RD.input [ RP._type "checkbox"
                              , RP.disabled $ loading || (not cv.canAddOvernight && not cv.canAddEvening)
@@ -145,7 +144,7 @@ spec = T.simpleSpec performAction render
                   , RD.label' []
                   ]
         ]
-      renderSelected dispatch state@{ date, loading, currentVol: (Just { shiftType: Just st }) } =
+      renderSelected dispatch state@{ date, loading, currentVol: (Just { shiftType: Just st }) } | not loading =
         [ RD.span [ RP.className "ui fitted checkbox" ]
                   [ RD.input [ RP._type "checkbox"
                              , RP.disabled $ loading
@@ -156,6 +155,8 @@ spec = T.simpleSpec performAction render
                   , RD.label' []
                   ]
         ]
+      renderSelected _ state@{ date, loading } | loading =
+        [ RD.i [ RP.className "icon-spin animate-spin loading" ] [] ]
       renderSelected _ _ = []
   renderCurrentVol _ _ = []
   
