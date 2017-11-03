@@ -80,6 +80,16 @@ i.vol-icon {
   background-color: #f9f9f9;
 }
 
+.ui.table tr.past td {
+  /* background-color: #f1f1f1; */
+  color: #777;
+}
+
+.ui.table tr.past.weekend td {
+  /* background-color: #eaeaea; */
+  color: #777;
+}
+
 .ui.table tr.loading td.shift-selected {
   padding-left: 10px;
   padding-right: 10px;
@@ -166,4 +176,6 @@ i.loading {
   margin-left: -2px;
 }
 
-.month
+.float-right {
+  float: right;
+}

@@ -1,11 +1,11 @@
-module App.ShiftList (Action(..), State, spec, initialState, changeCurrentVol) where
- 
+module App.ShiftList (Action(..), State, RosterState, spec, initialState, changeCurrentVol) where
+  
 import Prelude
 
 import App.Common (lensOfListWithProps, tomorrow, modifyListWhere, surroundIf, default, toMonthYearString, daysLeftInMonth, isFirstDayOfMonth, sortWith, addDays)
 import App.Data (OvernightSharingPrefs(..), Shift(..), Volunteer(..), VolunteerShift(..), RuleResult(..), canAddVolunteer, addVolunteerShift, changeVolunteerShift, removeVolunteerShift, hasVolWithId, validate, filterOut, canChangeVolunteerShiftType, updateVolunteer) as D
-import App.ShiftRow (CurrentVolState, OtherVolState, Action(..), State(..), ShiftStatus(..), ShiftType(..), spec) as SR
-import App.Row (State(..), StartRowState, EndRowState, Action(..), HeaderRowAction(..), spec) as R
+import App.ShiftRow (CurrentVolState, OtherVolState, Action(..), State(..), ShiftStatus(..), ShiftType(..), spec, initialState) as SR
+import App.Row (State(..), StartRowState, Action(..), HeaderRowAction(..), spec) as R
 import Control.Monad.Aff (delay)
 import Control.Monad.Aff.Class (liftAff)
 import Control.Monad.Trans.Class (lift)
@@ -32,13 +32,16 @@ import Thermite as T
 data Action = AddShift
             | RowAction Int R.Action
 
-type State = { currentVol :: Maybe D.Volunteer
-             , shifts :: List D.Shift
+type RosterState = { currentVol :: Maybe D.Volunteer
+                   , shifts :: List D.Shift
+                   , startDate :: Date
+                   , endDate :: Date
+                   , currentDate :: Date
+                   , loading :: Boolean
+                   }
+
+type State = { roster :: RosterState
              , rows :: List R.State
-             , currentDate :: Date
-             , startDate :: Date
-             , endDate :: Date
-             , loading :: Boolean
              }
 
 _rows :: Lens' State (List R.State)
@@ -69,27 +72,29 @@ spec =
     render dispatch _ state _ = []
 
     performAction :: T.PerformAction _ State _ Action
-    performAction (RowAction _ (R.ShiftRowAction (SR.AddCurrentVol shiftDate SR.Overnight))) _ { currentVol: Just cv } = void do
+    performAction (RowAction _ (R.ShiftRowAction (SR.AddCurrentVol shiftDate SR.Overnight))) _ { roster: { currentVol: Just cv } } = void do
       delay'
       T.modifyState \state -> modifyShifts state shiftDate $ D.addVolunteerShift shiftDate (D.Overnight cv)
-    performAction (RowAction _ (R.ShiftRowAction (SR.AddCurrentVol shiftDate SR.Evening))) _ { currentVol: Just cv } = void do
+    performAction (RowAction _ (R.ShiftRowAction (SR.AddCurrentVol shiftDate SR.Evening))) _ { roster: { currentVol: Just cv } } = void do
       delay'
       T.modifyState \state -> modifyShifts state shiftDate $ D.addVolunteerShift shiftDate (D.Evening cv)
-    performAction (RowAction _ (R.ShiftRowAction (SR.ChangeCurrentVolShiftType shiftDate SR.Overnight))) _ { currentVol: Just cv } = void do
+    performAction (RowAction _ (R.ShiftRowAction (SR.ChangeCurrentVolShiftType shiftDate SR.Overnight))) _ { roster: { currentVol: Just cv } } = void do
       delay'
       T.modifyState \state -> modifyShifts state shiftDate $ D.changeVolunteerShift shiftDate (D.Overnight cv)
-    performAction (RowAction _ (R.ShiftRowAction (SR.ChangeCurrentVolShiftType shiftDate SR.Evening))) _ { currentVol: Just cv } = void do
+    performAction (RowAction _ (R.ShiftRowAction (SR.ChangeCurrentVolShiftType shiftDate SR.Evening))) _ { roster: { currentVol: Just cv } } = void do
       delay'
       T.modifyState \state -> modifyShifts state shiftDate $ D.changeVolunteerShift shiftDate (D.Evening cv)
-    performAction (RowAction _ (R.ShiftRowAction (SR.RemoveCurrentVol shiftDate))) _ { currentVol: Just cv } = void do
+    performAction (RowAction _ (R.ShiftRowAction (SR.RemoveCurrentVol shiftDate))) _ { roster: { currentVol: Just cv } } = void do
       delay'
       T.modifyState \state -> modifyShifts state shiftDate $ D.removeVolunteerShift shiftDate cv
     performAction (RowAction _ (R.HeaderRowAction R.PrevPeriod)) _ _ = void do
-      _ <- T.modifyState \state -> state { loading = true, rows = (rows state.currentVol state.shifts state.currentDate state.startDate state.endDate true) }
+      _ <- T.modifyState \state -> let roster' = state.roster { loading = true }
+                                   in state { roster = roster', rows = rows roster' }
       delay'
       T.modifyState \state -> adjustPeriod (-28) state
     performAction (RowAction _ (R.HeaderRowAction R.NextPeriod)) _ _ = void do
-      _ <- T.modifyState \state -> state { loading = true, rows = rows state.currentVol state.shifts state.currentDate state.startDate state.endDate true }
+      _ <- T.modifyState \state -> let roster' = state.roster { loading = true }
+                                   in state { roster = roster', rows = rows roster' }
       delay'
       T.modifyState \state -> adjustPeriod 28 state
     performAction _ _ _ = pure unit
@@ -99,104 +104,37 @@ spec =
 initialState :: Maybe D.Volunteer -> List D.Shift -> Date -> Date -> Int -> State
 initialState currentVol shifts currentDate startDate shiftCount = 
   let endDate = addDays (shiftCount - 1) startDate
-  in { currentVol
-     , shifts
-     , rows: rows currentVol shifts currentDate startDate endDate false
-     , currentDate
-     , startDate
-     , endDate
-     , loading: false
+      roster = { currentVol
+               , shifts
+               , currentDate
+               , startDate
+               , endDate
+               , loading: false
+               }
+  in { roster
+     , rows: rows roster
      }
 
-rows :: Maybe D.Volunteer -> List D.Shift -> Date -> Date -> Date -> Boolean -> List R.State
-rows currentVol shifts currentDate startDate endDate loading = rows' startDate
+rows :: RosterState -> List R.State
+rows roster = rows' roster.startDate
   where 
   rows' :: Date -> List R.State
-  rows' date | date > endDate = 
-      Cons (R.EndRow { loading: false })
+  rows' date | date > roster.endDate = 
+      Cons R.EndRow
     $ Nil
-  rows' date | date == startDate =
+  rows' date | date == roster.startDate =
       Cons (R.StartRow { monthName: toMonthYearString date
-                       , loading: loading
+                       , loading: roster.loading
                        })
-    $ Cons (shiftRow date)
+    $ Cons (R.ShiftRow $ SR.initialState roster.shifts roster.currentVol roster.currentDate date)
     $ rows' $ tomorrow date
   rows' date | isFirstDayOfMonth date =
       Cons (R.MonthHeaderRow $ toMonthYearString date)
-    $ Cons (shiftRow date)
+    $ Cons (R.ShiftRow $ SR.initialState roster.shifts roster.currentVol roster.currentDate date)
     $ rows' $ tomorrow date
   rows' date =
-      Cons (shiftRow date)
+      Cons (R.ShiftRow $ SR.initialState roster.shifts roster.currentVol roster.currentDate date)
     $ rows' $ tomorrow date
-
-  shiftRow :: Date -> R.State
-  shiftRow date = 
-    R.ShiftRow { date 
-               , noOfVols: length shift.volunteers
-               , status: status shift currentDate
-               , loading: false
-               , currentVol: buildCurrentVol shift
-               , otherVol1: otherVols !! 0
-               , otherVol2: otherVols !! 1
-               }
-    where
-    shift = maybe {date: date, volunteers: Nil} id $ find (\s -> s.date == date) shifts
-    otherVols = sortWith _.name $ map buildVol $ case currentVol of
-                                                   Just cv -> filter (not <<< D.hasVolWithId $ cv.id) shift.volunteers
-                                                   _ -> shift.volunteers
-
-  buildVol :: D.VolunteerShift -> SR.OtherVolState
-  buildVol (D.Overnight v) = { name: v.name
-                             , shiftType: SR.Overnight
-                             , sharingPrefs: sharingPrefs v.overnightSharingPrefs
-                             } 
-  buildVol (D.Evening v)   = { name: v.name
-                             , shiftType: SR.Evening
-                             , sharingPrefs: sharingPrefs v.overnightSharingPrefs
-                             }
-
-  sharingPrefs :: D.OvernightSharingPrefs -> String
-  sharingPrefs prefs = surroundIf " (" ")" $ case prefs of
-                                               D.None -> "No sharing"
-                                               (D.OnlyGender gender) -> (show gender) <> " only"
-                                               (D.Custom text) -> text
-                                               _ -> ""
-
-  status :: D.Shift -> Date -> SR.ShiftStatus
-  status s currentDate =
-    let errors = D.validate s currentDate
-        firstErrorStatus = case head errors of
-          Just (D.Error e)   -> SR.Error
-          Just (D.Warning w) -> SR.Warning
-          Just (D.Info i)    -> SR.Info
-          Just (D.Neutral)   -> const SR.OK
-          _             -> const SR.Good
-        
-        extractMsg (D.Error e)   = Just e
-        extractMsg (D.Warning w) = Just w
-        extractMsg (D.Info i)    = Just i
-        extractMsg _             = Nothing
-
-        concat ""  (Just m) = "This shift " <> m
-        concat msg (Just m) = msg <> ", and also " <> m
-        concat msg Nothing  = msg
-    in firstErrorStatus $ foldl concat "" $ map extractMsg errors
-  
-  buildCurrentVol :: D.Shift -> Maybe SR.CurrentVolState
-  buildCurrentVol shift = case currentVol of
-    (Just cv) -> Just { name: cv.name 
-                      , shiftType: currentVolShiftType cv shift.volunteers
-                      , canAddOvernight: D.canAddVolunteer (D.Overnight cv) shift
-                      , canAddEvening: D.canAddVolunteer (D.Evening cv) shift
-                      , canChangeShiftType: D.canChangeVolunteerShiftType cv shift
-                      }
-    _         -> Nothing
-
-  currentVolShiftType :: D.Volunteer -> List D.VolunteerShift -> Maybe SR.ShiftType
-  currentVolShiftType v vols = 
-    find (D.hasVolWithId v.id) vols >>= case _ of
-      D.Overnight _ -> Just SR.Overnight
-      D.Evening   _ -> Just SR.Evening
 
 preserveLoading :: List R.State -> List R.State -> List R.State
 preserveLoading = zipWith row
@@ -206,24 +144,30 @@ preserveLoading = zipWith row
  
 changeCurrentVol :: Maybe D.Volunteer -> State -> State
 changeCurrentVol currentVol state =
-  let shifts = maybe state.shifts (\vol -> D.updateVolunteer vol state.shifts) currentVol
-  in state { currentVol = currentVol
-           , shifts = shifts
-           , rows = preserveLoading state.rows $ rows currentVol shifts state.currentDate state.startDate state.endDate false
+  let shifts' = maybe state.roster.shifts (\vol -> D.updateVolunteer vol state.roster.shifts) currentVol
+      roster' = state.roster { currentVol = currentVol
+                             , shifts = shifts'
+                             , loading = false
+                             }
+  in state { roster = roster'
+           , rows = preserveLoading state.rows $ rows roster'
            }
 
 adjustPeriod :: Int -> State -> State
 adjustPeriod adj state = 
-  let startDate' = addDays adj state.startDate
-      endDate' = addDays adj state.endDate
-  in state { startDate = startDate'
-           , endDate = endDate'
-           , rows = rows state.currentVol state.shifts state.currentDate startDate' endDate' false
+  let roster' = state.roster { startDate = addDays adj state.roster.startDate
+                             , endDate = addDays adj state.roster.endDate
+                             , loading = false
+                             }
+  in state { roster = roster'
+           , rows = rows roster'
            }
 
 modifyShifts :: State -> Date -> (List D.Shift -> List D.Shift) -> State
 modifyShifts state date modify =
-  let shifts = modify state.shifts
+  let shifts = modify state.roster.shifts
+      roster' = state.roster { shifts = shifts }
+
       isShiftOnDate :: R.State -> Boolean
       isShiftOnDate (R.ShiftRow s) = s.date == date
       isShiftOnDate _ = false
@@ -231,6 +175,6 @@ modifyShifts state date modify =
       cancelLoading :: R.State -> R.State
       cancelLoading (R.ShiftRow s) = R.ShiftRow s{ loading = false }
       cancelLoading r = r 
-  in state { shifts = shifts
-           , rows = modifyListWhere isShiftOnDate cancelLoading $ preserveLoading state.rows $ rows state.currentVol shifts state.currentDate state.startDate state.endDate false
+  in state { roster = roster'
+           , rows = modifyListWhere isShiftOnDate cancelLoading $ preserveLoading state.rows $ rows roster'
            }

@@ -1,11 +1,12 @@
-module App.ShiftRow (State, ShiftType(..), OtherVolState, CurrentVolState, Action(..), ShiftStatus(..), spec) where
+module App.ShiftRow (State, ShiftType(..), OtherVolState, CurrentVolState, Action(..), ShiftStatus(..), spec, initialState) where
  
 import Prelude
 
-import App.Common (unsafeEventValue, toDateString, surroundIf, onlyIf, className, toDayString)
-import App.Data (OvernightSharingPrefs(..), Volunteer(..), VolunteerShift(..), canChangeVolunteerShiftType) as D
+import App.Common (unsafeEventValue, toDateString, surroundIf, onlyIf, className, toDayString, sortWith)
+import App.Data (OvernightSharingPrefs(..), Volunteer(..), VolunteerShift(..), Shift(..), RuleResult(..), canChangeVolunteerShiftType, hasVolWithId, validate, canAddVolunteer) as D
 import Data.DateTime (Date, Weekday(..), year, month, day, weekday)
 import Data.Enum (fromEnum)
+import Data.List (List(..), find, filter, head, foldl, length, (!!))
 import Data.Maybe (Maybe(..), maybe)
 import Data.String (take, toUpper, joinWith)
 import Data.Tuple (Tuple(..))
@@ -43,6 +44,7 @@ type State = { date :: Date
              , otherVol1 :: Maybe OtherVolState
              , otherVol2 :: Maybe OtherVolState
              , loading :: Boolean
+             , past :: Boolean
              }
  
 data Action = AddCurrentVol Date ShiftType
@@ -56,6 +58,7 @@ spec = T.simpleSpec performAction render
   render dispatch _ state _ =
     [ RD.tr [ className $ [ onlyIf (isWeekend state.date) "weekend"
                           , onlyIf state.loading "loading"
+                          , onlyIf state.past "past"
                           ]
             ]
          (  [ RD.td  [ RP.className "shift-date collapsing" ]
@@ -178,3 +181,74 @@ spec = T.simpleSpec performAction render
   performAction (RemoveCurrentVol _)            _ _ = void $ T.modifyState \state -> state { loading = true }
   performAction (ChangeCurrentVolShiftType _ _) _ _ = void $ T.modifyState \state -> state { loading = true }
   performAction _ _ _ = pure unit
+
+
+initialState :: List D.Shift -> Maybe D.Volunteer -> Date -> Date -> State
+initialState shifts currentVol currentDate date = 
+  { date 
+  , noOfVols: length shift.volunteers
+  , status: status shift currentDate
+  , loading: false
+  , currentVol: buildCurrentVol shift
+  , otherVol1: otherVols !! 0
+  , otherVol2: otherVols !! 1
+  , past: date < currentDate
+  }
+  where
+  shift = maybe {date: date, volunteers: Nil} id $ find (\s -> s.date == date) shifts
+  otherVols = sortWith _.name $ map buildVol $ case currentVol of
+                                                 Just cv -> filter (not <<< D.hasVolWithId $ cv.id) shift.volunteers
+                                                 _ -> shift.volunteers
+
+  buildVol :: D.VolunteerShift -> OtherVolState
+  buildVol (D.Overnight v) = { name: v.name
+                             , shiftType: Overnight
+                             , sharingPrefs: sharingPrefs v.overnightSharingPrefs
+                             } 
+  buildVol (D.Evening v)   = { name: v.name
+                             , shiftType: Evening
+                             , sharingPrefs: sharingPrefs v.overnightSharingPrefs
+                             }
+
+  sharingPrefs :: D.OvernightSharingPrefs -> String
+  sharingPrefs prefs = surroundIf " (" ")" $ case prefs of
+                                               D.None -> "No sharing"
+                                               (D.OnlyGender gender) -> (show gender) <> " only"
+                                               (D.Custom text) -> text
+                                               _ -> ""
+
+  status :: D.Shift -> Date -> ShiftStatus
+  status s currentDate =
+    let errors = D.validate s currentDate
+        firstErrorStatus = case head errors of
+          Just (D.Error e)   -> Error
+          Just (D.Warning w) -> Warning
+          Just (D.Info i)    -> Info
+          Just (D.Neutral)   -> const OK
+          _             -> const Good
+        
+        extractMsg (D.Error e)   = Just e
+        extractMsg (D.Warning w) = Just w
+        extractMsg (D.Info i)    = Just i
+        extractMsg _             = Nothing
+
+        concat ""  (Just m) = "This shift " <> m
+        concat msg (Just m) = msg <> ", and also " <> m
+        concat msg Nothing  = msg
+    in firstErrorStatus $ foldl concat "" $ map extractMsg errors
+  
+  buildCurrentVol :: D.Shift -> Maybe CurrentVolState
+  buildCurrentVol shift = case currentVol of
+    (Just cv) -> Just { name: cv.name 
+                      , shiftType: currentVolShiftType cv shift.volunteers
+                      , canAddOvernight: D.canAddVolunteer (D.Overnight cv) shift
+                      , canAddEvening: D.canAddVolunteer (D.Evening cv) shift
+                      , canChangeShiftType: D.canChangeVolunteerShiftType cv shift
+                      }
+    _         -> Nothing
+
+  currentVolShiftType :: D.Volunteer -> List D.VolunteerShift -> Maybe ShiftType
+  currentVolShiftType v vols = 
+    find (D.hasVolWithId v.id) vols >>= case _ of
+      D.Overnight _ -> Just Overnight
+      D.Evening   _ -> Just Evening
