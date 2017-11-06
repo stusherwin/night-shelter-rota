@@ -5,7 +5,7 @@ import Prelude
 import App.Common (lensOfListWithProps, tomorrow, modifyListWhere, surroundIf, default, toMonthYearString, daysLeftInMonth, isFirstDayOfMonth, sortWith, addDays)
 import App.Data (OvernightSharingPrefs(..), Shift(..), Volunteer(..), VolunteerShift(..), RuleResult(..), canAddVolunteer, addVolunteerShift, changeVolunteerShift, removeVolunteerShift, hasVolWithId, validate, filterOut, canChangeVolunteerShiftType, updateVolunteer) as D
 import App.ShiftRow (CurrentVolState, OtherVolState, Action(..), State(..), ShiftStatus(..), ShiftType(..), spec, initialState) as SR
-import App.Row (State(..), Action(..), HeaderRowAction(..), spec) as R
+import App.Row (State(..), Action(..), HeaderRowAction(..), HeaderState, spec) as R
 import Control.Monad.Aff (delay)
 import Control.Monad.Aff.Class (liftAff)
 import Control.Monad.Trans.Class (lift)
@@ -112,20 +112,22 @@ initialState currentVol shifts currentDate startDate shiftCount =
 rows :: RosterState -> List R.State
 rows roster = rows' roster.startDate
   where 
+  maxVols = foldl max 0 $ map (length <<< _.volunteers) roster.shifts
+  
   rows' :: Date -> List R.State
   rows' date | date > roster.endDate = 
-      Cons R.EndRow
+      Cons (R.EndRow { text: "", noOfCols: maxVols + 7 })
     $ Nil
   rows' date | date == roster.startDate =
-      Cons (R.StartRow $ toMonthYearString date)
-    $ Cons (R.ShiftRow $ SR.initialState roster.shifts roster.currentVol roster.currentDate date)
+      Cons (R.StartRow { text: toMonthYearString date, noOfCols: maxVols + 7 })
+    $ Cons (R.ShiftRow $ SR.initialState roster.shifts roster.currentVol roster.currentDate date maxVols)
     $ rows' $ tomorrow date
   rows' date | isFirstDayOfMonth date =
-      Cons (R.MonthHeaderRow $ toMonthYearString date)
-    $ Cons (R.ShiftRow $ SR.initialState roster.shifts roster.currentVol roster.currentDate date)
+      Cons (R.MonthHeaderRow { text: toMonthYearString date, noOfCols: maxVols + 7 })
+    $ Cons (R.ShiftRow $ SR.initialState roster.shifts roster.currentVol roster.currentDate date maxVols)
     $ rows' $ tomorrow date
   rows' date =
-      Cons (R.ShiftRow $ SR.initialState roster.shifts roster.currentVol roster.currentDate date)
+      Cons (R.ShiftRow $ SR.initialState roster.shifts roster.currentVol roster.currentDate date maxVols)
     $ rows' $ tomorrow date
 
 preserveLoading :: List R.State -> List R.State -> List R.State

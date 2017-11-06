@@ -1,4 +1,4 @@
-module App.Row (State(..), Action(..), HeaderRowAction(..), spec) where
+module App.Row (State(..), HeaderState, Action(..), HeaderRowAction(..), spec) where
 
 import Prelude
 
@@ -18,10 +18,14 @@ data HeaderRowAction = PrevPeriod
 data Action = ShiftRowAction SR.Action
             | HeaderRowAction HeaderRowAction
 
+type HeaderState = { text :: String 
+                   , noOfCols :: Int
+                   }
+
 data State = ShiftRow SR.State
-           | StartRow String
-           | MonthHeaderRow String
-           | EndRow
+           | StartRow HeaderState
+           | MonthHeaderRow HeaderState
+           | EndRow HeaderState
 
 _HeaderRowAction :: Prism' Action HeaderRowAction
 _HeaderRowAction = prism HeaderRowAction unwrap
@@ -35,22 +39,22 @@ _ShiftRowAction = prism ShiftRowAction unwrap
   unwrap (ShiftRowAction a) = Right a
   unwrap ra = Left ra
 
-_StartRow :: Prism' State String
+_StartRow :: Prism' State HeaderState
 _StartRow = prism StartRow unwrap
   where
   unwrap (StartRow s) = Right s
   unwrap r = Left r
 
-_MonthHeaderRow :: Prism' State String
+_MonthHeaderRow :: Prism' State HeaderState
 _MonthHeaderRow = prism MonthHeaderRow unwrap
   where
   unwrap (MonthHeaderRow s) = Right s
   unwrap r = Left r
 
-_EndRow :: Prism' State Unit
-_EndRow = prism (const EndRow) unwrap
+_EndRow :: Prism' State HeaderState
+_EndRow = prism EndRow unwrap
   where
-  unwrap EndRow = Right unit
+  unwrap (EndRow s) = Right s
   unwrap r = Left r
 
 _ShiftRow :: Prism' State SR.State
@@ -68,13 +72,13 @@ spec =
   )
 
   where
-  startRow :: T.Spec _ String _ HeaderRowAction
+  startRow :: T.Spec _ HeaderState _ HeaderRowAction
   startRow = T.simpleSpec T.defaultPerformAction render
     where
-    render :: T.Render String _ HeaderRowAction
-    render dispatch _ text _ = [ RD.tr [ RP.className "month-header-row" ]
-                                        [ RD.td [ RP.colSpan 9 ]
-                                                [ RD.text text
+    render :: T.Render HeaderState _ HeaderRowAction
+    render dispatch _ state _ = [ RD.tr [ RP.className "month-header-row" ]
+                                        [ RD.td [ RP.colSpan state.noOfCols ]
+                                                [ RD.text state.text
                                                 , RD.a [ RP.href "#"
                                                        , RP.className "action"
                                                        , RP.onClick \_ -> dispatch NextPeriod
@@ -93,23 +97,23 @@ spec =
                                         ]
                                 ]
   
-  monthHeaderRow :: T.Spec _ String _ HeaderRowAction
+  monthHeaderRow :: T.Spec _ HeaderState _ HeaderRowAction
   monthHeaderRow = T.simpleSpec T.defaultPerformAction render
     where
-    render :: T.Render String _ HeaderRowAction
-    render dispatch _ text _ = [ RD.tr [ RP.className "month-header-row" ]
-                                       [ RD.td [ RP.colSpan 9 ]
-                                               [ RD.text text
-                                               ]
-                                       ]
-                               ]
+    render :: T.Render HeaderState _ HeaderRowAction
+    render dispatch _ state _ = [ RD.tr [ RP.className "month-header-row" ]
+                                        [ RD.td [ RP.colSpan state.noOfCols ]
+                                                [ RD.text state.text
+                                                ]
+                                        ]
+                                ]
    
-  endRow :: T.Spec _ Unit _ HeaderRowAction
+  endRow :: T.Spec _ HeaderState _ HeaderRowAction
   endRow = T.simpleSpec T.defaultPerformAction render
     where
-    render :: T.Render Unit _ HeaderRowAction
+    render :: T.Render HeaderState _ HeaderRowAction
     render dispatch _ state _ = [ RD.tr [ RP.className "month-header-row" ]
-                                        [ RD.td [ RP.colSpan 9 ]
+                                        [ RD.td [ RP.colSpan state.noOfCols ]
                                                 [ RD.a [ RP.href "#"
                                                        , RP.className "action"
                                                        , RP.onClick \_ -> dispatch NextPeriod

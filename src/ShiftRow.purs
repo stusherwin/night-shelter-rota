@@ -4,11 +4,13 @@ import Prelude
 
 import App.Common (unsafeEventValue, toDateString, surroundIf, onlyIf, className, toDayString, sortWith)
 import App.Data (OvernightSharingPrefs(..), Volunteer(..), VolunteerShift(..), Shift(..), RuleResult(..), canChangeVolunteerShiftType, hasVolWithId, validate, canAddVolunteer) as D
+import Data.Array ((:), concatMap)
 import Data.DateTime (Date, Weekday(..), year, month, day, weekday)
 import Data.Enum (fromEnum)
-import Data.List (List(..), find, filter, head, foldl, length, (!!))
+import Data.List (List(..), find, filter, head, foldl, length, (!!), toUnfoldable, take, fromFoldable)
+import Data.List.Lazy (List(..), repeat, zipWith, fromFoldable, take) as Laz
 import Data.Maybe (Maybe(..), maybe)
-import Data.String (take, toUpper, joinWith)
+import Data.String (take, toUpper) as S
 import Data.Tuple (Tuple(..))
 import React (ReactElement)
 import React.DOM as RD
@@ -42,8 +44,7 @@ type State = { date :: Date
              , status :: ShiftStatus
              , currentVol :: Maybe CurrentVolState
              , noOfVols :: Int
-             , otherVol1 :: Maybe OtherVolState
-             , otherVol2 :: Maybe OtherVolState
+             , otherVols :: List (Maybe OtherVolState)
              , loading :: Boolean
              }
  
@@ -66,17 +67,14 @@ spec = T.simpleSpec performAction render
          (  [ RD.td  [ className [ "shift-status collapsing", statusClass state ] ]
                      (statusIcon state)
             , RD.td  [ className [ "left-border shift-day collapsing", statusClass state ] ]
-                     [ RD.text $ toUpper $ take 3 $ show $ weekday state.date ]
+                     [ RD.text $ S.toUpper $ S.take 3 $ show $ weekday state.date ]
             , RD.td  [ className [ "shift-date collapsing", statusClass state ] ]
                      [ RD.text $ toDayString state.date ]
             , RD.td  [ className [ "left-border collapsing" ] ]
                      [ RD.text $ "" <> show state.noOfVols <> "/2" ]
-            , RD.td  [ RP.className "collapsing" ]
-                     $ renderOtherVol state.otherVol1
-            , RD.td  [ RP.className "collapsing" ]
-                     $ renderOtherVol state.otherVol2
-            , RD.td' []
             ]
+         <> renderOtherVols state.otherVols
+         <> [ RD.td' [] ]
          <> renderCurrentVol dispatch state
          )
     ]
@@ -149,15 +147,20 @@ spec = T.simpleSpec performAction render
         [ RD.i [ RP.className "icon-spin animate-spin loading" ] [] ]
       renderSelected _ _ = []
   renderCurrentVol _ _ = []
-  
-  renderOtherVol :: Maybe OtherVolState -> Array ReactElement
-  renderOtherVol (Just v) =
-    [ RD.span [ RP.className "other-vol" ]
-              [ renderIcon v.shiftType
-              , RD.text $ v.name <> v.sharingPrefs
+
+  renderOtherVols :: List (Maybe OtherVolState) -> Array ReactElement
+  renderOtherVols = concatMap renderOtherVol <<< toUnfoldable
+    where
+    renderOtherVol :: Maybe OtherVolState -> Array ReactElement
+    renderOtherVol (Just v) =
+      [ RD.td [ RP.className "collapsing" ]
+              [ RD.span [ RP.className "other-vol" ]
+                        [ renderIcon v.shiftType
+                        , RD.text $ v.name <> v.sharingPrefs
+                        ]
               ]
-    ]
-  renderOtherVol _ = []
+      ]
+    renderOtherVol _ = [ RD.td [ RP.className "collapsing" ] [] ]
 
   renderIcon :: ShiftType -> ReactElement
   renderIcon Evening   = RD.i [ RP.className "vol-icon icon-no-bed" ] []
@@ -169,16 +172,14 @@ spec = T.simpleSpec performAction render
   performAction (ChangeCurrentVolShiftType _ _) _ _ = void $ T.modifyState \state -> state { loading = true }
   performAction _ _ _ = pure unit
 
-
-initialState :: List D.Shift -> Maybe D.Volunteer -> Date -> Date -> State
-initialState shifts currentVol currentDate date = 
+initialState :: List D.Shift -> Maybe D.Volunteer -> Date -> Date -> Int -> State
+initialState shifts currentVol currentDate date maxVols = 
   { date 
   , noOfVols: length shift.volunteers
   , status: status shift currentDate
   , loading: false
   , currentVol: buildCurrentVol shift
-  , otherVol1: otherVols !! 0
-  , otherVol2: otherVols !! 1
+  , otherVols: fromFoldable $ Laz.take maxVols $ (Laz.fromFoldable $ map Just otherVols) <> (Laz.repeat Nothing)
   }
   where
   shift = maybe {date: date, volunteers: Nil} id $ find (\s -> s.date == date) shifts
