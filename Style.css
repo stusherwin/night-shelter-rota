@@ -41,6 +41,10 @@
   background: #ebf0dc !important;
 }
 
+.ui.table td.shift-status {
+  min-width: 10px;
+}
+
 .ui.table td.shift-status i {
   margin-left: -5px;
   margin-right: -5px;

@@ -1,5 +1,5 @@
 module App.Main where 
- 
+  
 import Prelude
 
 import Data.Array (toUnfoldable)
@@ -213,7 +213,7 @@ main = unsafePerformEff $ do
   let shifts = Nil
   let currentVol = Nothing
   let component = T.createClass spec $ { vols
-                                       , shiftList: SL.initialState currentVol shifts currentDate (addDays (-1) currentDate) 28
+                                       , shiftList: SL.initialState currentVol shifts currentDate 
                                        , currentVol: currentVol
                                        , currentVolSelector: CVS.initialState vols currentVol
                                        , volDetailsEditState: Nothing

@@ -2,7 +2,7 @@ module App.ShiftList (Action(..), State, RosterState, spec, initialState, change
   
 import Prelude
 
-import App.Common (lensOfListWithProps, tomorrow, modifyListWhere, surroundIf, default, toMonthYearString, daysLeftInMonth, isFirstDayOfMonth, sortWith, addDays)
+import App.Common (lensOfListWithProps, tomorrow, modifyListWhere, surroundIf, default, toMonthYearString, daysLeftInMonth, isFirstDayOfMonth, sortWith, addDays, previousWeekday)
 import App.Data (OvernightSharingPrefs(..), Shift(..), Volunteer(..), VolunteerShift(..), RuleResult(..), canAddVolunteer, addVolunteerShift, changeVolunteerShift, removeVolunteerShift, hasVolWithId, validate, filterOut, canChangeVolunteerShiftType, updateVolunteer) as D
 import App.ShiftRow (CurrentVolState, OtherVolState, Action(..), State(..), ShiftStatus(..), ShiftType(..), spec, initialState) as SR
 import App.Row (State(..), Action(..), HeaderRowAction(..), HeaderState, spec) as R
@@ -11,7 +11,7 @@ import Control.Monad.Aff.Class (liftAff)
 import Control.Monad.Trans.Class (lift)
 import DOM.HTML.HTMLElement (offsetHeight) 
 import Data.Date (diff, lastDayOfMonth, canonicalDate)
-import Data.DateTime (Date(..), DateTime(..), Millisecond, Time(..), adjust, canonicalDate, date, day, month, year, Day(..), Year(..))
+import Data.DateTime (Date(..), DateTime(..), Millisecond, Time(..), adjust, canonicalDate, date, day, month, year, Day(..), Year(..), Weekday(..))
 import Data.Either (Either(..))
 import Data.Enum (fromEnum, toEnum)
 import Data.Int (floor)
@@ -28,6 +28,9 @@ import React as R
 import React.DOM as RD 
 import React.DOM.Props as RP
 import Thermite as T
+
+shiftCount :: Int
+shiftCount = 28
 
 data Action = AddShift
             | RowAction Int R.Action
@@ -88,16 +91,17 @@ spec =
       delay'
       T.modifyState \state -> modifyShifts state shiftDate $ D.removeVolunteerShift shiftDate cv
     performAction (RowAction _ (R.HeaderRowAction R.PrevPeriod)) _ _ = void do
-      T.modifyState \state -> adjustPeriod (-28) state
+      T.modifyState \state -> adjustPeriod (-shiftCount) state
     performAction (RowAction _ (R.HeaderRowAction R.NextPeriod)) _ _ = void do
-      T.modifyState \state -> adjustPeriod 28 state
+      T.modifyState \state -> adjustPeriod shiftCount state
     performAction _ _ _ = pure unit
     
     delay' = lift $ liftAff $ delay (Milliseconds 500.0)
 
-initialState :: Maybe D.Volunteer -> List D.Shift -> Date -> Date -> Int -> State
-initialState currentVol shifts currentDate startDate shiftCount = 
-  let endDate = addDays (shiftCount - 1) startDate
+initialState :: Maybe D.Volunteer -> List D.Shift -> Date -> State
+initialState currentVol shifts currentDate = 
+  let startDate = previousWeekday Monday currentDate 
+      endDate = addDays (shiftCount - 1) startDate
       roster = { currentVol
                , shifts
                , currentDate

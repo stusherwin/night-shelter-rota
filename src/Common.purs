@@ -1,11 +1,11 @@
-module App.Common (unsafeEventValue, unsafeEventSelectedIndex, lensWithProps, lensOfListWithProps, midnight, tomorrow, toDateString, updateWhere, modifyWhere, updateListWhere, modifyListWhere, surroundIf, justIf, default, onlyIf, className, isJustWith, addDays, toMonthYearString, isFirstDayOfMonth, daysLeftInMonth, toDayString, sortWith) where
+module App.Common (unsafeEventValue, unsafeEventSelectedIndex, lensWithProps, lensOfListWithProps, midnight, tomorrow, toDateString, updateWhere, modifyWhere, updateListWhere, modifyListWhere, surroundIf, justIf, default, onlyIf, className, isJustWith, addDays, toMonthYearString, isFirstDayOfMonth, daysLeftInMonth, toDayString, sortWith, previousWeekday) where
   
 import Prelude 
 
 import Data.Array (filter, elemIndex) as A
 import Data.List (List(..), findIndex, updateAt, modifyAt, sortBy, findIndex, updateAt, modifyAt, filter)
 import Data.DateTime (DateTime(..), Date(..), Time(..), canonicalDate, date, adjust, month, year, day)
-import Data.Date (lastDayOfMonth, diff)
+import Data.Date (lastDayOfMonth, diff, Weekday(..), weekday)
 import Data.Either (Either(..), fromRight, either)
 import Data.Enum (fromEnum, toEnum)
 import Data.Formatter.DateTime (formatDateTime)
@@ -132,3 +132,7 @@ daysLeftInMonth date = (floor daysDiff) + 1
 
 sortWith :: forall a b. Ord b => (a -> b) -> List a -> List a
 sortWith fn = sortBy $ comparing fn
+
+previousWeekday :: Weekday -> Date -> Date
+previousWeekday day date = let daysToSubtract = ((fromEnum $ weekday date) - (fromEnum day) + 7) `mod` 7
+                           in addDays (-daysToSubtract) date
