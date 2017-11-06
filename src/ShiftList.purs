@@ -5,7 +5,7 @@ import Prelude
 import App.Common (lensOfListWithProps, tomorrow, modifyListWhere, surroundIf, default, toMonthYearString, daysLeftInMonth, isFirstDayOfMonth, sortWith, addDays)
 import App.Data (OvernightSharingPrefs(..), Shift(..), Volunteer(..), VolunteerShift(..), RuleResult(..), canAddVolunteer, addVolunteerShift, changeVolunteerShift, removeVolunteerShift, hasVolWithId, validate, filterOut, canChangeVolunteerShiftType, updateVolunteer) as D
 import App.ShiftRow (CurrentVolState, OtherVolState, Action(..), State(..), ShiftStatus(..), ShiftType(..), spec, initialState) as SR
-import App.Row (State(..), StartRowState, Action(..), HeaderRowAction(..), spec) as R
+import App.Row (State(..), Action(..), HeaderRowAction(..), spec) as R
 import Control.Monad.Aff (delay)
 import Control.Monad.Aff.Class (liftAff)
 import Control.Monad.Trans.Class (lift)
@@ -25,7 +25,7 @@ import Math (e)
 import Partial.Unsafe (unsafePartial)
 import React (ReactElement)
 import React as R
-import React.DOM as RD
+import React.DOM as RD 
 import React.DOM.Props as RP
 import Thermite as T
 
@@ -88,14 +88,8 @@ spec =
       delay'
       T.modifyState \state -> modifyShifts state shiftDate $ D.removeVolunteerShift shiftDate cv
     performAction (RowAction _ (R.HeaderRowAction R.PrevPeriod)) _ _ = void do
-      _ <- T.modifyState \state -> let roster' = state.roster { loading = true }
-                                   in state { roster = roster', rows = rows roster' }
-      delay'
       T.modifyState \state -> adjustPeriod (-28) state
     performAction (RowAction _ (R.HeaderRowAction R.NextPeriod)) _ _ = void do
-      _ <- T.modifyState \state -> let roster' = state.roster { loading = true }
-                                   in state { roster = roster', rows = rows roster' }
-      delay'
       T.modifyState \state -> adjustPeriod 28 state
     performAction _ _ _ = pure unit
     
@@ -123,9 +117,7 @@ rows roster = rows' roster.startDate
       Cons R.EndRow
     $ Nil
   rows' date | date == roster.startDate =
-      Cons (R.StartRow { monthName: toMonthYearString date
-                       , loading: roster.loading
-                       })
+      Cons (R.StartRow $ toMonthYearString date)
     $ Cons (R.ShiftRow $ SR.initialState roster.shifts roster.currentVol roster.currentDate date)
     $ rows' $ tomorrow date
   rows' date | isFirstDayOfMonth date =

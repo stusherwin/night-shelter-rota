@@ -1,4 +1,4 @@
-module App.Row (State(..), StartRowState, Action(..), HeaderRowAction(..), spec) where
+module App.Row (State(..), Action(..), HeaderRowAction(..), spec) where
 
 import Prelude
 
@@ -18,12 +18,8 @@ data HeaderRowAction = PrevPeriod
 data Action = ShiftRowAction SR.Action
             | HeaderRowAction HeaderRowAction
 
-type StartRowState = { monthName :: String
-                     , loading :: Boolean
-                     }
-
 data State = ShiftRow SR.State
-           | StartRow StartRowState
+           | StartRow String
            | MonthHeaderRow String
            | EndRow
 
@@ -39,7 +35,7 @@ _ShiftRowAction = prism ShiftRowAction unwrap
   unwrap (ShiftRowAction a) = Right a
   unwrap ra = Left ra
 
-_StartRow :: Prism' State StartRowState
+_StartRow :: Prism' State String
 _StartRow = prism StartRow unwrap
   where
   unwrap (StartRow s) = Right s
@@ -72,25 +68,27 @@ spec =
   )
 
   where
-  startRow :: T.Spec _ StartRowState _ HeaderRowAction
+  startRow :: T.Spec _ String _ HeaderRowAction
   startRow = T.simpleSpec T.defaultPerformAction render
     where
-    render :: T.Render StartRowState _ HeaderRowAction
-    render dispatch _ state _ = [ RD.tr [ RP.className "month-header-row" ]
+    render :: T.Render String _ HeaderRowAction
+    render dispatch _ text _ = [ RD.tr [ RP.className "month-header-row" ]
                                         [ RD.td [ RP.colSpan 9 ]
-                                                [ RD.text state.monthName
-                                                , ( if state.loading
-                                                      then RD.i [ RP.className "icon-spin animate-spin loading float-right"
-                                                                ]
-                                                                []
-                                                      else RD.a [ RP.href "#"
-                                                                , RP.className "action float-right"
-                                                                , RP.onClick \_ -> dispatch PrevPeriod
-                                                                ]
-                                                                [ RD.i [ RP.className "icon-up-open"] []
-                                                                , RD.span' [ RD.text "previous 4 weeks" ]
-                                                                ]
-                                                  )
+                                                [ RD.text text
+                                                , RD.a [ RP.href "#"
+                                                       , RP.className "action"
+                                                       , RP.onClick \_ -> dispatch NextPeriod
+                                                       ]
+                                                       [ RD.span' [ RD.text "next 4 weeks" ]
+                                                       , RD.i [ RP.className "icon-right-open"] []
+                                                       ]
+                                                , RD.a [ RP.href "#"
+                                                       , RP.className "action"
+                                                       , RP.onClick \_ -> dispatch PrevPeriod
+                                                       ]
+                                                       [ RD.i [ RP.className "icon-left-open"] []
+                                                       , RD.span' [ RD.text "previous 4 weeks" ]
+                                                       ]
                                                 ]
                                         ]
                                 ]
@@ -113,11 +111,18 @@ spec =
     render dispatch _ state _ = [ RD.tr [ RP.className "month-header-row" ]
                                         [ RD.td [ RP.colSpan 9 ]
                                                 [ RD.a [ RP.href "#"
-                                                       , RP.className "action float-right"
+                                                       , RP.className "action"
                                                        , RP.onClick \_ -> dispatch NextPeriod
                                                        ]
-                                                       [ RD.i [ RP.className "icon-down-open"] []
-                                                       , RD.span' [ RD.text "next 4 weeks" ]
+                                                       [ RD.span' [ RD.text "next 4 weeks" ]
+                                                       , RD.i [ RP.className "icon-right-open"] []
+                                                       ]
+                                                , RD.a [ RP.href "#"
+                                                       , RP.className "action"
+                                                       , RP.onClick \_ -> dispatch PrevPeriod
+                                                       ]
+                                                       [ RD.i [ RP.className "icon-left-open"] []
+                                                       , RD.span' [ RD.text "previous 4 weeks" ]
                                                        ]
                                                 ]
                                         ]

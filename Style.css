@@ -10,36 +10,44 @@
   background: #fdfdfd;
 }
 
+.ui.table tr td.shift-date {
+  padding-left: 5px;
+}
+
+.ui.table tr td.shift-day {
+  padding-right: 5px;
+}
+
 .ui.table tr.weekend {
   background: #eee;
 }
 
-.ui.table tr.weekend td.shift-date, .ui.table tr.weekend td.shift-status {
+.ui.table tr.weekend td.shift-date, .ui.table tr.weekend td.shift-status, .ui.table tr.weekend td.shift-day {
   font-weight: bold;
 }
 
-.ui.table tr.weekend td.shift-date.warning, .ui.table tr.weekend td.shift-status.warning {
+.ui.table tr.weekend td.shift-date.warning, .ui.table tr.weekend td.shift-day.warning, .ui.table tr.weekend td.shift-status.warning {
   /* #fffaf3 */
   background: #f3ece1 !important;
 }
 
-.ui.table tr.weekend td.shift-date.negative, .ui.table tr.weekend td.shift-status.negative {
+.ui.table tr.weekend td.shift-date.negative, .ui.table tr.weekend td.shift-day.negative, .ui.table tr.weekend td.shift-status.negative {
   /* #fff6f6 */
   background: #f4e7e7 !important;
 }
 
-.ui.table tr.weekend td.shift-date.positive, .ui.table tr.weekend td.shift-status.positive {
+.ui.table tr.weekend td.shift-date.positive, .ui.table tr.weekend td.shift-day.positive, .ui.table tr.weekend td.shift-status.positive {
   /* #fcfff5 */
   background: #ebf0dc !important;
 }
 
 .ui.table td.shift-status i {
-  margin-left: -15px;
+  margin-left: -5px;
   margin-right: -5px;
   opacity: 0.4;
 }
 
-.ui.table td.shift-status i.icon-warning, .ui.table td.shift-status i.icon-info {
+.ui.table td.shift-status i.icon-warning, .ui.table td.shift-status i.icon-info, .ui.table td.shift-status i.icon-clock {
   cursor: help;
   opacity: 0.65;
 }
@@ -113,12 +121,19 @@ i.vol-icon {
   color: #ddd;
 }
 
+.ui.table tr.month-header-row .action, .ui.table tr.month-header-row .loading {
+  float: right;
+  margin-right: -5px;
+  margin-left: 20px;
+}
+
 .ui.table tr.month-header-row .action:hover {
   color: #fff;
 }
 
 .ui.table tr.month-header-row .action span {
   border-bottom: 1px dashed #aaa;
+  vertical-align: bottom;
 }
 
 .ui.table tr.month-header-row .action:hover span {

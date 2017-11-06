@@ -23,6 +23,7 @@ data ShiftStatus = Good
                  | Warning String
                  | Error String
                  | Info String
+                 | Past
                  | OK
 
 type OtherVolState = { name :: String
@@ -44,7 +45,6 @@ type State = { date :: Date
              , otherVol1 :: Maybe OtherVolState
              , otherVol2 :: Maybe OtherVolState
              , loading :: Boolean
-             , past :: Boolean
              }
  
 data Action = AddCurrentVol Date ShiftType
@@ -58,18 +58,20 @@ spec = T.simpleSpec performAction render
   render dispatch _ state _ =
     [ RD.tr [ className $ [ onlyIf (isWeekend state.date) "weekend"
                           , onlyIf state.loading "loading"
-                          , onlyIf state.past "past"
+                          , case state.status of
+                              Past -> "past"
+                              _ -> ""
                           ]
             ]
-         (  [ RD.td  [ RP.className "shift-date collapsing" ]
-                     [ RD.text $ toUpper $ take 3 $ show $ weekday state.date ]
-            , RD.td  [ RP.className "shift-date collapsing" ]
-                     [ RD.text $ toDayString state.date ]
-            , RD.td  [ className [ "shift-status left-border collapsing", statusClass state ] ]
-                     [ RD.text $ "" <> show state.noOfVols <> "/2" ]
-            , RD.td  [ className [ "shift-status collapsing", statusClass state ] ]
+         (  [ RD.td  [ className [ "shift-status collapsing", statusClass state ] ]
                      (statusIcon state)
-            , RD.td  [ RP.className "left-border collapsing" ]
+            , RD.td  [ className [ "left-border shift-day collapsing", statusClass state ] ]
+                     [ RD.text $ toUpper $ take 3 $ show $ weekday state.date ]
+            , RD.td  [ className [ "shift-date collapsing", statusClass state ] ]
+                     [ RD.text $ toDayString state.date ]
+            , RD.td  [ className [ "left-border collapsing" ] ]
+                     [ RD.text $ "" <> show state.noOfVols <> "/2" ]
+            , RD.td  [ RP.className "collapsing" ]
                      $ renderOtherVol state.otherVol1
             , RD.td  [ RP.className "collapsing" ]
                      $ renderOtherVol state.otherVol2
@@ -84,21 +86,6 @@ spec = T.simpleSpec performAction render
     Saturday -> true
     Sunday   -> true
     _ -> false
-
-  statusClass :: State -> String
-  statusClass state = case state.loading, state.status of
-    false, Good        -> "positive"
-    false, (Error _)   -> "negative"
-    false, (Warning _) -> "warning"
-    _, _               -> ""
-
-  statusIcon :: State -> Array ReactElement
-  statusIcon state = case state.loading, state.status of
-    _,    Good        -> [ RD.i [ RP.className "icon-ok" ] [] ]
-    _,    (Error e)   -> [ RD.i [ RP.className "icon-warning", RP.title e ] [] ]
-    _,    (Warning w) -> [ RD.i [ RP.className "icon-info", RP.title w ] [] ]
-    _,    (Info i)    -> [ RD.i [ RP.className "icon-info", RP.title i ] [] ]
-    _,    _           -> []
  
   renderCurrentVol :: _ -> State -> Array ReactElement
   renderCurrentVol dispatch state@{ currentVol: Just _ } =
@@ -192,7 +179,6 @@ initialState shifts currentVol currentDate date =
   , currentVol: buildCurrentVol shift
   , otherVol1: otherVols !! 0
   , otherVol2: otherVols !! 1
-  , past: date < currentDate
   }
   where
   shift = maybe {date: date, volunteers: Nil} id $ find (\s -> s.date == date) shifts
@@ -216,26 +202,6 @@ initialState shifts currentVol currentDate date =
                                                (D.OnlyGender gender) -> (show gender) <> " only"
                                                (D.Custom text) -> text
                                                _ -> ""
-
-  status :: D.Shift -> Date -> ShiftStatus
-  status s currentDate =
-    let errors = D.validate s currentDate
-        firstErrorStatus = case head errors of
-          Just (D.Error e)   -> Error
-          Just (D.Warning w) -> Warning
-          Just (D.Info i)    -> Info
-          Just (D.Neutral)   -> const OK
-          _             -> const Good
-        
-        extractMsg (D.Error e)   = Just e
-        extractMsg (D.Warning w) = Just w
-        extractMsg (D.Info i)    = Just i
-        extractMsg _             = Nothing
-
-        concat ""  (Just m) = "This shift " <> m
-        concat msg (Just m) = msg <> ", and also " <> m
-        concat msg Nothing  = msg
-    in firstErrorStatus $ foldl concat "" $ map extractMsg errors
   
   buildCurrentVol :: D.Shift -> Maybe CurrentVolState
   buildCurrentVol shift = case currentVol of
@@ -252,3 +218,40 @@ initialState shifts currentVol currentDate date =
     find (D.hasVolWithId v.id) vols >>= case _ of
       D.Overnight _ -> Just Overnight
       D.Evening   _ -> Just Evening
+
+statusClass :: State -> String
+statusClass state = case state.status of
+  Good        -> "positive"
+  (Error _)   -> "negative"
+  (Warning _) -> "warning"
+  _ -> ""
+
+statusIcon :: State -> Array ReactElement
+statusIcon state = case state.status of
+  Past        -> [ RD.i [ RP.className "icon-clock", RP.title "This shift is in the past" ] [] ]
+  Good        -> [ RD.i [ RP.className "icon-ok" ] [] ]
+  (Error e)   -> [ RD.i [ RP.className "icon-warning", RP.title e ] [] ]
+  (Warning w) -> [ RD.i [ RP.className "icon-info", RP.title w ] [] ]
+  (Info i)    -> [ RD.i [ RP.className "icon-info", RP.title i ] [] ]
+  _ -> []
+
+status :: D.Shift -> Date -> ShiftStatus
+status s currentDate | s.date < currentDate = Past
+status s currentDate =
+  let errors = D.validate s currentDate
+      firstErrorStatus = case head errors of
+        Just (D.Error e)   -> Error
+        Just (D.Warning w) -> Warning
+        Just (D.Info i)    -> Info
+        Just (D.Neutral)   -> const OK
+        _             -> const Good
+      
+      extractMsg (D.Error e)   = Just e
+      extractMsg (D.Warning w) = Just w
+      extractMsg (D.Info i)    = Just i
+      extractMsg _             = Nothing
+
+      concat ""  (Just m) = "This shift " <> m
+      concat msg (Just m) = msg <> ", and also " <> m
+      concat msg Nothing  = msg
+  in firstErrorStatus $ foldl concat "" $ map extractMsg errors
