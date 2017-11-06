@@ -2,7 +2,7 @@ module App.Common (unsafeEventValue, unsafeEventSelectedIndex, lensWithProps, le
   
 import Prelude 
 
-import Data.Array (filter) as A
+import Data.Array (filter, elemIndex) as A
 import Data.List (List(..), findIndex, updateAt, modifyAt, sortBy, findIndex, updateAt, modifyAt, filter)
 import Data.DateTime (DateTime(..), Date(..), Time(..), canonicalDate, date, adjust, month, year, day)
 import Data.Date (lastDayOfMonth, diff)
@@ -11,10 +11,10 @@ import Data.Enum (fromEnum, toEnum)
 import Data.Formatter.DateTime (formatDateTime)
 import Data.Int (toNumber, floor)
 import Data.Lens (Lens', lens)
-import Data.Maybe (Maybe(..), fromJust, maybe, fromMaybe)
+import Data.Maybe (Maybe(..), fromJust, maybe, fromMaybe, isJust)
 import Data.String (joinWith, length)
 import Data.Time.Duration (Days(..))
-import Data.Tuple (Tuple(..), snd)
+import Data.Tuple (Tuple(..), snd, curry, uncurry)
 import Partial.Unsafe (unsafePartial)
 import React.DOM.Dynamic (a)
 import Unsafe.Coerce (unsafeCoerce)
@@ -105,14 +105,19 @@ className = RP.className <<< joinWith " " <<< (A.filter $ (_ > 0) <<< length)
 toMonthYearString :: Date -> String 
 toMonthYearString date = show (month date) <> " " <> (show $ fromEnum $ year date)
 
+contains :: forall a. Eq a => Array a -> a -> Boolean
+contains arr x = isJust $ A.elemIndex x arr
+
+positionalPostfix :: Int -> String
+positionalPostfix n | [11, 12, 13] `contains` n = "th"
+positionalPostfix n | n `mod` 10 == 1 = "st"
+positionalPostfix n | n `mod` 10 == 2 = "nd"
+positionalPostfix n | n `mod` 10 == 3 = "rd"
+positionalPostfix _ = "th"
+
 toDayString :: Date -> String 
 toDayString date = let d = fromEnum $ day date
-                       postFix = case d of
-                                   n | n `mod` 10 == 1 -> "st"
-                                   n | n `mod` 10 == 2 -> "nd"
-                                   n | n `mod` 10 == 3 -> "rd"
-                                   _ -> "th"
-                   in show d <> postFix
+                   in show d <> positionalPostfix d
 
 isFirstDayOfMonth :: Date -> Boolean
 isFirstDayOfMonth date = case toEnum 1 of

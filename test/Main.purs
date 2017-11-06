@@ -11,12 +11,13 @@ import Partial.Unsafe (unsafePartial)
 import Test.Assert (assert', ASSERT)
 import Control.Monad.Eff (Eff)
 
-import App.Commonimport App.Common
+import App.Common
 import App.Data
 import App.Main as M
 import App.CurrentVolSelector as CVS
 import App.ShiftList as SL
 import App.ShiftRow as SR
+import App.Row as R
 
 mkDate :: Int -> Int -> Int -> Date
 mkDate d m y = canonicalDate (unsafePartial $ fromJust $ toEnum y) (unsafePartial $ fromJust $ toEnum m) (unsafePartial $ fromJust $ toEnum d)  
@@ -25,7 +26,7 @@ assertAll :: forall a e. String -> a -> Array (a -> Maybe Boolean) -> Eff (asser
 assertAll msg s = assert' msg <<< all (maybe false id <<< (#) s)
 
 findShift :: Date -> M.State -> Maybe Shift
-findShift date state = find (\s -> s.date == date) state.shiftList.shifts
+findShift date state = find (\s -> s.date == date) state.shiftList.roster.shifts
 
 findVol :: VolId -> Shift -> Maybe Volunteer
 findVol id shift = find (\v -> v.id == id) $ map extractVol shift.volunteers
@@ -36,10 +37,10 @@ findVol id shift = find (\v -> v.id == id) $ map extractVol shift.volunteers
 findShiftRow :: Date -> M.State -> Maybe SR.State
 findShiftRow date state = extract =<< find predicate state.shiftList.rows
   where
-  predicate (SL.ShiftRow s) = s.date == date
+  predicate (R.ShiftRow s) = s.date == date
   predicate _ = false
 
-  extract (SL.ShiftRow s) = Just s
+  extract (R.ShiftRow s) = Just s
   extract _ = Nothing
 
 hasName :: forall a. String -> { name :: String | a } -> Boolean
