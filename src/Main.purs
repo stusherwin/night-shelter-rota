@@ -1,12 +1,12 @@
 module App.Main where 
-  
-import Prelude
+
+import Prelude 
 
 import Data.Array (toUnfoldable)
 import App.Common (lensWithProps, modifyWhere, updateWhere, addDays, sortWith)
 import App.CurrentVolDetails (State, Action(..), VolDetails, spec, initialState) as CVD
 import App.CurrentVolSelector (State, Action(..), spec, initialState, changeVols) as CVS
-import App.Data (OvernightSharingPrefs(..), Shift(..), Volunteer(..), VolId(..), Gender(..), nextVolId)
+import App.Data (OvernightPreference(..), OvernightGenderPreference(..), Shift(..), Volunteer(..), VolId(..), nextVolId)
 import App.ShiftList (State, Action(..), spec, initialState, changeCurrentVol) as SL
 import Control.Monad.Aff.Class (liftAff)
 import Control.Monad.Eff (Eff)
@@ -170,7 +170,7 @@ changeCurrentVol vol state = state{ currentVol = vol
 
 updateCurrentVolDetails :: CVD.VolDetails -> State -> State
 updateCurrentVolDetails details state@{ currentVol: Just cv } =
-  let vol  = cv{ name = details.name, overnightSharingPrefs = Custom details.notes }
+  let vol  = cv{ name = details.name, notes = details.notes }
       vols = updateWhere (\v -> v.id == cv.id) vol state.vols
       currentVol = Just vol
   in  state{ currentVol = currentVol 
@@ -185,7 +185,12 @@ updateCurrentVolDetails _ state = state
 addNewVol :: CVD.VolDetails -> State -> State
 addNewVol details state =
   let maxId  = maybe (VolId 0) (_.id) $ last $ sortWith (\v -> v.id) state.vols
-      newVol = { id: nextVolId maxId, name: details.name, gender: Nothing, overnightSharingPrefs: Custom details.notes }
+      newVol = { id: nextVolId maxId
+               , name: details.name
+               , overnightPreference: Nothing
+               , overnightGenderPreference: Nothing
+               , notes: details.notes
+               }
       vols   = snoc state.vols newVol
   in  state{ currentVol = Just newVol
            , vols = vols
@@ -203,15 +208,33 @@ cancelEditingCurrentVol = _{ volDetailsEditState = Nothing
 main :: Unit
 main = unsafePerformEff $ do 
   (LocalValue _ currentDate) <- nowDate
-  let vols = toUnfoldable [ { id: VolId 1, name: "Fred",    gender: Just Male,           overnightSharingPrefs: Any }
-                          , { id: VolId 2, name: "Alice",   gender: Just Female,         overnightSharingPrefs: (OnlyGender Female) }
-                          , { id: VolId 3, name: "Jim",     gender: Nothing,             overnightSharingPrefs: None }
-                          , { id: VolId 4, name: "Mary",    gender: Just Female,         overnightSharingPrefs: (Custom "Only nice people") }
-                          , { id: VolId 5, name: "Smoo 1",  gender: Just (Other "Smoo"), overnightSharingPrefs: (OnlyGender (Other "Smoo")) }
-                          , { id: VolId 6, name: "Smoo 2",  gender: Just (Other "Smoo"), overnightSharingPrefs: (OnlyGender (Other "Smoo")) }
-                          ]
+  let fred  = { id: VolId 1
+              , name: "Fred"
+              , overnightPreference: Just PreferAnotherVolunteer
+              , overnightGenderPreference: Nothing
+              , notes: ""
+              }
+      alice = { id: VolId 2
+              , name: "Alice"
+              , overnightPreference: Nothing
+              , overnightGenderPreference: Just Female
+              , notes: ""
+              }
+      jim   = { id: VolId 3
+              , name: "Jim"
+              , overnightPreference: Just PreferToBeAlone
+              , overnightGenderPreference: Just Male
+              , notes: ""
+              }
+      mary  = { id: VolId 4
+              , name: "Mary"
+              , overnightPreference: Nothing
+              , overnightGenderPreference: Nothing
+              , notes: "Only nice people"
+              }
+  let vols = toUnfoldable [ fred, alice, jim, mary ]
   let shifts = Nil
-  let currentVol = Nothing
+  let currentVol = Just fred
   let component = T.createClass spec $ { vols
                                        , shiftList: SL.initialState currentVol shifts currentDate 
                                        , currentVol: currentVol

@@ -3,14 +3,14 @@ module App.ShiftRow (State, ShiftType(..), OtherVolState, CurrentVolState, Actio
 import Prelude
 
 import App.Common (unsafeEventValue, toDateString, surroundIf, onlyIf, className, toDayString, sortWith)
-import App.Data (OvernightSharingPrefs(..), Volunteer(..), VolunteerShift(..), Shift(..), RuleResult(..), canChangeVolunteerShiftType, hasVolWithId, validate, canAddVolunteer) as D
-import Data.Array ((:), concatMap)
+import App.Data (OvernightPreference(..), OvernightGenderPreference(..), Volunteer(..), VolunteerShift(..), Shift(..), RuleResult(..), canChangeVolunteerShiftType, hasVolWithId, validate, canAddVolunteer) as D
+import Data.Array ((:), concatMap, catMaybes)
 import Data.DateTime (Date, Weekday(..), year, month, day, weekday)
 import Data.Enum (fromEnum)
 import Data.List (List(..), find, filter, head, foldl, length, (!!), toUnfoldable, take, fromFoldable)
 import Data.List.Lazy (List(..), repeat, zipWith, fromFoldable, take) as Laz
 import Data.Maybe (Maybe(..), maybe)
-import Data.String (take, toUpper) as S
+import Data.String (take, toUpper, joinWith, length) as S
 import Data.Tuple (Tuple(..))
 import React (ReactElement)
 import React.DOM as RD
@@ -156,7 +156,7 @@ spec = T.simpleSpec performAction render
       [ RD.td [ RP.className "collapsing" ]
               [ RD.span [ RP.className "other-vol" ]
                         [ renderIcon v.shiftType
-                        , RD.text $ v.name <> v.sharingPrefs
+                        , RD.text $ v.name <> " " <> v.sharingPrefs
                         ]
               ]
       ]
@@ -190,19 +190,28 @@ initialState shifts currentVol currentDate date maxVols =
   buildVol :: D.VolunteerShift -> OtherVolState
   buildVol (D.Overnight v) = { name: v.name
                              , shiftType: Overnight
-                             , sharingPrefs: sharingPrefs v.overnightSharingPrefs
+                             , sharingPrefs: sharingPrefs v
                              } 
   buildVol (D.Evening v)   = { name: v.name
                              , shiftType: Evening
-                             , sharingPrefs: sharingPrefs v.overnightSharingPrefs
+                             , sharingPrefs: sharingPrefs v
                              }
 
-  sharingPrefs :: D.OvernightSharingPrefs -> String
-  sharingPrefs prefs = surroundIf " (" ")" $ case prefs of
-                                               D.None -> "No sharing"
-                                               (D.OnlyGender gender) -> (show gender) <> " only"
-                                               (D.Custom text) -> text
-                                               _ -> ""
+  sharingPrefs :: D.Volunteer -> String
+  sharingPrefs vol = S.joinWith " " $ catMaybes [ map overnight vol.overnightPreference
+                                                , map gender vol.overnightGenderPreference
+                                                , if S.length vol.notes > 0
+                                                    then Just $ "(" <> vol.notes <> ")"
+                                                    else Nothing                 
+                                                ]
+    where
+    overnight :: D.OvernightPreference -> String
+    overnight D.PreferToBeAlone = "(1)"
+    overnight D.PreferAnotherVolunteer = "(2)"
+    
+    gender :: D.OvernightGenderPreference -> String
+    gender D.Male = "(M)"
+    gender D.Female = "(F)"
   
   buildCurrentVol :: D.Shift -> Maybe CurrentVolState
   buildCurrentVol shift = case currentVol of

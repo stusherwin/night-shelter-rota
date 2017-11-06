@@ -3,7 +3,7 @@ module App.CurrentVolDetails (State, VolDetails, Action(..), spec, initialState)
 import Prelude
 
 import App.Common (unsafeEventValue, className, onlyIf)
-import App.Data (OvernightSharingPrefs(..), VolId(..), Volunteer(..), parseVolId)
+import App.Data (OvernightPreference(..), OvernightGenderPreference(..), VolId(..), Volunteer(..), parseVolId)
 import Data.List ((!!))
 import Data.Maybe (Maybe(..), isJust, maybe)
 import Data.Newtype (unwrap)
@@ -123,5 +123,4 @@ isValid { name } | length name == 0 = false
 isValid _ = true
 
 notes :: Volunteer -> String
-notes { overnightSharingPrefs: (Custom n)} = n
-notes _ = ""
+notes = _.notes

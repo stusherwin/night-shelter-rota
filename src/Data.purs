@@ -1,7 +1,7 @@
-module App.Data (Shift (..), Volunteer(..), VolId(..), Gender(..), OvernightSharingPrefs(..), VolunteerShift(..), RuleResult(..), addVolunteerShift, changeVolunteerShift, removeVolunteerShift, canAddVolunteer, hasVolWithId, validate, filterOut, canChangeVolunteerShiftType, parseVolId, nextVolId, updateVolunteer) where
+module App.Data (Shift (..), Volunteer(..), VolId(..), OvernightPreference(..), OvernightGenderPreference(..), VolunteerShift(..), RuleResult(..), addVolunteerShift, changeVolunteerShift, removeVolunteerShift, canAddVolunteer, hasVolWithId, validate, filterOut, canChangeVolunteerShiftType, parseVolId, nextVolId, updateVolunteer) where
 
 import Prelude
-
+ 
 import Data.Array (toUnfoldable)
 import App.Common (toDateString, justIf, sortWith)
 import Data.List (List(..), findIndex, find, modifyAt, snoc, updateAt, deleteAt, length, all, nub, nubBy, (:), filter, catMaybes, any, singleton)
@@ -18,17 +18,11 @@ import Data.Tuple.Nested (Tuple3(..))
 import React.DOM.Dynamic (a)
 import Type.Data.Boolean (False)
 
-data Gender = Male | Female | Other String
+data OvernightPreference = PreferToBeAlone
+                         | PreferAnotherVolunteer 
 
-instance genderShow :: Show (Gender) where
-  show Male = "Male"
-  show Female = "Female"
-  show (Other gender) = gender
-
-data OvernightSharingPrefs = None
-                           | OnlyGender Gender
-                           | Custom String
-                           | Any
+data OvernightGenderPreference = Male
+                               | Female
 
 newtype VolId = VolId Int
 derive instance volIdEq :: Eq VolId
@@ -43,8 +37,9 @@ parseVolId = map VolId <<< fromString
  
 type Volunteer = { id :: VolId
                  , name :: String
-                 , gender :: Maybe Gender
-                 , overnightSharingPrefs :: OvernightSharingPrefs
+                 , overnightPreference :: Maybe OvernightPreference
+                 , overnightGenderPreference :: Maybe OvernightGenderPreference
+                 , notes :: String
                  }
 
 data VolunteerShift = Overnight Volunteer
@@ -115,12 +110,6 @@ isError _                = false
 isOvernight :: VolunteerShift -> Boolean
 isOvernight (Overnight _) = true
 isOvernight _ = false
-
-hasGender :: Gender -> Volunteer -> Boolean
-hasGender Male   { gender: Just Male }   = true 
-hasGender Female { gender: Just Female } = true
-hasGender (Other o1)  { gender: Just (Other o2)} = o1 == o2
-hasGender _ _ = false
 
 filterOut :: Volunteer -> List VolunteerShift -> List VolunteerShift
 filterOut v = filter (not <<< hasVolWithId $ v.id)
@@ -223,10 +212,10 @@ haveAnOvernightVolunteer { shift, currentDate } =
 
 notViolateAnyVolsSharingPrefs :: forall r. Rule r
 notViolateAnyVolsSharingPrefs { shift } =
-  justIf "goes against a volunteer's sharing preferences"
+  justIf "goes against a volunteer's overnight preference"
        $ any violatesSharingPrefs shift.volunteers
   where
   violatesSharingPrefs :: VolunteerShift -> Boolean
-  violatesSharingPrefs (Overnight vol@{ overnightSharingPrefs: None }) =         any isOvernight $ filterOut vol shift.volunteers
-  violatesSharingPrefs (Overnight vol@{ overnightSharingPrefs: OnlyGender g }) = any ((&&) <$> isOvernight <*> (not <<< (volThat (hasGender g)))) $ filterOut vol shift.volunteers
+  violatesSharingPrefs (Overnight vol@{ overnightPreference: Just PreferToBeAlone }) = any isOvernight $ filterOut vol shift.volunteers
+  violatesSharingPrefs (Overnight vol@{ overnightPreference: Just PreferAnotherVolunteer }) = (not <<< any) isOvernight $ filterOut vol shift.volunteers
   violatesSharingPrefs _ = false
