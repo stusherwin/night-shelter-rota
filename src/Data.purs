@@ -1,4 +1,4 @@
-module App.Data (Shift (..), Volunteer(..), VolId(..), OvernightPreference(..), OvernightGenderPreference(..), VolunteerShift(..), RuleResult(..), addVolunteerShift, changeVolunteerShift, removeVolunteerShift, canAddVolunteer, hasVolWithId, validate, filterOut, canChangeVolunteerShiftType, parseVolId, nextVolId, updateVolunteer) where
+module App.Data (Shift (..), Volunteer(..), VolId(..), OvernightPreference(..), OvernightGenderPreference(..), VolunteerShift(..), RuleResult(..), Config, addVolunteerShift, changeVolunteerShift, removeVolunteerShift, canAddVolunteer, hasVolWithId, validate, filterOut, canChangeVolunteerShiftType, parseVolId, nextVolId, updateVolunteer) where
 
 import Prelude
  
@@ -9,10 +9,10 @@ import Data.Date (diff)
 import Data.DateTime (DateTime(..), Date(..), Time(..), canonicalDate, date, adjust)
 import Data.Either (Either(..))
 import Data.Foldable (foldMap)
-import Data.Int (fromString)
+import Data.Int (fromString, toNumber)
 import Data.Lens (_1)
 import Data.Maybe (Maybe(..), fromMaybe, isNothing, isJust, fromJust)
-import Data.Newtype --(Newtype)
+import Data.Newtype
 import Data.Time.Duration (Days(..))
 import Data.Tuple.Nested (Tuple3(..))
 import React.DOM.Dynamic (a)
@@ -93,10 +93,16 @@ updateVolunteer vol = map updateShift
   updateVol (Evening   v) | v.id == vol.id = Evening vol
   updateVol v = v
 
+type Config = { currentDate :: Date
+              , maxVolsPerShift :: Int
+              , urgentPeriodDays :: Int
+              }
   
-type RuleParams r = { shift :: Shift | r }
+type RuleParams = { shift :: Shift
+                  , config :: Config
+                  }
 
-type Rule r = RuleParams r -> Maybe String
+type Rule = RuleParams -> Maybe String
 
 data RuleResult = Error String
                 | Warning String
@@ -114,25 +120,21 @@ isOvernight _ = false
 filterOut :: Volunteer -> List VolunteerShift -> List VolunteerShift
 filterOut v = filter (not <<< hasVolWithId $ v.id)
 
-config :: _
-config = { maxVolsPerShift: 2
-         , urgentPeriodDays: 14.0
-         }
-
-isAllowed :: forall r. { shift :: Shift | r } -> Boolean
+isAllowed :: RuleParams -> Boolean
 isAllowed params = satisfies params $ toUnfoldable [ notHaveSameVolunteerTwice
                                                    ]
   where
-  satisfies :: RuleParams r -> List (Rule r) -> Boolean
+  satisfies :: RuleParams -> List Rule -> Boolean
   satisfies p = all id <<< map (not <<< isJust) <<< (flip flap) p
 
-canAddVolunteer :: VolunteerShift -> Shift -> Boolean
-canAddVolunteer volShift s =
+canAddVolunteer :: Config -> VolunteerShift -> Shift -> Boolean
+canAddVolunteer config volShift s =
   isAllowed { shift: s{ volunteers = volShift:s.volunteers }
+            , config
             }
 
-canChangeVolunteerShiftType :: Volunteer -> Shift -> Boolean
-canChangeVolunteerShiftType v s =
+canChangeVolunteerShiftType :: Config -> Volunteer -> Shift -> Boolean
+canChangeVolunteerShiftType config v s =
   case find (hasVolWithId v.id) s.volunteers of
     Nothing -> false
     (Just volShift) ->
@@ -140,33 +142,34 @@ canChangeVolunteerShiftType v s =
                            (Overnight _) -> (Evening v)
                            (Evening _)   -> (Overnight v)
       in isAllowed { shift: s{ volunteers = changedShift:(filterOut v s.volunteers) }
+                   , config
                    }
 
-isLooming :: Shift -> Date -> Boolean
-isLooming shift currentDate =
-  let (Days d) = shift.date `diff` currentDate
-  in d >= 0.0 && d < config.urgentPeriodDays
-
-isPast :: Shift -> Date -> Boolean
-isPast shift currentDate =
-  let (Days d) = shift.date `diff` currentDate
-  in d < 0.0
-
-validate :: Shift -> Date -> List RuleResult
-validate shift currentDate =
+validate :: Config -> Shift -> List RuleResult
+validate config shift =
   collectViolations params $ toUnfoldable [ must <<< notHaveSameVolunteerTwice
-                                          , ignoreIf (isPast shift currentDate) <<< should <<< notExceedMaxVolunteers
-                                          , ignoreIf (isPast shift currentDate) <<< mustIf (isLooming shift currentDate) <<< haveAtLeastOneVolunteer
-                                          , ignoreIf (isPast shift currentDate) <<< could <<< haveMoreThanOneVolunteer
-                                          , ignoreIf (isPast shift currentDate) <<< mustIf (isLooming shift currentDate) <<< haveAnOvernightVolunteer
-                                          , ignoreIf (isPast shift currentDate) <<< should <<< notViolateAnyVolsSharingPrefs
+                                          , ignoreIf (isPast shift) <<< should <<< notExceedMaxVolunteers
+                                          , ignoreIf (isPast shift) <<< mustIf (isLooming shift) <<< haveAtLeastOneVolunteer
+                                          , ignoreIf (isPast shift) <<< could <<< haveMoreThanOneVolunteer
+                                          , ignoreIf (isPast shift) <<< mustIf (isLooming shift) <<< haveAnOvernightVolunteer
+                                          , ignoreIf (isPast shift) <<< should <<< notViolateAnyVolsSharingPrefs
                                           ]
   where
   params = { shift
-           , currentDate
+           , config
            }
 
-  collectViolations :: forall r. RuleParams r -> List (RuleParams r -> Maybe RuleResult) -> List RuleResult
+  isLooming :: Shift -> Boolean
+  isLooming shift =
+    let (Days d) = shift.date `diff` config.currentDate
+    in d >= 0.0 && d < (toNumber config.urgentPeriodDays)
+
+  isPast :: Shift -> Boolean
+  isPast shift =
+    let (Days d) = shift.date `diff` config.currentDate
+    in d < 0.0
+
+  collectViolations :: RuleParams -> List (RuleParams -> Maybe RuleResult) -> List RuleResult
   collectViolations params = sortWith priority <<< catMaybes <<< (flip flap) params
 
   must   = map Error
@@ -181,28 +184,28 @@ validate shift currentDate =
   priority (Info _)    = 2
   priority _           = 3
 
-notExceedMaxVolunteers :: forall r. Rule r
-notExceedMaxVolunteers { shift } =
-  justIf ("has more than " <> show config.maxVolsPerShift <> " volunteers")
-       $ length shift.volunteers > config.maxVolsPerShift
+notExceedMaxVolunteers :: Rule
+notExceedMaxVolunteers { shift, config: { maxVolsPerShift } } =
+  justIf ("has more than " <> show maxVolsPerShift <> " volunteers")
+       $ length shift.volunteers > maxVolsPerShift
 
-notHaveSameVolunteerTwice :: forall r. Rule r
+notHaveSameVolunteerTwice :: Rule
 notHaveSameVolunteerTwice { shift } =
   justIf "has the same volunteer down twice"
        $ length (nubBy (\a b -> volId a == volId b) shift.volunteers) > length shift.volunteers
 
-haveAtLeastOneVolunteer :: forall r. Rule (currentDate :: Date | r)
+haveAtLeastOneVolunteer :: Rule
 haveAtLeastOneVolunteer { shift } =
   justIf "has no volunteers"
        $ length shift.volunteers == 0
 
-haveMoreThanOneVolunteer :: forall r. Rule r
+haveMoreThanOneVolunteer :: Rule
 haveMoreThanOneVolunteer { shift } =
   justIf "has only one volunteer"
        $ length shift.volunteers == 1
 
-haveAnOvernightVolunteer :: forall r. Rule (currentDate :: Date | r)
-haveAnOvernightVolunteer { shift, currentDate } =
+haveAnOvernightVolunteer :: Rule
+haveAnOvernightVolunteer { shift, config: { currentDate } } =
   justIf "has no overnight volunteer"
        $ length shift.volunteers /= 0 && (length $ filter isOvernight shift.volunteers) == 0
   where
@@ -210,7 +213,7 @@ haveAnOvernightVolunteer { shift, currentDate } =
   isOvernight (Overnight _) = true
   isOvernight _ = false
 
-notViolateAnyVolsSharingPrefs :: forall r. Rule r
+notViolateAnyVolsSharingPrefs :: Rule
 notViolateAnyVolsSharingPrefs { shift } =
   justIf "goes against a volunteer's overnight preference"
        $ any violatesSharingPrefs shift.volunteers

@@ -1,9 +1,9 @@
-module App.ShiftRow (State, ShiftType(..), OtherVolState, CurrentVolState, Action(..), ShiftStatus(..), spec, initialState) where
+module App.ShiftRow (State, ShiftType(..), OtherVolState, CurrentVolState, Action(..), ShiftStatus(..), RosterData, spec, initialState) where
  
 import Prelude
 
 import App.Common (unsafeEventValue, toDateString, surroundIf, onlyIf, className, toDayString, sortWith)
-import App.Data (OvernightPreference(..), OvernightGenderPreference(..), Volunteer(..), VolunteerShift(..), Shift(..), RuleResult(..), canChangeVolunteerShiftType, hasVolWithId, validate, canAddVolunteer) as D
+import App.Data (OvernightPreference(..), OvernightGenderPreference(..), Volunteer(..), VolunteerShift(..), Shift(..), RuleResult(..), Config, canChangeVolunteerShiftType, hasVolWithId, validate, canAddVolunteer) as D
 import Data.Array ((:), concatMap, catMaybes)
 import Data.DateTime (Date, Weekday(..), year, month, day, weekday)
 import Data.Enum (fromEnum)
@@ -44,9 +44,15 @@ type State = { date :: Date
              , status :: ShiftStatus
              , currentVol :: Maybe CurrentVolState
              , noOfVols :: Int
+             , maxVols :: Int
              , otherVols :: List OtherVolState
              , loading :: Boolean
              }
+
+type RosterData d = { currentVol :: Maybe D.Volunteer
+                    , shifts :: List D.Shift
+                    | d
+                    }
  
 data Action = AddCurrentVol Date ShiftType
             | RemoveCurrentVol Date
@@ -71,7 +77,7 @@ spec = T.simpleSpec performAction render
             , RD.td  [ className [ "shift-date collapsing", statusClass state ] ]
                      [ RD.text $ toDayString state.date ]
             , RD.td  [ className [ "vol-count left-border collapsing" ] ]
-                     [ RD.text $ "" <> show state.noOfVols <> "/2" ]
+                     [ RD.text $ "" <> show state.noOfVols <> "/" <> show state.maxVols ]
             ]
          <> renderOtherVols state.otherVols
          <> [ RD.td' [] ]
@@ -170,18 +176,19 @@ spec = T.simpleSpec performAction render
   performAction (ChangeCurrentVolShiftType _ _) _ _ = void $ T.modifyState \state -> state { loading = true }
   performAction _ _ _ = pure unit
 
-initialState :: List D.Shift -> Maybe D.Volunteer -> Date -> Date -> State
-initialState shifts currentVol currentDate date = 
+initialState :: forall d. RosterData d -> D.Config -> Date -> State
+initialState roster config date = 
   { date 
   , noOfVols: length shift.volunteers
-  , status: status shift currentDate
+  , maxVols: config.maxVolsPerShift
+  , status: status config shift
   , loading: false
   , currentVol: buildCurrentVol shift
   , otherVols: otherVols
   }
   where
-  shift = maybe {date: date, volunteers: Nil} id $ find (\s -> s.date == date) shifts
-  otherVols = sortWith _.name $ map buildVol $ case currentVol of
+  shift = maybe {date: date, volunteers: Nil} id $ find (\s -> s.date == date) roster.shifts
+  otherVols = sortWith _.name $ map buildVol $ case roster.currentVol of
                                                  Just cv -> filter (not <<< D.hasVolWithId $ cv.id) shift.volunteers
                                                  _ -> shift.volunteers
 
@@ -212,14 +219,14 @@ initialState shifts currentVol currentDate date =
     gender D.Female = "(F)"
   
   buildCurrentVol :: D.Shift -> Maybe CurrentVolState
-  buildCurrentVol shift = case currentVol of
+  buildCurrentVol shift = case roster.currentVol of
     (Just cv) -> Just { name: cv.name 
                       , shiftType: currentVolShiftType cv shift.volunteers
-                      , canAddOvernight: D.canAddVolunteer (D.Overnight cv) shift
-                      , canAddEvening: D.canAddVolunteer (D.Evening cv) shift
-                      , canChangeShiftType: D.canChangeVolunteerShiftType cv shift
+                      , canAddOvernight: D.canAddVolunteer config (D.Overnight cv) shift
+                      , canAddEvening: D.canAddVolunteer config (D.Evening cv) shift
+                      , canChangeShiftType: D.canChangeVolunteerShiftType config cv shift
                       }
-    _         -> Nothing
+    _ -> Nothing
 
   currentVolShiftType :: D.Volunteer -> List D.VolunteerShift -> Maybe ShiftType
   currentVolShiftType v vols = 
@@ -243,21 +250,21 @@ statusIcon state = case state.status of
   (Info i)    -> [ RD.i [ RP.className "icon-info", RP.title i ] [] ]
   _ -> []
 
-status :: D.Shift -> Date -> ShiftStatus
-status s currentDate | s.date < currentDate = Past
-status s currentDate =
-  let errors = D.validate s currentDate
+status :: D.Config -> D.Shift -> ShiftStatus
+status config s | s.date < config.currentDate = Past
+status config s =
+  let errors = D.validate config s
       firstErrorStatus = case head errors of
         Just (D.Error e)   -> Error
         Just (D.Warning w) -> Warning
         Just (D.Info i)    -> Info
         Just (D.Neutral)   -> const OK
-        _             -> const Good
+        _ -> const Good
       
       extractMsg (D.Error e)   = Just e
       extractMsg (D.Warning w) = Just w
       extractMsg (D.Info i)    = Just i
-      extractMsg _             = Nothing
+      extractMsg _ = Nothing
 
       concat ""  (Just m) = "This shift " <> m
       concat msg (Just m) = msg <> ", and also " <> m

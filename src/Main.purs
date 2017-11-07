@@ -1,14 +1,14 @@
 module App.Main where 
-
-import Prelude 
+   
+import Prelude
 
 import Data.Array (toUnfoldable)
 import App.Common (lensWithProps, modifyWhere, updateWhere, addDays, sortWith, nextWeekday)
 import App.CurrentVolDetails (State, Action(..), VolDetails, spec, initialState) as CVD
 import App.CurrentVolSelector (State, Action(..), spec, initialState, changeVols) as CVS
-import App.Data (OvernightPreference(..), OvernightGenderPreference(..), Shift(..), Volunteer(..), VolunteerShift(..), VolId(..), nextVolId)
+import App.Data (OvernightPreference(..), OvernightGenderPreference(..), Shift(..), Volunteer(..), VolunteerShift(..), VolId(..), Config, nextVolId)
 import App.ShiftList (State, Action(..), spec, initialState, changeCurrentVol) as SL
-import Control.Monad.Aff.Class (liftAff)
+import Control.Monad.Aff.Class (liftAff) 
 import Control.Monad.Eff (Eff)
 import Control.Monad.Eff.Class (liftEff)
 import Control.Monad.Eff.Console (log, CONSOLE)
@@ -40,19 +40,19 @@ data Action = ShiftListAction SL.Action
             | CurrentVolSelectorAction CVS.Action
             | CurrentVolDetailsAction CVD.Action
             | NewVol
-            | EditCurrentVol
-
+            | EditCurrentVol 
+ 
 data VolDetailsEditState = EditingNewVol
                          | EditingCurrentVol
 
-type State = { vols :: List Volunteer
+type State = { vols :: List Volunteer 
              , shiftList :: SL.State
              , currentVol :: Maybe Volunteer
              , currentVolSelector :: CVS.State
-             , currentVolDetails :: Maybe CVD.State
+             , currentVolDetails :: Maybe CVD.State 
              , volDetailsEditState :: Maybe VolDetailsEditState
              }
-
+ 
 _shiftList :: Lens' State SL.State
 _shiftList = lens _.shiftList _{shiftList = _}
 
@@ -246,10 +246,14 @@ main = unsafePerformEff $ do
                                                          , Evening mary
                                                          ]
                               }
-                            ]
+                            ] 
   let currentVol = Nothing --Just fred
+  let config = { maxVolsPerShift: 2
+               , urgentPeriodDays: 14
+               , currentDate
+               }
   let component = T.createClass spec $ { vols
-                                       , shiftList: SL.initialState currentVol shifts currentDate 
+                                       , shiftList: SL.initialState currentVol shifts config
                                        , currentVol: currentVol
                                        , currentVolSelector: CVS.initialState vols currentVol
                                        , volDetailsEditState: Nothing

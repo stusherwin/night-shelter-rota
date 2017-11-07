@@ -3,7 +3,7 @@ module App.ShiftList (Action(..), State, RosterState, spec, initialState, change
 import Prelude
 
 import App.Common (lensOfListWithProps, tomorrow, modifyListWhere, surroundIf, default, toMonthYearString, daysLeftInMonth, isFirstDayOfMonth, sortWith, addDays, previousWeekday)
-import App.Data (OvernightPreference(..), Shift(..), Volunteer(..), VolunteerShift(..), RuleResult(..), canAddVolunteer, addVolunteerShift, changeVolunteerShift, removeVolunteerShift, hasVolWithId, validate, filterOut, canChangeVolunteerShiftType, updateVolunteer) as D
+import App.Data (OvernightPreference(..), Shift(..), Volunteer(..), VolunteerShift(..), RuleResult(..), Config, canAddVolunteer, addVolunteerShift, changeVolunteerShift, removeVolunteerShift, hasVolWithId, validate, filterOut, canChangeVolunteerShiftType, updateVolunteer) as D
 import App.ShiftRow (CurrentVolState, OtherVolState, Action(..), State(..), ShiftStatus(..), ShiftType(..), spec, initialState) as SR
 import App.Row (State(..), Action(..), HeaderRowAction(..), HeaderState, spec) as R
 import Control.Monad.Aff (delay)
@@ -39,11 +39,11 @@ type RosterState = { currentVol :: Maybe D.Volunteer
                    , shifts :: List D.Shift
                    , startDate :: Date
                    , endDate :: Date
-                   , currentDate :: Date
                    , loading :: Boolean
                    }
 
 type State = { roster :: RosterState
+             , config :: D.Config
              , rows :: List R.State
              }
 
@@ -98,23 +98,23 @@ spec =
     
     delay' = lift $ liftAff $ delay (Milliseconds 500.0)
 
-initialState :: Maybe D.Volunteer -> List D.Shift -> Date -> State
-initialState currentVol shifts currentDate = 
-  let startDate = previousWeekday Monday currentDate 
+initialState :: forall c. Maybe D.Volunteer -> List D.Shift -> D.Config -> State
+initialState currentVol shifts config = 
+  let startDate = previousWeekday Monday config.currentDate 
       endDate = addDays (shiftCount - 1) startDate
       roster = { currentVol
                , shifts
-               , currentDate
                , startDate
                , endDate
                , loading: false
                }
   in { roster
-     , rows: rows roster
+     , config
+     , rows: rows roster config
      }
  
-rows :: RosterState -> List R.State
-rows roster = rows' roster.startDate
+rows :: RosterState -> D.Config -> List R.State
+rows roster config = rows' roster.startDate
   where   
   rows' :: Date -> List R.State
   rows' date | date > roster.endDate = 
@@ -122,14 +122,14 @@ rows roster = rows' roster.startDate
     $ Nil
   rows' date | date == roster.startDate =
       Cons (R.StartRow { text: toMonthYearString date})
-    $ Cons (R.ShiftRow $ SR.initialState roster.shifts roster.currentVol roster.currentDate date)
+    $ Cons (R.ShiftRow $ SR.initialState roster config date)
     $ rows' $ tomorrow date
   rows' date | isFirstDayOfMonth date =
       Cons (R.MonthHeaderRow { text: toMonthYearString date })
-    $ Cons (R.ShiftRow $ SR.initialState roster.shifts roster.currentVol roster.currentDate date)
+    $ Cons (R.ShiftRow $ SR.initialState roster config date)
     $ rows' $ tomorrow date
   rows' date =
-      Cons (R.ShiftRow $ SR.initialState roster.shifts roster.currentVol roster.currentDate date)
+      Cons (R.ShiftRow $ SR.initialState roster config date)
     $ rows' $ tomorrow date
 
 preserveLoading :: List R.State -> List R.State -> List R.State
@@ -146,7 +146,7 @@ changeCurrentVol currentVol state =
                              , loading = false
                              }
   in state { roster = roster'
-           , rows = preserveLoading state.rows $ rows roster'
+           , rows = preserveLoading state.rows $ rows roster' state.config
            }
 
 adjustPeriod :: Int -> State -> State
@@ -156,7 +156,7 @@ adjustPeriod adj state =
                              , loading = false
                              }
   in state { roster = roster'
-           , rows = rows roster'
+           , rows = rows roster' state.config
            }
 
 modifyShifts :: State -> Date -> (List D.Shift -> List D.Shift) -> State
@@ -172,5 +172,5 @@ modifyShifts state date modify =
       cancelLoading (R.ShiftRow s) = R.ShiftRow s{ loading = false }
       cancelLoading r = r 
   in state { roster = roster'
-           , rows = modifyListWhere isShiftOnDate cancelLoading $ preserveLoading state.rows $ rows roster'
+           , rows = modifyListWhere isShiftOnDate cancelLoading $ preserveLoading state.rows $ rows roster' state.config
            }
