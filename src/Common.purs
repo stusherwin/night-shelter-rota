@@ -1,4 +1,4 @@
-module App.Common (unsafeEventValue, unsafeEventSelectedIndex, lensWithProps, lensOfListWithProps, midnight, tomorrow, toDateString, updateWhere, modifyWhere, updateListWhere, modifyListWhere, surroundIf, justIf, default, onlyIf, className, isJustWith, addDays, toMonthYearString, isFirstDayOfMonth, daysLeftInMonth, toDayString, sortWith, previousWeekday) where
+module App.Common (unsafeEventValue, unsafeEventSelectedIndex, lensWithProps, lensOfListWithProps, midnight, tomorrow, toDateString, updateWhere, modifyWhere, updateListWhere, modifyListWhere, surroundIf, justIf, default, onlyIf, className, isJustWith, addDays, toMonthYearString, isFirstDayOfMonth, daysLeftInMonth, toDayString, sortWith, previousWeekday, nextWeekday) where
   
 import Prelude 
 
@@ -136,3 +136,7 @@ sortWith fn = sortBy $ comparing fn
 previousWeekday :: Weekday -> Date -> Date
 previousWeekday day date = let daysToSubtract = ((fromEnum $ weekday date) - (fromEnum day) + 7) `mod` 7
                            in addDays (-daysToSubtract) date
+
+nextWeekday :: Weekday -> Date -> Date
+nextWeekday day date = let daysToAdd = ((fromEnum day) - (fromEnum $ weekday date) + 7) `mod` 7
+                       in addDays daysToAdd date                           

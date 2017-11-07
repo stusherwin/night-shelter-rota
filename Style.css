@@ -41,6 +41,12 @@
   background: #ebf0dc !important;
 }
 
+.ui.table td.other-vols {
+  /* padding-left: 0; */
+  padding-top: 0;
+  padding-bottom: 0;
+}
+
 .ui.table td.shift-status {
   min-width: 10px;
 }
@@ -197,4 +203,16 @@ i.loading {
 
 .float-right {
   float: right;
+}
+
+.other-vol {
+  display: inline-block;
+  background: #ddd;
+  margin-right: 10px;
+  padding-left: 5px;
+  padding-right: 5px;
+  padding-top: 3px;
+  padding-bottom: 3px;
+  border-radius: 2px;
+  border: 1px solid #ccc;
 }

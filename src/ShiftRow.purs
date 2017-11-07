@@ -44,7 +44,7 @@ type State = { date :: Date
              , status :: ShiftStatus
              , currentVol :: Maybe CurrentVolState
              , noOfVols :: Int
-             , otherVols :: List (Maybe OtherVolState)
+             , otherVols :: List OtherVolState
              , loading :: Boolean
              }
  
@@ -66,11 +66,11 @@ spec = T.simpleSpec performAction render
             ]
          (  [ RD.td  [ className [ "shift-status collapsing", statusClass state ] ]
                      (statusIcon state)
-            , RD.td  [ className [ "left-border shift-day collapsing", statusClass state ] ]
+            , RD.td  [ className [ "shift-day left-border collapsing", statusClass state ] ]
                      [ RD.text $ S.toUpper $ S.take 3 $ show $ weekday state.date ]
             , RD.td  [ className [ "shift-date collapsing", statusClass state ] ]
                      [ RD.text $ toDayString state.date ]
-            , RD.td  [ className [ "left-border collapsing" ] ]
+            , RD.td  [ className [ "vol-count left-border collapsing" ] ]
                      [ RD.text $ "" <> show state.noOfVols <> "/2" ]
             ]
          <> renderOtherVols state.otherVols
@@ -148,19 +148,17 @@ spec = T.simpleSpec performAction render
       renderSelected _ _ = []
   renderCurrentVol _ _ = []
 
-  renderOtherVols :: List (Maybe OtherVolState) -> Array ReactElement
-  renderOtherVols = concatMap renderOtherVol <<< toUnfoldable
+  renderOtherVols :: List OtherVolState -> Array ReactElement
+  renderOtherVols vols = [ RD.td [ RP.className "other-vols collapsing" ]
+                                 (toUnfoldable $ map renderOtherVol vols)
+                         ]
     where
-    renderOtherVol :: Maybe OtherVolState -> Array ReactElement
-    renderOtherVol (Just v) =
-      [ RD.td [ RP.className "collapsing" ]
-              [ RD.span [ RP.className "other-vol" ]
-                        [ renderIcon v.shiftType
-                        , RD.text $ v.name <> " " <> v.sharingPrefs
-                        ]
-              ]
-      ]
-    renderOtherVol _ = [ RD.td [ RP.className "collapsing" ] [] ]
+    renderOtherVol :: OtherVolState -> ReactElement
+    renderOtherVol v =
+       RD.span [ RP.className "other-vol" ]
+               [ renderIcon v.shiftType
+               , RD.text $ v.name <> " " <> v.sharingPrefs
+               ]
 
   renderIcon :: ShiftType -> ReactElement
   renderIcon Evening   = RD.i [ RP.className "vol-icon icon-no-bed" ] []
@@ -172,14 +170,14 @@ spec = T.simpleSpec performAction render
   performAction (ChangeCurrentVolShiftType _ _) _ _ = void $ T.modifyState \state -> state { loading = true }
   performAction _ _ _ = pure unit
 
-initialState :: List D.Shift -> Maybe D.Volunteer -> Date -> Date -> Int -> State
-initialState shifts currentVol currentDate date maxVols = 
+initialState :: List D.Shift -> Maybe D.Volunteer -> Date -> Date -> State
+initialState shifts currentVol currentDate date = 
   { date 
   , noOfVols: length shift.volunteers
   , status: status shift currentDate
   , loading: false
   , currentVol: buildCurrentVol shift
-  , otherVols: fromFoldable $ Laz.take maxVols $ (Laz.fromFoldable $ map Just otherVols) <> (Laz.repeat Nothing)
+  , otherVols: otherVols
   }
   where
   shift = maybe {date: date, volunteers: Nil} id $ find (\s -> s.date == date) shifts

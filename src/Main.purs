@@ -3,10 +3,10 @@ module App.Main where
 import Prelude 
 
 import Data.Array (toUnfoldable)
-import App.Common (lensWithProps, modifyWhere, updateWhere, addDays, sortWith)
+import App.Common (lensWithProps, modifyWhere, updateWhere, addDays, sortWith, nextWeekday)
 import App.CurrentVolDetails (State, Action(..), VolDetails, spec, initialState) as CVD
 import App.CurrentVolSelector (State, Action(..), spec, initialState, changeVols) as CVS
-import App.Data (OvernightPreference(..), OvernightGenderPreference(..), Shift(..), Volunteer(..), VolId(..), nextVolId)
+import App.Data (OvernightPreference(..), OvernightGenderPreference(..), Shift(..), Volunteer(..), VolunteerShift(..), VolId(..), nextVolId)
 import App.ShiftList (State, Action(..), spec, initialState, changeCurrentVol) as SL
 import Control.Monad.Aff.Class (liftAff)
 import Control.Monad.Eff (Eff)
@@ -19,7 +19,7 @@ import Control.Monad.Trans.Class (lift)
 import DOM.HTML.History (state)
 import DOM.Node.Types (Element)
 import Data.List (List(..), find, (:), (!!), length, snoc, last)
-import Data.DateTime (Date)
+import Data.DateTime (Date, Weekday(..))
 import Data.DateTime.Locale (LocalValue(..))
 import Data.Either (Either(..))
 import Data.Foldable (fold)
@@ -233,8 +233,21 @@ main = unsafePerformEff $ do
               , notes: "Only nice people"
               }
   let vols = toUnfoldable [ fred, alice, jim, mary ]
-  let shifts = Nil
-  let currentVol = Just fred
+  let shifts = toUnfoldable [ { date: currentDate
+                              , volunteers: toUnfoldable [ Overnight fred
+                                                         , Evening alice
+                                                         , Overnight jim
+                                                         , Evening mary
+                                                         ]
+                              }
+                            , { date: nextWeekday Sunday currentDate
+                              , volunteers: toUnfoldable [ Overnight fred
+                                                         , Overnight jim
+                                                         , Evening mary
+                                                         ]
+                              }
+                            ]
+  let currentVol = Nothing --Just fred
   let component = T.createClass spec $ { vols
                                        , shiftList: SL.initialState currentVol shifts currentDate 
                                        , currentVol: currentVol

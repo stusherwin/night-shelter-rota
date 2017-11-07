@@ -19,13 +19,15 @@ data Action = ShiftRowAction SR.Action
             | HeaderRowAction HeaderRowAction
 
 type HeaderState = { text :: String 
-                   , noOfCols :: Int
                    }
 
 data State = ShiftRow SR.State
            | StartRow HeaderState
            | MonthHeaderRow HeaderState
            | EndRow HeaderState
+
+noOfCols :: Int
+noOfCols = 8
 
 _HeaderRowAction :: Prism' Action HeaderRowAction
 _HeaderRowAction = prism HeaderRowAction unwrap
@@ -77,7 +79,7 @@ spec =
     where
     render :: T.Render HeaderState _ HeaderRowAction
     render dispatch _ state _ = [ RD.tr [ RP.className "month-header-row" ]
-                                        [ RD.td [ RP.colSpan state.noOfCols ]
+                                        [ RD.td [ RP.colSpan noOfCols ]
                                                 [ RD.text state.text
                                                 , RD.a [ RP.href "#"
                                                        , RP.className "action"
@@ -102,7 +104,7 @@ spec =
     where
     render :: T.Render HeaderState _ HeaderRowAction
     render dispatch _ state _ = [ RD.tr [ RP.className "month-header-row" ]
-                                        [ RD.td [ RP.colSpan state.noOfCols ]
+                                        [ RD.td [ RP.colSpan noOfCols ]
                                                 [ RD.text state.text
                                                 ]
                                         ]
@@ -113,7 +115,7 @@ spec =
     where
     render :: T.Render HeaderState _ HeaderRowAction
     render dispatch _ state _ = [ RD.tr [ RP.className "month-header-row" ]
-                                        [ RD.td [ RP.colSpan state.noOfCols ]
+                                        [ RD.td [ RP.colSpan noOfCols ]
                                                 [ RD.a [ RP.href "#"
                                                        , RP.className "action"
                                                        , RP.onClick \_ -> dispatch NextPeriod
