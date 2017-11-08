@@ -1,8 +1,8 @@
-module App.ShiftRow (State, ShiftType(..), OtherVolState, CurrentVolState, Action(..), ShiftStatus(..), RosterData, spec, initialState) where
+module App.ShiftRow (State, ShiftType(..), OtherVolState, SharingPref, CurrentVolState, Action(..), ShiftStatus(..), RosterData, spec, initialState) where
  
 import Prelude
 
-import App.Common (unsafeEventValue, toDateString, surroundIf, onlyIf, className, toDayString, sortWith)
+import App.Common (unsafeEventValue, toDateString, surroundIf, onlyIf, className, toDayString, sortWith, justIf)
 import App.Data (OvernightPreference(..), OvernightGenderPreference(..), Volunteer(..), VolunteerShift(..), Shift(..), RuleResult(..), Config, canChangeVolunteerShiftType, hasVolWithId, validate, canAddVolunteer) as D
 import Data.Array ((:), concatMap, catMaybes)
 import Data.DateTime (Date, Weekday(..), year, month, day, weekday)
@@ -28,9 +28,15 @@ data ShiftStatus = Good
                  | Past
                  | OK
 
+data SharingPref = Male
+                 | Female
+                 | One
+                 | Two
+                 | Notes String
+
 type OtherVolState = { name :: String
                      , shiftType :: ShiftType
-                     , sharingPrefs :: String
+                     , sharingPrefs :: Array SharingPref
                      }
 
 type CurrentVolState = { name :: String
@@ -162,14 +168,39 @@ spec = T.simpleSpec performAction render
     renderOtherVol :: OtherVolState -> ReactElement
     renderOtherVol v =
        RD.span [ RP.className "other-vol" ]
-               [ renderIcon v.shiftType
-               , RD.text $ v.name <> " " <> v.sharingPrefs
-               ]
+               ([ renderIcon v.shiftType
+                , RD.text $ v.name
+                ]
+                <> map renderSharingPref v.sharingPrefs
+               )
+    
+    renderSharingPref :: SharingPref -> ReactElement
+    renderSharingPref Male      = RD.div [ RP.className "sharing-pref gender" 
+                                         , RP.title "Male only" 
+                                         ] 
+                                         [ RD.text "M" ]
+    renderSharingPref Female    = RD.div [ RP.className "sharing-pref gender" 
+                                         , RP.title "Female only" 
+                                         ] 
+                                         [ RD.text "F" ]
+    renderSharingPref One       = RD.div [ RP.className "sharing-pref alone" 
+                                         , RP.title "Prefer to be on my own" 
+                                         ] 
+                                         [ RD.text "1" ]
+    renderSharingPref Two       = RD.div [ RP.className "sharing-pref alone" 
+                                         , RP.title "Prefer to share with another volunteer" 
+                                         ] 
+                                         [ RD.text "2" ]
+    renderSharingPref (Notes n) = RD.div [ RP.className "sharing-pref icon" 
+                                         , RP.title n
+                                         , RP.dangerouslySetInnerHTML { __html: "<i class=\"icon-info-1\"></i>&nbsp;" }
+                                         ] 
+                                         []
 
   renderIcon :: ShiftType -> ReactElement
   renderIcon Evening   = RD.i [ RP.className "vol-icon icon-no-bed" ] []
   renderIcon Overnight = RD.i [ RP.className "vol-icon icon-bed" ]    []
-  
+
   performAction :: T.PerformAction _ State _ Action
   performAction (AddCurrentVol _ _)             _ _ = void $ T.modifyState \state -> state { loading = true }
   performAction (RemoveCurrentVol _)            _ _ = void $ T.modifyState \state -> state { loading = true }
@@ -202,21 +233,19 @@ initialState roster config date =
                              , sharingPrefs: sharingPrefs v
                              }
 
-  sharingPrefs :: D.Volunteer -> String
-  sharingPrefs vol = S.joinWith " " $ catMaybes [ map overnight vol.overnightPreference
-                                                , map gender vol.overnightGenderPreference
-                                                , if S.length vol.notes > 0
-                                                    then Just $ "(" <> vol.notes <> ")"
-                                                    else Nothing                 
-                                                ]
+  sharingPrefs :: D.Volunteer -> Array SharingPref
+  sharingPrefs vol = catMaybes [ map overnight vol.overnightPreference
+                               , map gender vol.overnightGenderPreference
+                               , justIf (Notes vol.notes) $ S.length vol.notes > 0
+                               ]
     where
-    overnight :: D.OvernightPreference -> String
-    overnight D.PreferToBeAlone = "(1)"
-    overnight D.PreferAnotherVolunteer = "(2)"
+    overnight :: D.OvernightPreference -> SharingPref
+    overnight D.PreferToBeAlone = One
+    overnight D.PreferAnotherVolunteer = Two
     
-    gender :: D.OvernightGenderPreference -> String
-    gender D.Male = "(M)"
-    gender D.Female = "(F)"
+    gender :: D.OvernightGenderPreference -> SharingPref
+    gender D.Male = Male
+    gender D.Female = Female
   
   buildCurrentVol :: D.Shift -> Maybe CurrentVolState
   buildCurrentVol shift = case roster.currentVol of

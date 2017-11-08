@@ -216,3 +216,27 @@ i.loading {
   border-radius: 2px;
   border: 1px solid #ccc;
 }
+
+.other-vol .sharing-pref {
+  display: inline-block;
+  width: 16px;
+  height: 16px;
+  text-align: center;
+  background: #555;
+  color: #fff;
+   border: 1px solid #555; 
+  margin-left: 5px;
+  border-radius: 16px;
+  cursor: help;
+  font-weight: bold;
+  font-size: 12px;
+  position: relative;
+} 
+
+.other-vol .sharing-pref.icon {
+  font-weight: 300;
+}
+
+.other-vol .sharing-pref.icon i {
+  margin-left: -1px;
+}
