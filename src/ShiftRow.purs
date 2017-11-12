@@ -99,7 +99,7 @@ spec = T.simpleSpec performAction render
  
   renderCurrentVol :: _ -> State -> Array ReactElement
   renderCurrentVol dispatch state@{ currentVol: Just _ } =
-    [ RD.td  [ RP.className "collapsing left-border right aligned shift-selected" ]
+    [ RD.td  [ RP.className "collapsing right aligned shift-selected" ]
              $ renderShiftType dispatch state
             <> renderSelected dispatch state
     ]
@@ -107,13 +107,26 @@ spec = T.simpleSpec performAction render
       renderShiftType :: _ -> State -> Array ReactElement
       renderShiftType dispatch state@{ date, loading, currentVol: (Just { shiftType: Just st, canChangeShiftType }) } | canChangeShiftType =
         [ RD.span [ RP.className "shift-type" ]
-                  [ renderIcon st
-                   , RD.text $ description st <> " / "
-                   , RD.a [ RP.onClick \_ -> dispatch $ ChangeCurrentVolShiftType date $ other st
-                          , RP.className "action"
-                          , RP.disabled loading
-                          ]
-                          [ RD.text $ "[" <> (description $ other st) <> "]" ]
+                  [ RD.input [ RP._type "radio"
+                             , RP._id $ "shift-type-" <> toDateString date <> "-overnight"
+                             , RP.name $ "shift-type-" <> toDateString date
+                             , RP.checked $ st == Overnight
+                             , RP.onChange \_ -> dispatch $ ChangeCurrentVolShiftType date Evening
+                             ]
+                             [ ]
+                  , RD.label [ RP.htmlFor $ "shift-type-" <> toDateString date <> "-overnight" ]
+                             [ renderIcon Overnight
+                             , RD.text "Overnight" ] 
+                  , RD.input [ RP._type "radio"
+                             , RP._id $ "shift-type-" <> toDateString date <> "-evening"
+                             , RP.checked $ st == Evening
+                             , RP.name $ "shift-type-" <> toDateString date
+                             , RP.onChange \_ -> dispatch $ ChangeCurrentVolShiftType date Overnight
+                             ]
+                             [ ]
+                  , RD.label [ RP.htmlFor $ "shift-type-" <> toDateString date <> "-evening" ]
+                             [ renderIcon Evening
+                             , RD.text "Evening only" ] 
                    ]
         ]
       renderShiftType dispatch state@{ date, loading, currentVol: (Just { shiftType: Just st }) } =
@@ -219,9 +232,10 @@ initialState roster config date =
   }
   where
   shift = maybe {date: date, volunteers: Nil} id $ find (\s -> s.date == date) roster.shifts
-  otherVols = sortWith _.name $ map buildVol $ case roster.currentVol of
-                                                 Just cv -> filter (not <<< D.hasVolWithId $ cv.id) shift.volunteers
-                                                 _ -> shift.volunteers
+  otherVols = sortWith _.name $ map buildVol $ shift.volunteers
+                                              -- case roster.currentVol of
+                                              --   Just cv -> filter (not <<< D.hasVolWithId $ cv.id) shift.volunteers
+                                              --   _ -> shift.volunteers
 
   buildVol :: D.VolunteerShift -> OtherVolState
   buildVol (D.Overnight v) = { name: v.name

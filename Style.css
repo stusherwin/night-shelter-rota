@@ -156,6 +156,7 @@ i.vol-icon {
 
 a.action {
   cursor: pointer;
+  border-bottom: 1px dashed #4183c4;
 }
 
 a.action[disabled] {
@@ -239,4 +240,12 @@ i.loading {
 
 .other-vol .sharing-pref.icon i {
   margin-left: -1px;
+}
+
+.shift-type label {
+  margin-right: 20px;
+}
+
+.shift-type input[type="radio"] {
+  margin-right: 5px;
 }
