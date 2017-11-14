@@ -1,9 +1,10 @@
 module App.ShiftRow (State, ShiftType(..), OtherVolState, SharingPref, CurrentVolState, Action(..), ShiftStatus(..), RosterData, spec, initialState) where
  
 import Prelude
-
+ 
 import App.Common (unsafeEventValue, toDateString, surroundIf, onlyIf, className, toDayString, sortWith, justIf)
 import App.Data (OvernightPreference(..), OvernightGenderPreference(..), Volunteer(..), VolunteerShift(..), Shift(..), RuleResult(..), Config, canChangeVolunteerShiftType, hasVolWithId, validate, canAddVolunteer) as D
+import App.ShiftTypeRadio (State, Action, ShiftType(..), spec, initialState) as STR
 import Data.Array ((:), concatMap, catMaybes)
 import Data.DateTime (Date, Weekday(..), year, month, day, weekday)
 import Data.Enum (fromEnum)
@@ -19,6 +20,7 @@ import Thermite as T
 
 data ShiftType = Overnight
                | Evening
+ 
 derive instance shiftTypeEq :: Eq ShiftType
 
 data ShiftStatus = Good
@@ -63,7 +65,7 @@ type RosterData d = { currentVol :: Maybe D.Volunteer
 data Action = AddCurrentVol Date ShiftType
             | RemoveCurrentVol Date
             | ChangeCurrentVolShiftType Date ShiftType
-
+ 
 spec :: T.Spec _ State _ Action
 spec = T.simpleSpec performAction render
   where
@@ -219,7 +221,7 @@ spec = T.simpleSpec performAction render
   performAction (RemoveCurrentVol _)            _ _ = void $ T.modifyState \state -> state { loading = true }
   performAction (ChangeCurrentVolShiftType _ _) _ _ = void $ T.modifyState \state -> state { loading = true }
   performAction _ _ _ = pure unit
-
+ 
 initialState :: forall d. RosterData d -> D.Config -> Date -> State
 initialState roster config date = 
   { date 

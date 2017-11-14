@@ -1,4 +1,4 @@
-module App.CurrentVolDetails (State, VolDetails, Action(..), spec, initialState) where
+module App.VolDetails (State, Details, Action(..), spec, initialState) where
 
 import Prelude
 
@@ -15,11 +15,11 @@ import React.DOM as RD
 import React.DOM.Props as RP
 import Thermite as T
 
-type VolDetails = { name :: String 
-                  , notes :: String
-                  }
+type Details = { name :: String 
+               , notes :: String
+               }
 
-type State = { volDetails :: VolDetails
+type State = { details :: Details
              , formValid :: Boolean
              , formSubmitted :: Boolean
              }
@@ -27,7 +27,7 @@ type State = { volDetails :: VolDetails
 data Action = SetName String
             | SetNotes String
             | SetSubmitted
-            | Save VolDetails
+            | Save Details
             | Cancel
 
 spec :: T.Spec _ State _ Action
@@ -41,7 +41,7 @@ spec = T.simpleSpec performAction render
                                   [ RD.text "Name" ]
                        , RD.input [ RP._type "text"
                                   , RP.autoFocus true
-                                  , RP.value state.volDetails.name
+                                  , RP.value state.details.name
                                   , RP.onChange $ dispatch <<< SetName <<< unsafeEventValue
                                   ]
                                   []
@@ -62,7 +62,7 @@ spec = T.simpleSpec performAction render
                                             ]
                                   ]
                        , RD.input [ RP._type "text"
-                                  , RP.value state.volDetails.notes
+                                  , RP.value state.details.notes
                                   , RP.onChange $ dispatch <<< SetNotes <<< unsafeEventValue
                                   ]
                                   []
@@ -77,7 +77,7 @@ spec = T.simpleSpec performAction render
                           , RP.disabled formError
                           , RP.onClick \e -> do
                               _ <- preventDefault e
-                              dispatch $ if state.formValid then Save state.volDetails else SetSubmitted
+                              dispatch $ if state.formValid then Save state.details else SetSubmitted
                           ]
                           [ RD.i [ RP.className "icon icon-ok" ] []
                           , RD.text "Save" ]
@@ -98,27 +98,27 @@ spec = T.simpleSpec performAction render
   
   performAction :: T.PerformAction _ State _ Action
   performAction (SetName name) _ _ = void $ T.modifyState \state ->
-    let volDetails' = state.volDetails { name = name }
-    in state { volDetails = volDetails'
-             , formValid = isValid volDetails'
+    let details' = state.details { name = name }
+    in state { details = details'
+             , formValid = isValid details'
              }
   performAction (SetNotes notes) _ _ = void $ T.modifyState \state ->
-    let volDetails' = state.volDetails { notes = notes }
-    in state { volDetails = volDetails'
-             , formValid = isValid volDetails'
+    let details' = state.details { notes = notes }
+    in state { details = details'
+             , formValid = isValid details'
              }
   performAction SetSubmitted _ _ = void $ T.modifyState \state -> state { formSubmitted = true }
   performAction _ _ _ = pure unit 
 
 initialState :: Maybe Volunteer -> State
 initialState currentVol =
-  let volDetails = maybe { name: "", notes: "" } (\cv -> { name: cv.name, notes: notes cv }) currentVol
-  in { volDetails: volDetails
-     , formValid: isValid volDetails
+  let details = maybe { name: "", notes: "" } (\cv -> { name: cv.name, notes: notes cv }) currentVol
+  in { details
+     , formValid: isValid details
      , formSubmitted: false
      }
 
-isValid :: VolDetails -> Boolean
+isValid :: Details -> Boolean
 isValid { name } | length name == 0 = false
 isValid _ = true
 
