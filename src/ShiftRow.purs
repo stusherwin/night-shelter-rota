@@ -64,7 +64,7 @@ type RosterData d = { currentVol :: Maybe D.Volunteer
  
 data Action = AddCurrentVol Date ShiftType
             | RemoveCurrentVol Date
-            | ChangeCurrentVolShiftType Date ShiftType
+            | ChangeCurrentVolShiftType Date
  
 spec :: T.Spec _ State _ Action
 spec = T.simpleSpec performAction render
@@ -78,17 +78,19 @@ spec = T.simpleSpec performAction render
                               _ -> ""
                           ]
             ]
-         (  [ RD.td  [ className [ "shift-status collapsing", statusClass state ] ]
+         (  [ RD.td  [ className [ "shift-status-icon shift-status collapsing", statusClass state ] ]
                      (statusIcon state)
-            , RD.td  [ className [ "shift-day left-border collapsing", statusClass state ] ]
+            , RD.td  [ className [ "shift-day shift-status collapsing", statusClass state ] ]
                      [ RD.text $ S.toUpper $ S.take 3 $ show $ weekday state.date ]
-            , RD.td  [ className [ "shift-date collapsing", statusClass state ] ]
+            , RD.td  [ className [ "shift-date shift-status collapsing", statusClass state ] ]
                      [ RD.text $ toDayString state.date ]
-            , RD.td  [ className [ "vol-count left-border collapsing" ] ]
+            , RD.td  [ className [ "vol-count shift-status collapsing", statusClass state ] ]
                      [ RD.text $ "" <> show state.noOfVols <> "/" <> show state.maxVols ]
             ]
-         <> renderOtherVols state.otherVols
-         <> [ RD.td' [] ]
+         <> renderOtherVols state
+         <> [ RD.td [ className [ "shift-status", statusClass state ] ]
+                    []
+            ]
          <> renderCurrentVol dispatch state
          )
     ]
@@ -101,7 +103,7 @@ spec = T.simpleSpec performAction render
  
   renderCurrentVol :: _ -> State -> Array ReactElement
   renderCurrentVol dispatch state@{ currentVol: Just _ } =
-    [ RD.td  [ RP.className "collapsing right aligned shift-selected" ]
+    [ RD.td  [ className [ "shift-selected shift-status collapsing right aligned", statusClass state ] ]
              $ renderShiftType dispatch state
             <> renderSelected dispatch state
     ]
@@ -113,7 +115,7 @@ spec = T.simpleSpec performAction render
                              , RP._id $ "shift-type-" <> toDateString date <> "-overnight"
                              , RP.name $ "shift-type-" <> toDateString date
                              , RP.checked $ st == Overnight
-                             , RP.onChange \_ -> dispatch $ ChangeCurrentVolShiftType date Evening
+                             , RP.onChange \_ -> dispatch $ ChangeCurrentVolShiftType date
                              ]
                              [ ]
                   , RD.label [ RP.htmlFor $ "shift-type-" <> toDateString date <> "-overnight" ]
@@ -123,7 +125,7 @@ spec = T.simpleSpec performAction render
                              , RP._id $ "shift-type-" <> toDateString date <> "-evening"
                              , RP.checked $ st == Evening
                              , RP.name $ "shift-type-" <> toDateString date
-                             , RP.onChange \_ -> dispatch $ ChangeCurrentVolShiftType date Overnight
+                             , RP.onChange \_ -> dispatch $ ChangeCurrentVolShiftType date
                              ]
                              [ ]
                   , RD.label [ RP.htmlFor $ "shift-type-" <> toDateString date <> "-evening" ]
@@ -175,10 +177,10 @@ spec = T.simpleSpec performAction render
       renderSelected _ _ = []
   renderCurrentVol _ _ = []
 
-  renderOtherVols :: List OtherVolState -> Array ReactElement
-  renderOtherVols vols = [ RD.td [ RP.className "other-vols collapsing" ]
-                                 (toUnfoldable $ map renderOtherVol vols)
-                         ]
+  renderOtherVols :: State -> Array ReactElement
+  renderOtherVols state = [ RD.td [ className [ "other-vols shift-status collapsing", statusClass state ] ]
+                                  (toUnfoldable $ map renderOtherVol state.otherVols)
+                          ]
     where
     renderOtherVol :: OtherVolState -> ReactElement
     renderOtherVol v =
@@ -219,7 +221,7 @@ spec = T.simpleSpec performAction render
   performAction :: T.PerformAction _ State _ Action
   performAction (AddCurrentVol _ _)             _ _ = void $ T.modifyState \state -> state { loading = true }
   performAction (RemoveCurrentVol _)            _ _ = void $ T.modifyState \state -> state { loading = true }
-  performAction (ChangeCurrentVolShiftType _ _) _ _ = void $ T.modifyState \state -> state { loading = true }
+  performAction (ChangeCurrentVolShiftType _) _ _ = void $ T.modifyState \state -> state { loading = true }
   performAction _ _ _ = pure unit
  
 initialState :: forall d. RosterData d -> D.Config -> Date -> State

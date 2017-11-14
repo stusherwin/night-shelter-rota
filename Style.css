@@ -12,6 +12,7 @@
 
 .ui.table tr td.shift-date {
   padding-left: 5px;
+  /* padding-right: 0; */
 }
 
 .ui.table tr td.shift-day {
@@ -22,44 +23,48 @@
   background: #eee;
 }
 
-.ui.table tr.weekend td.shift-date, .ui.table tr.weekend td.shift-status, .ui.table tr.weekend td.shift-day {
+.ui.table tr.weekend td.shift-date, .ui.table tr.weekend td.shift-day {
   font-weight: bold;
 }
 
-.ui.table tr.weekend td.shift-date.warning, .ui.table tr.weekend td.shift-day.warning, .ui.table tr.weekend td.shift-status.warning {
+.ui.table tr.weekend td.shift-status.warning {
   /* #fffaf3 */
   background: #f3ece1 !important;
 }
 
-.ui.table tr.weekend td.shift-date.negative, .ui.table tr.weekend td.shift-day.negative, .ui.table tr.weekend td.shift-status.negative {
+.ui.table tr.weekend td.shift-status.negative {
   /* #fff6f6 */
   background: #f4e7e7 !important;
 }
 
-.ui.table tr.weekend td.shift-date.positive, .ui.table tr.weekend td.shift-day.positive, .ui.table tr.weekend td.shift-status.positive {
+.ui.table tr.weekend td.shift-status.positive {
   /* #fcfff5 */
   background: #ebf0dc !important;
 }
 
 .ui.table td.other-vols {
-  /* padding-left: 0; */
+   padding-left: 0; 
   padding-top: 0;
   padding-bottom: 0;
 }
 
-.ui.table td.shift-status {
+.ui.table td.shift-status-icon {
   min-width: 10px;
+  padding-left: 5px;
+  padding-right: 5px;
 }
 
-.ui.table td.shift-status i {
-  margin-left: -5px;
-  margin-right: -5px;
+.ui.table td.shift-status-icon i {
   opacity: 0.4;
 }
 
-.ui.table td.shift-status i.icon-warning, .ui.table td.shift-status i.icon-info, .ui.table td.shift-status i.icon-clock {
+.ui.table td.shift-status-icon i.icon-warning, .ui.table td.shift-status-icon i.icon-info, .ui.table td.shift-status-icon i.icon-clock {
   cursor: help;
   opacity: 0.65;
+}
+
+.ui.table td.vol-count {
+  padding-left: 20px;
 }
 
 .ui.table td.shift-type {
@@ -209,6 +214,7 @@ i.loading {
 .other-vol {
   display: inline-block;
   background: #ddd;
+  color: #555;
   margin-right: 10px;
   padding-left: 5px;
   padding-right: 5px;
@@ -225,7 +231,7 @@ i.loading {
   text-align: center;
   background: #555;
   color: #fff;
-   border: 1px solid #555; 
+  border: 1px solid #555; 
   margin-left: 5px;
   border-radius: 16px;
   cursor: help;

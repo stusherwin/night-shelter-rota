@@ -67,14 +67,18 @@ addVolunteerShift date vol shifts =
     Just i -> fromMaybe shifts $ modifyAt i (\s -> s{ volunteers = (flip snoc) vol s.volunteers }) shifts
     _      -> snoc shifts $ { date, volunteers: singleton vol }
 
-changeVolunteerShift :: Date -> VolunteerShift -> List Shift -> List Shift
-changeVolunteerShift date vol shifts =
+changeVolunteerShift :: Date -> VolId -> List Shift -> List Shift
+changeVolunteerShift date volId shifts =
   case findIndex (\s -> s.date == date) shifts of
     Just i -> fromMaybe shifts $ modifyAt i (\s ->
-                case findIndex (hasVolWithId $ volId vol) s.volunteers of
-                  Just j -> s{ volunteers = fromMaybe s.volunteers $ updateAt j vol s.volunteers }
+                case findIndex (hasVolWithId volId) s.volunteers of
+                  Just j -> s{ volunteers = fromMaybe s.volunteers $ modifyAt j otherShiftType s.volunteers }
                   _      -> s) shifts
     _      -> shifts
+
+otherShiftType :: VolunteerShift -> VolunteerShift
+otherShiftType (Overnight v) = Evening v
+otherShiftType (Evening v) = Overnight v
 
 removeVolunteerShift :: Date -> Volunteer -> List Shift -> List Shift
 removeVolunteerShift date vol shifts =
@@ -215,7 +219,7 @@ haveAnOvernightVolunteer { shift, config: { currentDate } } =
 
 notViolateAnyVolsSharingPrefs :: Rule
 notViolateAnyVolsSharingPrefs { shift } =
-  justIf "goes against a volunteer's overnight preference"
+  justIf "goes against a volunteer's preferences"
        $ any violatesSharingPrefs shift.volunteers
   where
   violatesSharingPrefs :: VolunteerShift -> Boolean

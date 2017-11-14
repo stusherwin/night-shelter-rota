@@ -81,12 +81,12 @@ spec =
     performAction (RowAction _ (R.ShiftRowAction (SR.AddCurrentVol shiftDate SR.Evening))) _ { roster: { currentVol: Just cv } } = void do
       delay'
       T.modifyState \state -> modifyShifts state shiftDate $ D.addVolunteerShift shiftDate (D.Evening cv)
-    performAction (RowAction _ (R.ShiftRowAction (SR.ChangeCurrentVolShiftType shiftDate SR.Overnight))) _ { roster: { currentVol: Just cv } } = void do
+    performAction (RowAction _ (R.ShiftRowAction (SR.ChangeCurrentVolShiftType shiftDate))) _ { roster: { currentVol: Just cv } } = void do
       delay'
-      T.modifyState \state -> modifyShifts state shiftDate $ D.changeVolunteerShift shiftDate (D.Overnight cv)
-    performAction (RowAction _ (R.ShiftRowAction (SR.ChangeCurrentVolShiftType shiftDate SR.Evening))) _ { roster: { currentVol: Just cv } } = void do
+      T.modifyState \state -> modifyShifts state shiftDate $ D.changeVolunteerShift shiftDate cv.id
+    performAction (RowAction _ (R.ShiftRowAction (SR.ChangeCurrentVolShiftType shiftDate))) _ { roster: { currentVol: Just cv } } = void do
       delay'
-      T.modifyState \state -> modifyShifts state shiftDate $ D.changeVolunteerShift shiftDate (D.Evening cv)
+      T.modifyState \state -> modifyShifts state shiftDate $ D.changeVolunteerShift shiftDate cv.id
     performAction (RowAction _ (R.ShiftRowAction (SR.RemoveCurrentVol shiftDate))) _ { roster: { currentVol: Just cv } } = void do
       delay'
       T.modifyState \state -> modifyShifts state shiftDate $ D.removeVolunteerShift shiftDate cv

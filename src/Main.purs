@@ -1,5 +1,5 @@
 module App.Main where 
-   
+    
 import Prelude
  
 import Data.Array (toUnfoldable) 
