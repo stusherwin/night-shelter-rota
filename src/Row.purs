@@ -10,7 +10,7 @@ import React.DOM as RD
 import React.DOM.Props as RP
 import Thermite as T
 
-import App.ShiftRow (CurrentVolState, OtherVolState, Action(..), State(..), ShiftStatus(..), ShiftType(..), spec) as SR
+import App.ShiftRow (Action(..), State(..), ShiftStatus(..), ShiftType(..), spec) as SR
 
 data HeaderRowAction = PrevPeriod
                      | NextPeriod

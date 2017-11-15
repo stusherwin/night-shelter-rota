@@ -1,15 +1,16 @@
 module App.ShiftList (Action(..), State, RosterState, spec, initialState, changeCurrentVol) where
-  
+   
 import Prelude
 
 import App.Common (lensOfListWithProps, tomorrow, modifyListWhere, surroundIf, default, toMonthYearString, daysLeftInMonth, isFirstDayOfMonth, sortWith, addDays, previousWeekday)
 import App.Data (OvernightPreference(..), Shift(..), Volunteer(..), VolunteerShift(..), RuleResult(..), Config, canAddVolunteer, addVolunteerShift, changeVolunteerShift, removeVolunteerShift, hasVolWithId, validate, filterOut, canChangeVolunteerShiftType, updateVolunteer) as D
-import App.ShiftRow (CurrentVolState, OtherVolState, Action(..), State(..), ShiftStatus(..), ShiftType(..), spec, initialState) as SR
+import App.ShiftRow (Action(..), State(..), ShiftStatus(..), ShiftType(..), spec, initialState) as SR
 import App.Row (State(..), Action(..), HeaderRowAction(..), HeaderState, spec) as R
+import App.CurrentVolShiftEdit (State, Action(..), ShiftType(..), spec, initialState) as CVSE
 import Control.Monad.Aff (delay)
 import Control.Monad.Aff.Class (liftAff)
 import Control.Monad.Trans.Class (lift)
-import DOM.HTML.HTMLElement (offsetHeight) 
+import DOM.HTML.HTMLElement (offsetHeight)
 import Data.Date (diff, lastDayOfMonth, canonicalDate)
 import Data.DateTime (Date(..), DateTime(..), Millisecond, Time(..), adjust, canonicalDate, date, day, month, year, Day(..), Year(..), Weekday(..))
 import Data.Either (Either(..))
@@ -75,19 +76,16 @@ spec =
     render dispatch _ state _ = []
 
     performAction :: T.PerformAction _ State _ Action
-    performAction (RowAction _ (R.ShiftRowAction (SR.AddCurrentVol shiftDate SR.Overnight))) _ { roster: { currentVol: Just cv } } = void do
+    performAction (RowAction _ (R.ShiftRowAction (SR.CurrentVolShiftEditAction (CVSE.AddCurrentVol shiftDate CVSE.Overnight)))) _ { roster: { currentVol: Just cv } } = void do
       delay'
       T.modifyState \state -> modifyShifts state shiftDate $ D.addVolunteerShift shiftDate (D.Overnight cv)
-    performAction (RowAction _ (R.ShiftRowAction (SR.AddCurrentVol shiftDate SR.Evening))) _ { roster: { currentVol: Just cv } } = void do
+    performAction (RowAction _ (R.ShiftRowAction (SR.CurrentVolShiftEditAction (CVSE.AddCurrentVol shiftDate CVSE.Evening)))) _ { roster: { currentVol: Just cv } } = void do
       delay'
       T.modifyState \state -> modifyShifts state shiftDate $ D.addVolunteerShift shiftDate (D.Evening cv)
-    performAction (RowAction _ (R.ShiftRowAction (SR.ChangeCurrentVolShiftType shiftDate))) _ { roster: { currentVol: Just cv } } = void do
+    performAction (RowAction _ (R.ShiftRowAction (SR.CurrentVolShiftEditAction (CVSE.ChangeCurrentVolShiftType shiftDate)))) _ { roster: { currentVol: Just cv } } = void do
       delay'
       T.modifyState \state -> modifyShifts state shiftDate $ D.changeVolunteerShift shiftDate cv.id
-    performAction (RowAction _ (R.ShiftRowAction (SR.ChangeCurrentVolShiftType shiftDate))) _ { roster: { currentVol: Just cv } } = void do
-      delay'
-      T.modifyState \state -> modifyShifts state shiftDate $ D.changeVolunteerShift shiftDate cv.id
-    performAction (RowAction _ (R.ShiftRowAction (SR.RemoveCurrentVol shiftDate))) _ { roster: { currentVol: Just cv } } = void do
+    performAction (RowAction _ (R.ShiftRowAction (SR.CurrentVolShiftEditAction (CVSE.RemoveCurrentVol shiftDate)))) _ { roster: { currentVol: Just cv } } = void do
       delay'
       T.modifyState \state -> modifyShifts state shiftDate $ D.removeVolunteerShift shiftDate cv
     performAction (RowAction _ (R.HeaderRowAction R.PrevPeriod)) _ _ = void do

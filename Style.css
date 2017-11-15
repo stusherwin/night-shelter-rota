@@ -27,22 +27,25 @@
   font-weight: bold;
 }
 
-.ui.table tr.weekend td.shift-status.warning {
+.ui.table tr.weekend td.shift-status.warning,
+.ui.table tr.weekend.warning {
   /* #fffaf3 */
   background: #f3ece1 !important;
 }
 
-.ui.table tr.weekend td.shift-status.negative {
+.ui.table tr.weekend td.shift-status.negative,
+.ui.table tr.weekend.negative {
   /* #fff6f6 */
   background: #f4e7e7 !important;
 }
 
-.ui.table tr.weekend td.shift-status.positive {
+.ui.table tr.weekend td.shift-status.positive,
+.ui.table tr.weekend.positive {
   /* #fcfff5 */
   background: #ebf0dc !important;
 }
 
-.ui.table td.other-vols {
+.ui.table td.vol-markers {
    padding-left: 0; 
   padding-top: 0;
   padding-bottom: 0;
@@ -211,7 +214,7 @@ i.loading {
   float: right;
 }
 
-.other-vol {
+.vol-marker {
   display: inline-block;
   background: #ddd;
   color: #555;
@@ -224,7 +227,7 @@ i.loading {
   border: 1px solid #ccc;
 }
 
-.other-vol .sharing-pref {
+.vol-marker .sharing-pref {
   display: inline-block;
   width: 16px;
   height: 16px;
@@ -240,11 +243,11 @@ i.loading {
   position: relative;
 } 
 
-.other-vol .sharing-pref.icon {
+.vol-marker .sharing-pref.icon {
   font-weight: 300;
 }
 
-.other-vol .sharing-pref.icon i {
+.vol-marker .sharing-pref.icon i {
   margin-left: -1px;
 }
 
