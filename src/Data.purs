@@ -20,9 +20,19 @@ import Type.Data.Boolean (False)
 
 data OvernightPreference = PreferToBeAlone
                          | PreferAnotherVolunteer 
+derive instance overnightPreferenceEq :: Eq OvernightPreference
+instance overnightPreferenceShow :: Show OvernightPreference
+  where
+  show PreferToBeAlone = "PreferToBeAlone"
+  show PreferAnotherVolunteer = "PreferAnotherVolunteer" 
 
 data OvernightGenderPreference = Male
                                | Female
+derive instance overnightGenderPreferenceEq :: Eq OvernightGenderPreference
+instance overnightGenderPreferenceShow :: Show OvernightGenderPreference
+  where
+  show Male = "Male"
+  show Female = "Female" 
 
 newtype VolId = VolId Int
 derive instance volIdEq :: Eq VolId

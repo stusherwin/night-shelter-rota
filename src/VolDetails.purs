@@ -13,11 +13,13 @@ import React.DOM as RD
 import React.DOM.Props as RP
 import Thermite as T
 
-import App.Common (unsafeEventValue, className, onlyIf)
+import App.Common (unsafeEventValue, className, onlyIf, unsafeChecked)
 import App.Data (OvernightPreference(..), OvernightGenderPreference(..), VolId(..), Volunteer(..), parseVolId)
 
 type Details = { name :: String 
                , notes :: String
+               , pref :: Maybe OvernightPreference
+               , genderPref :: Maybe OvernightGenderPreference
                }
 
 type State = { details :: Details
@@ -27,6 +29,8 @@ type State = { details :: Details
  
 data Action = SetName String
             | SetNotes String
+            | SetPref (Maybe OvernightPreference)
+            | SetGenderPref (Maybe OvernightGenderPreference)
             | SetSubmitted
             | Save Details
             | Cancel
@@ -48,19 +52,108 @@ spec = T.simpleSpec performAction render
                                   []
                        ]
               , RD.div [ className [ "field " ] ]
+                       [ RD.label' [ RD.text "Sharing preferences" ]
+                       , RD.div [ RP.className "ui radio checkbox" ]
+                                [ RD.input [ RP._type "radio"
+                                           , RP._id "pref-alone-1"
+                                           , RP.name "pref-alone"
+                                           , RP.checked $ state.details.pref == (Just PreferToBeAlone)
+                                           , RP.onChange \e -> do
+                                               let checked = unsafeChecked e
+                                               when checked $ dispatch $ SetPref (Just PreferToBeAlone)
+                                           ]
+                                           [ ]
+                                , RD.label [ RP.className "action-label"
+                                           , RP.htmlFor "pref-alone-1" ]
+                                           [ renderPref PreferToBeAlone
+                                           , RD.text "prefer to be on my own"
+                                           ]
+                                ]
+                       , RD.div [ RP.className "ui radio checkbox" ]
+                                [ RD.input [ RP._type "radio"
+                                           , RP._id "pref-alone-2"
+                                           , RP.name "pref-alone"
+                                           , RP.checked $ state.details.pref == (Just PreferAnotherVolunteer)
+                                           , RP.onChange \e -> do
+                                               let checked = unsafeChecked e
+                                               when checked $ dispatch $ SetPref (Just PreferAnotherVolunteer)
+                                           ]
+                                           [ ]
+                                , RD.label [ RP.className "action-label"
+                                           , RP.htmlFor "pref-alone-2" ]
+                                           [ renderPref PreferAnotherVolunteer 
+                                           , RD.text "prefer to share with another volunteer"
+                                           ]
+                                ]
+                       , RD.div [ RP.className "ui radio checkbox" ]
+                                [ RD.input [ RP._type "radio"
+                                           , RP._id "pref-alone-none"
+                                           , RP.name "pref-alone"
+                                           , RP.checked $ state.details.pref == Nothing
+                                           , RP.onChange \e -> do
+                                               let checked = unsafeChecked e
+                                               when checked $ dispatch $ SetPref Nothing
+                                           ]
+                                           [ ]
+                                , RD.label [ RP.className "action-label"
+                                           , RP.htmlFor "pref-alone-none" ]
+                                           [ RD.text "No preference"
+                                           ]
+                                ]
+                       ]
+              , RD.div [ className [ "field " ] ]
+                       [ RD.label' [ RD.text "Gender preferences" ]
+                       , RD.div [ RP.className "ui radio checkbox" ]
+                                [ RD.input [ RP._type "radio"
+                                           , RP._id "pref-gender-f"
+                                           , RP.name "pref-gender"
+                                           , RP.checked $ state.details.genderPref == (Just Female)
+                                           , RP.onChange \e -> do
+                                               let checked = unsafeChecked e
+                                               when checked $ dispatch $ SetGenderPref (Just Female)
+                                           ]
+                                           [ ]
+                                , RD.label [ RP.className "action-label"
+                                           , RP.htmlFor "pref-gender-f" ]
+                                           [ renderGenderPref Female
+                                           , RD.text "female only"
+                                           ]
+                                ]
+                       , RD.div [ RP.className "ui radio checkbox" ]
+                                [ RD.input [ RP._type "radio"
+                                           , RP._id "pref-gender-m"
+                                           , RP.name "pref-gender"
+                                           , RP.checked $ state.details.genderPref == (Just Male)
+                                           , RP.onChange \e -> do
+                                               let checked = unsafeChecked e
+                                               when checked $ dispatch $ SetGenderPref (Just Male)
+                                           ]
+                                           [ ]
+                                , RD.label [ RP.className "action-label"
+                                           , RP.htmlFor "pref-gender-m" ]
+                                           [ renderGenderPref Male 
+                                           , RD.text "male only"
+                                           ]
+                                ]
+                       , RD.div [ RP.className "ui radio checkbox" ]
+                                [ RD.input [ RP._type "radio"
+                                           , RP._id "pref-gender-none"
+                                           , RP.name "pref-gender"
+                                           , RP.checked $ state.details.genderPref == Nothing
+                                           , RP.onChange \e -> do
+                                               let checked = unsafeChecked e
+                                               when checked $ dispatch $ SetGenderPref Nothing
+                                           ]
+                                           [ ]
+                                , RD.label [ RP.className "action-label"
+                                           , RP.htmlFor "pref-gender-none" ]
+                                           [ RD.text "No preference"
+                                           ]
+                                ]
+                       ]
+              , RD.div [ className [ "field " ] ]
                        [ RD.label [ RP.htmlFor "volNotes" ]
                                   [ RD.text "Notes"
-                                  , RD.span [ RP.className "notes" ]
-                                            [ RD.text "e.g. "
-                                            , RD.b' [ RD.text "M" ]
-                                            , RD.text " for Male only, "
-                                            , RD.b' [ RD.text "F" ]
-                                            , RD.text " for Female only, "
-                                            , RD.b' [ RD.text "(1)" ]
-                                            , RD.text " if you prefer to be on your own or "
-                                            , RD.b' [ RD.text "(2)" ]
-                                            , RD.text " if you prefer to share with another volunteer"
-                                            ]
                                   ]
                        , RD.input [ RP._type "text"
                                   , RP.value state.details.notes
@@ -108,12 +201,32 @@ spec = T.simpleSpec performAction render
     in state { details = details'
              , formValid = isValid details'
              }
+  performAction (SetPref pref) _ _ = void $ T.modifyState \state ->
+    let details' = state.details { pref = pref }
+    in state { details = details'
+             , formValid = isValid details'
+             }
+  performAction (SetGenderPref pref) _ _ = void $ T.modifyState \state ->
+    let details' = state.details { genderPref = pref }
+    in state { details = details'
+             , formValid = isValid details'
+             }
   performAction SetSubmitted _ _ = void $ T.modifyState \state -> state { formSubmitted = true }
   performAction _ _ _ = pure unit 
 
 initialState :: Maybe Volunteer -> State
 initialState currentVol =
-  let details = maybe { name: "", notes: "" } (\cv -> { name: cv.name, notes: notes cv }) currentVol
+  let defaultDetails = { name: ""
+                       , notes: ""
+                       , pref: Nothing
+                       , genderPref: Nothing
+                       }
+      currentVolDetails cv = { name: cv.name
+                             , notes: notes cv
+                             , pref: cv.overnightPreference
+                             , genderPref: cv.overnightGenderPreference
+                             }
+      details = maybe defaultDetails currentVolDetails currentVol
   in { details
      , formValid: isValid details
      , formSubmitted: false
@@ -125,3 +238,18 @@ isValid _ = true
 
 notes :: Volunteer -> String
 notes = _.notes
+
+renderGenderPref :: OvernightGenderPreference -> ReactElement
+renderGenderPref Male   = RD.div [ RP.className "sharing-pref gender" 
+                                 ] 
+                                 [ RD.span' [ RD.text "M" ] ]
+renderGenderPref Female = RD.div [ RP.className "sharing-pref gender" 
+                                 ] 
+                                 [ RD.span' [ RD.text "F" ] ]
+renderPref :: OvernightPreference -> ReactElement
+renderPref PreferToBeAlone        = RD.div [ RP.className "sharing-pref alone" 
+                                           ] 
+                                           [ RD.span' [ RD.text "1" ] ]
+renderPref PreferAnotherVolunteer = RD.div [ RP.className "sharing-pref alone" 
+                                           ] 
+                                           [ RD.span' [ RD.text "2" ] ]

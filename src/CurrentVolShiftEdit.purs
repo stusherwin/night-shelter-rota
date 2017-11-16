@@ -106,7 +106,8 @@ renderShiftTypeRadio dispatch s =
              , RP.onChange \_ -> dispatch $ ChangeCurrentVolShiftType s.date
              ]
              [ ]
-  , RD.label [ RP.htmlFor $ "shift-type-" <> toDateString s.date <> "-" <> code s.shiftType ]
+  , RD.label [ RP.className "action-label"
+             , RP.htmlFor $ "shift-type-" <> toDateString s.date <> "-" <> code s.shiftType ]
              [ renderIcon s.shiftType
              , RD.text $ description s.shiftType
              ]

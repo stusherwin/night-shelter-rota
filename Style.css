@@ -87,6 +87,10 @@
   vertical-align: bottom;
 }
 
+.ui.table td.shift-selected {
+  color: #555;
+}
+
 .ui.table td.shift-selected .ui.checkbox label:before {
   border-color: #aaa;
   border-radius: 2px;
@@ -227,7 +231,7 @@ i.loading {
   border: 1px solid #ccc;
 }
 
-.vol-marker .sharing-pref {
+.sharing-pref {
   display: inline-block;
   width: 16px;
   height: 16px;
@@ -243,12 +247,26 @@ i.loading {
   position: relative;
 } 
 
-.vol-marker .sharing-pref.icon {
+.sharing-pref.icon {
   font-weight: 300;
 }
 
-.vol-marker .sharing-pref.icon i {
+.sharing-pref.icon i {
   margin-left: -1px;
+}
+
+label .sharing-pref {
+  margin-left: 0px;
+  margin-right: 5px;
+  padding-bottom: 2px;
+  position: relative;
+  top: 1px;
+  cursor: inherit;
+}
+
+label .sharing-pref span {
+  position: relative;
+  top: -1px;
 }
 
 .shift-type label {
@@ -257,4 +275,13 @@ i.loading {
 
 .shift-type input[type="radio"] {
   margin-right: 5px;
+}
+
+.field .ui.radio.checkbox {
+  margin-right: 20px;
+  margin-top: 10px;
+}
+
+.action-label {
+  cursor: pointer !important;
 }

@@ -177,7 +177,11 @@ addOrUpdateVol d s =
        }
   where
   addOrUpdate d { currentVol: Just cv, vols } =
-    let cv'  = cv{ name = d.name, notes = d.notes }
+    let cv'  = cv{ name = d.name
+                 , overnightPreference = d.pref
+                 , overnightGenderPreference = d.genderPref
+                 , notes = d.notes
+                 }
     in { currentVol': Just cv'
        , vols': updateWhere (\v -> v.id == cv.id) cv' vols
        }
@@ -185,8 +189,8 @@ addOrUpdateVol d s =
     let maxId  = maybe (VolId 0) (_.id) $ last $ sortWith (\v -> v.id) vols
         newVol = { id: nextVolId maxId
                  , name: d.name
-                 , overnightPreference: Nothing
-                 , overnightGenderPreference: Nothing
+                 , overnightPreference: d.pref
+                 , overnightGenderPreference: d.genderPref
                  , notes: d.notes
                  }
     in { currentVol': Just newVol

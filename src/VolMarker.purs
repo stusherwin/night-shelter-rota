@@ -52,19 +52,19 @@ spec = T.simpleSpec T.defaultPerformAction render
   renderSharingPref Male      = RD.div [ RP.className "sharing-pref gender" 
                                        , RP.title "Male only" 
                                        ] 
-                                       [ RD.text "M" ]
+                                       [ RD.span' [ RD.text "M" ] ]
   renderSharingPref Female    = RD.div [ RP.className "sharing-pref gender" 
                                        , RP.title "Female only" 
                                        ] 
-                                       [ RD.text "F" ]
+                                       [ RD.span' [ RD.text "F" ] ]
   renderSharingPref One       = RD.div [ RP.className "sharing-pref alone" 
                                        , RP.title "Prefer to be on my own" 
                                        ] 
-                                       [ RD.text "1" ]
+                                       [ RD.span' [ RD.text "1" ] ]
   renderSharingPref Two       = RD.div [ RP.className "sharing-pref alone" 
                                        , RP.title "Prefer to share with another volunteer" 
                                        ] 
-                                       [ RD.text "2" ]
+                                       [ RD.span' [ RD.text "2" ] ]
   renderSharingPref (Notes n) = RD.div [ RP.className "sharing-pref icon" 
                                        , RP.title n
                                        , RP.dangerouslySetInnerHTML { __html: "<i class=\"icon-info-1\"></i>&nbsp;" }
