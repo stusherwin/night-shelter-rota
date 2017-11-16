@@ -2,11 +2,6 @@ module App.ShiftRow (State, ShiftType(..), Action(..), ShiftStatus(..), RosterDa
  
 import Prelude
  
-import App.Common (unsafeEventValue, toDateString, surroundIf, onlyIf, className, toDayString, sortWith, justIf)
-import App.Data (OvernightPreference(..), OvernightGenderPreference(..), Volunteer(..), VolunteerShift(..), Shift(..), RuleResult(..), Config, canChangeVolunteerShiftType, hasVolWithId, validate, canAddVolunteer) as D
-import App.ShiftTypeRadio (State, Action, ShiftType(..), spec, initialState) as STR
-import App.CurrentVolShiftEdit (State, Action(..), spec, initialState) as CVSE
-import App.VolMarker (State, spec, initialState) as VM
 import Data.Array ((:), concatMap, catMaybes)
 import Data.DateTime (Date, Weekday(..), year, month, day, weekday)
 import Data.Enum (fromEnum)
@@ -22,6 +17,11 @@ import React (ReactElement)
 import React.DOM as RD
 import React.DOM.Props as RP
 import Thermite as T
+
+import App.Common (unsafeEventValue, toDateString, surroundIf, onlyIf, className, toDayString, sortWith, justIf)
+import App.Data (OvernightPreference(..), OvernightGenderPreference(..), Volunteer(..), VolunteerShift(..), Shift(..), RuleResult(..), Config, canChangeVolunteerShiftType, hasVolWithId, validate, canAddVolunteer) as D
+import App.CurrentVolShiftEdit (State, Action(..), spec, initialState) as CVSE
+import App.VolMarker (State, spec, initialState) as VM
 
 data ShiftType = Overnight
                | Evening 

@@ -3,13 +3,6 @@ module App.Main where
 import Prelude
  
 import Data.Array (toUnfoldable) 
-import App.Common (lensWithProps, modifyWhere, updateWhere, addDays, sortWith, nextWeekday)
-import App.VolDetails (State, Action(..), Details, spec, initialState) as VD
-import App.CurrentVolSelector (State, Action(..), spec, initialState, changeVols) as CVS
-import App.Data (OvernightPreference(..), OvernightGenderPreference(..), Shift(..), Volunteer(..), VolunteerShift(..), VolId(..), Config, nextVolId)
-import App.ShiftList (State, Action(..), spec, initialState, changeCurrentVol) as SL
-import App.NewVolButton (State, Action, spec, initialState) as NVB
-import App.EditVolButton (State, Action, spec, initialState) as EVB
 import Control.Monad.Aff.Class (liftAff) 
 import Control.Monad.Eff (Eff)
 import Control.Monad.Eff.Class (liftEff)
@@ -37,6 +30,14 @@ import React.DOM.Props as RP
 import ReactDOM (render)
 import ReactDOM as RDOM
 import Thermite as T
+
+import App.Common (lensWithProps, modifyWhere, updateWhere, addDays, sortWith, nextWeekday)
+import App.VolDetails (State, Action(..), Details, spec, initialState) as VD
+import App.CurrentVolSelector (State, Action(..), spec, initialState, changeVols) as CVS
+import App.Data (OvernightPreference(..), OvernightGenderPreference(..), Shift(..), Volunteer(..), VolunteerShift(..), VolId(..), Config, nextVolId)
+import App.ShiftList (State, Action(..), spec, initialState, changeCurrentVol) as SL
+import App.NewVolButton (State, Action, spec, initialState) as NVB
+import App.EditVolButton (State, Action, spec, initialState) as EVB
 
 data Action = ShiftListAction SL.Action
             | CurrentVolSelectorAction CVS.Action

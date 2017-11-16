@@ -2,8 +2,6 @@ module App.VolDetails (State, Details, Action(..), spec, initialState) where
 
 import Prelude
 
-import App.Common (unsafeEventValue, className, onlyIf)
-import App.Data (OvernightPreference(..), OvernightGenderPreference(..), VolId(..), Volunteer(..), parseVolId)
 import Data.List ((!!))
 import Data.Maybe (Maybe(..), isJust, maybe)
 import Data.Newtype (unwrap)
@@ -14,6 +12,9 @@ import React (ReactElement, preventDefault)
 import React.DOM as RD
 import React.DOM.Props as RP
 import Thermite as T
+
+import App.Common (unsafeEventValue, className, onlyIf)
+import App.Data (OvernightPreference(..), OvernightGenderPreference(..), VolId(..), Volunteer(..), parseVolId)
 
 type Details = { name :: String 
                , notes :: String

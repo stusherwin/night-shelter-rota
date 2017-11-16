@@ -2,8 +2,6 @@ module App.CurrentVolSelector (State, Action(..), spec, initialState, changeVols
 
 import Prelude 
 
-import App.Common (unsafeEventSelectedIndex, isJustWith)
-import App.Data (Volunteer(..), VolId(..), parseVolId)
 import Data.List (List(..), (!!), find, toUnfoldable)
 import Data.Int (fromString)
 import Data.Maybe (Maybe(..), maybe)
@@ -13,6 +11,9 @@ import React (ReactElement)
 import React.DOM as RD
 import React.DOM.Props as RP
 import Thermite as T
+
+import App.Common (unsafeEventSelectedIndex, isJustWith)
+import App.Data (Volunteer(..), VolId(..), parseVolId)
 
 type State = { vols :: List Volunteer
              , currentVol :: Maybe Volunteer

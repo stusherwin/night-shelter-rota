@@ -2,11 +2,6 @@ module App.ShiftList (Action(..), State, RosterState, spec, initialState, change
    
 import Prelude
 
-import App.Common (lensOfListWithProps, tomorrow, modifyListWhere, surroundIf, default, toMonthYearString, daysLeftInMonth, isFirstDayOfMonth, sortWith, addDays, previousWeekday)
-import App.Data (OvernightPreference(..), Shift(..), Volunteer(..), VolunteerShift(..), RuleResult(..), Config, canAddVolunteer, addVolunteerShift, changeVolunteerShift, removeVolunteerShift, hasVolWithId, validate, filterOut, canChangeVolunteerShiftType, updateVolunteer) as D
-import App.ShiftRow (Action(..), State(..), ShiftStatus(..), ShiftType(..), spec, initialState) as SR
-import App.Row (State(..), Action(..), HeaderRowAction(..), HeaderState, spec) as R
-import App.CurrentVolShiftEdit (State, Action(..), ShiftType(..), spec, initialState) as CVSE
 import Control.Monad.Aff (delay)
 import Control.Monad.Aff.Class (liftAff)
 import Control.Monad.Trans.Class (lift)
@@ -29,6 +24,12 @@ import React as R
 import React.DOM as RD 
 import React.DOM.Props as RP
 import Thermite as T
+
+import App.Common (lensOfListWithProps, tomorrow, modifyListWhere, surroundIf, default, toMonthYearString, daysLeftInMonth, isFirstDayOfMonth, sortWith, addDays, previousWeekday)
+import App.Data (OvernightPreference(..), Shift(..), Volunteer(..), VolunteerShift(..), RuleResult(..), Config, canAddVolunteer, addVolunteerShift, changeVolunteerShift, removeVolunteerShift, hasVolWithId, validate, filterOut, canChangeVolunteerShiftType, updateVolunteer) as D
+import App.ShiftRow (Action(..), State(..), ShiftStatus(..), ShiftType(..), spec, initialState) as SR
+import App.Row (State(..), Action(..), HeaderRowAction(..), HeaderState, spec) as R
+import App.CurrentVolShiftEdit (State, Action(..), ShiftType(..), spec, initialState) as CVSE
 
 shiftCount :: Int
 shiftCount = 28

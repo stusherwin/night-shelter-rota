@@ -2,9 +2,6 @@ module App.CurrentVolShiftEdit (State, ShiftType(..), Action(..), spec, initialS
 
 import Prelude
  
-import App.Common (unsafeEventValue, toDateString, surroundIf, onlyIf, className, toDayString, sortWith, justIf)
-import App.Data (OvernightPreference(..), OvernightGenderPreference(..), Volunteer(..), VolunteerShift(..), Shift(..), RuleResult(..), Config, canChangeVolunteerShiftType, hasVolWithId, validate, canAddVolunteer) as D
-import App.ShiftTypeRadio (State, Action, ShiftType(..), spec, initialState) as STR
 import Data.Array ((:), concatMap, catMaybes)
 import Data.DateTime (Date, Weekday(..), year, month, day, weekday)
 import Data.Enum (fromEnum)
@@ -21,12 +18,14 @@ import React.DOM as RD
 import React.DOM.Props as RP
 import Thermite as T
 
+import App.Common (unsafeEventValue, toDateString, surroundIf, onlyIf, className, toDayString, sortWith, justIf)
+import App.Data (OvernightPreference(..), OvernightGenderPreference(..), Volunteer(..), VolunteerShift(..), Shift(..), RuleResult(..), Config, canChangeVolunteerShiftType, hasVolWithId, validate, canAddVolunteer) as D
+
 data ShiftType = Overnight
                | Evening
 derive instance shiftTypeEq :: Eq ShiftType
 
-type State = { name :: String
-             , date :: Date
+type State = { date :: Date
              , loading :: Boolean
              , shiftType :: Maybe ShiftType
              , canAddOvernight :: Boolean
@@ -34,58 +33,37 @@ type State = { name :: String
              , canChangeShiftType :: Boolean
              }
 
+type ShiftTypeRadioState = { date :: Date
+                           , shiftType :: ShiftType
+                           , currentShiftType :: ShiftType
+                           }
+
 data Action = AddCurrentVol Date ShiftType
             | RemoveCurrentVol Date
             | ChangeCurrentVolShiftType Date
 
 spec :: T.Spec _ State _ Action
-spec = T.simpleSpec performAction render
+spec = shiftTypeSpec
+    <> selectedSpec
+    <> handler
+  
+shiftTypeSpec :: T.Spec _ State _ Action
+shiftTypeSpec = T.simpleSpec T.defaultPerformAction render
   where
   render :: T.Render State _ Action
-  render d _ s _ = renderShiftType d s <> renderSelected d s
-
-  performAction :: T.PerformAction _ State _ Action
-  performAction (AddCurrentVol _ _)           _ _ = void $ T.modifyState \state -> state { loading = true }
-  performAction (RemoveCurrentVol _)          _ _ = void $ T.modifyState \state -> state { loading = true }
-  performAction (ChangeCurrentVolShiftType _) _ _ = void $ T.modifyState \state -> state { loading = true }
-
-  renderShiftType :: _ -> State -> Array ReactElement
-  renderShiftType dispatch s@{ shiftType: Just st } | s.canChangeShiftType =
+  render dispatch _ s@{ shiftType: Just st } _ | s.canChangeShiftType =
     [ RD.span [ RP.className "shift-type" ]
-              [ RD.input [ RP._type "radio"
-                         , RP._id $ "shift-type-" <> toDateString s.date <> "-overnight"
-                         , RP.name $ "shift-type-" <> toDateString s.date
-                         , RP.checked $ st == Overnight
-                         , RP.onChange \_ -> dispatch $ ChangeCurrentVolShiftType s.date
-                         ]
-                         [ ]
-              , RD.label [ RP.htmlFor $ "shift-type-" <> toDateString s.date <> "-overnight" ]
-                         [ renderIcon Overnight
-                         , RD.text "Overnight" ] 
-              , RD.input [ RP._type "radio"
-                         , RP._id $ "shift-type-" <> toDateString s.date <> "-evening"
-                         , RP.checked $ st == Evening
-                         , RP.name $ "shift-type-" <> toDateString s.date
-                         , RP.onChange \_ -> dispatch $ ChangeCurrentVolShiftType s.date
-                         ]
-                         [ ]
-              , RD.label [ RP.htmlFor $ "shift-type-" <> toDateString s.date <> "-evening" ]
-                         [ renderIcon Evening
-                         , RD.text "Evening only" ] 
-               ]
+              ( renderShiftTypeRadio dispatch { shiftType: Overnight, date: s.date, currentShiftType: st }
+             <> renderShiftTypeRadio dispatch { shiftType: Evening,   date: s.date, currentShiftType: st }
+              )
     ]
-  renderShiftType _ _ = []
+  render _ _ _ _ = []
 
-  description :: ShiftType -> String
-  description Evening   = "Evening only"
-  description Overnight = "Overnight"
-
-  other :: ShiftType -> ShiftType
-  other Evening   = Overnight
-  other Overnight = Evening
-
-  renderSelected :: _ -> State -> Array ReactElement
-  renderSelected dispatch s@{ shiftType: Nothing } | not s.loading =
+selectedSpec :: T.Spec _ State _ Action
+selectedSpec = T.simpleSpec T.defaultPerformAction render
+  where
+  render :: T.Render State _ Action
+  render dispatch _ s@{ shiftType: Nothing } _ | not s.loading =
     [ RD.span [ RP.className "ui fitted checkbox" ]
               [ RD.input [ RP._type "checkbox"
                          , RP.disabled $ s.loading || (not s.canAddOvernight && not s.canAddEvening)
@@ -96,7 +74,7 @@ spec = T.simpleSpec performAction render
               , RD.label' []
               ]
     ]
-  renderSelected dispatch s@{ shiftType: Just st } | not s.loading =
+  render dispatch _ s@{ shiftType: Just st } _ | not s.loading =
     [ RD.span [ RP.className "ui fitted checkbox" ]
               [ RD.input [ RP._type "checkbox"
                          , RP.disabled $ s.loading
@@ -107,26 +85,59 @@ spec = T.simpleSpec performAction render
               , RD.label' []
               ]
     ]
-  renderSelected _ s | s.loading =
+  render _ _ s _ | s.loading =
     [ RD.i [ RP.className "icon-spin animate-spin loading" ] [] ]
-  renderSelected _ _ = []
+  render _ _ _ _ = []
+
+handler :: T.Spec _ State _ Action
+handler = T.simpleSpec performAction T.defaultRender
+  where
+  performAction :: T.PerformAction _ State _ Action
+  performAction (AddCurrentVol _ _)           _ _ = void $ T.modifyState \state -> state { loading = true }
+  performAction (RemoveCurrentVol _)          _ _ = void $ T.modifyState \state -> state { loading = true }
+  performAction (ChangeCurrentVolShiftType _) _ _ = void $ T.modifyState \state -> state { loading = true }
+
+renderShiftTypeRadio :: _ -> ShiftTypeRadioState -> Array ReactElement
+renderShiftTypeRadio dispatch s = 
+  [ RD.input [ RP._type "radio"
+             , RP._id $ "shift-type-" <> toDateString s.date <> "-" <> code s.shiftType
+             , RP.name $ "shift-type-" <> toDateString s.date
+             , RP.checked $ s.currentShiftType == s.shiftType
+             , RP.onChange \_ -> dispatch $ ChangeCurrentVolShiftType s.date
+             ]
+             [ ]
+  , RD.label [ RP.htmlFor $ "shift-type-" <> toDateString s.date <> "-" <> code s.shiftType ]
+             [ renderIcon s.shiftType
+             , RD.text $ description s.shiftType
+             ]
+  ]
+  where
+  description :: ShiftType -> String
+  description Evening   = "Evening only"
+  description Overnight = "Overnight"
+
+  code :: ShiftType -> String
+  code Evening   = "evening"
+  code Overnight = "overnight"
+
+  other :: ShiftType -> ShiftType
+  other Evening   = Overnight
+  other Overnight = Evening
+
+  renderIcon :: ShiftType -> ReactElement
+  renderIcon Evening   = RD.i [ RP.className "vol-icon icon-no-bed" ] []
+  renderIcon Overnight = RD.i [ RP.className "vol-icon icon-bed" ]    []
+
 
 initialState :: D.Config -> D.Shift -> D.Volunteer -> State
-initialState config shift cv = { name: cv.name
-                               , date: shift.date
+initialState config shift cv = { date: shift.date
                                , loading: false
-                               , shiftType: currentVolShiftType cv shift.volunteers
+                               , shiftType: shiftType
                                , canAddOvernight: D.canAddVolunteer config (D.Overnight cv) shift
                                , canAddEvening: D.canAddVolunteer config (D.Evening cv) shift
                                , canChangeShiftType: D.canChangeVolunteerShiftType config cv shift
                                }
-
-currentVolShiftType :: D.Volunteer -> List D.VolunteerShift -> Maybe ShiftType
-currentVolShiftType v vols = 
-  find (D.hasVolWithId v.id) vols >>= case _ of
+  where
+  shiftType = find (D.hasVolWithId cv.id) shift.volunteers >>= case _ of
     D.Overnight _ -> Just Overnight
     D.Evening   _ -> Just Evening
-
-renderIcon :: ShiftType -> ReactElement
-renderIcon Evening   = RD.i [ RP.className "vol-icon icon-no-bed" ] []
-renderIcon Overnight = RD.i [ RP.className "vol-icon icon-bed" ]    []
