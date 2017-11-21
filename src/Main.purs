@@ -98,14 +98,14 @@ _EditVolButtonAction = prism EditVolButtonAction unwrap
   where 
   unwrap (EditVolButtonAction a) = Right a
   unwrap a = Left a 
-
+  
 spec :: forall eff. T.Spec (console :: CONSOLE | eff) State _ Action
 spec =
   over T._render container
-    $ fold [ T.focus _editVolButton _EditVolButtonAction
-               $ T.split _Just EVB.spec
-           , T.focus _newVolButton _NewVolButtonAction
+    $ fold [ T.focus _newVolButton _NewVolButtonAction
                $ T.split _Just NVB.spec
+           , T.focus _editVolButton _EditVolButtonAction
+               $ T.split _Just EVB.spec
            , over T._render header
                $ T.focus _currentVolSelector _CurrentVolSelectorAction CVS.spec 
            , T.focus _volDetails _VolDetailsAction

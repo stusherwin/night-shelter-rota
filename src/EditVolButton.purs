@@ -25,7 +25,7 @@ spec = T.simpleSpec T.defaultPerformAction render
                     dispatch unit
                 ]
                 [ RD.i [ RP.className "icon icon-edit" ] []
-                , RD.text $ "Edit " <> state.currentVolName <> "'s preferences"
+                , RD.text $ "Edit " <> state.currentVolName <> "'s details"
                 ]
     ]
   render _ _ _ _ = []

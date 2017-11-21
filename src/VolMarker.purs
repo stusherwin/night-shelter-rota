@@ -50,19 +50,19 @@ spec = T.simpleSpec T.defaultPerformAction render
   
   renderSharingPref :: SharingPref -> ReactElement
   renderSharingPref Male      = RD.div [ RP.className "sharing-pref gender" 
-                                       , RP.title "Male only" 
+                                       , RP.title "Males only" 
                                        ] 
                                        [ RD.span' [ RD.text "M" ] ]
   renderSharingPref Female    = RD.div [ RP.className "sharing-pref gender" 
-                                       , RP.title "Female only" 
+                                       , RP.title "Females only" 
                                        ] 
                                        [ RD.span' [ RD.text "F" ] ]
   renderSharingPref One       = RD.div [ RP.className "sharing-pref alone" 
-                                       , RP.title "Prefer to be on my own" 
+                                       , RP.title "I prefer to be on my own" 
                                        ] 
                                        [ RD.span' [ RD.text "1" ] ]
   renderSharingPref Two       = RD.div [ RP.className "sharing-pref alone" 
-                                       , RP.title "Prefer to share with another volunteer" 
+                                       , RP.title "I prefer to work with another volunteer" 
                                        ] 
                                        [ RD.span' [ RD.text "2" ] ]
   renderSharingPref (Notes n) = RD.div [ RP.className "sharing-pref icon" 

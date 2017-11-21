@@ -23,6 +23,7 @@ type Details = { name :: String
                }
 
 type State = { details :: Details
+             , title :: String
              , formValid :: Boolean
              , formSubmitted :: Boolean
              }
@@ -41,7 +42,8 @@ spec = T.simpleSpec performAction render
   render :: T.Render State _ Action
   render dispatch _ state _ =
     [ RD.form [ className [ "ui form", onlyIf formError "error" ] ]
-              [ RD.div [ className [ "required field ", onlyIf formError "error" ] ]
+              [ RD.h3' [ RD.text state.title ]
+              , RD.div [ className [ "required field ", onlyIf formError "error" ] ]
                        [ RD.label [ RP.htmlFor "volName" ]
                                   [ RD.text "Name" ]
                        , RD.input [ RP._type "text"
@@ -52,23 +54,7 @@ spec = T.simpleSpec performAction render
                                   []
                        ]
               , RD.div [ className [ "field " ] ]
-                       [ RD.label' [ RD.text "Sharing preferences" ]
-                       , RD.div [ RP.className "ui radio checkbox" ]
-                                [ RD.input [ RP._type "radio"
-                                           , RP._id "pref-alone-1"
-                                           , RP.name "pref-alone"
-                                           , RP.checked $ state.details.pref == (Just PreferToBeAlone)
-                                           , RP.onChange \e -> do
-                                               let checked = unsafeChecked e
-                                               when checked $ dispatch $ SetPref (Just PreferToBeAlone)
-                                           ]
-                                           [ ]
-                                , RD.label [ RP.className "action-label"
-                                           , RP.htmlFor "pref-alone-1" ]
-                                           [ renderPref PreferToBeAlone
-                                           , RD.text "prefer to be on my own"
-                                           ]
-                                ]
+                       [ RD.label' [ RD.text "Would you prefer to work with another volunteer?" ]
                        , RD.div [ RP.className "ui radio checkbox" ]
                                 [ RD.input [ RP._type "radio"
                                            , RP._id "pref-alone-2"
@@ -82,7 +68,23 @@ spec = T.simpleSpec performAction render
                                 , RD.label [ RP.className "action-label"
                                            , RP.htmlFor "pref-alone-2" ]
                                            [ renderPref PreferAnotherVolunteer 
-                                           , RD.text "prefer to share with another volunteer"
+                                           , RD.text "I prefer to work with a second volunteer"
+                                           ]
+                                ]
+                       , RD.div [ RP.className "ui radio checkbox" ]
+                                [ RD.input [ RP._type "radio"
+                                           , RP._id "pref-alone-1"
+                                           , RP.name "pref-alone"
+                                           , RP.checked $ state.details.pref == (Just PreferToBeAlone)
+                                           , RP.onChange \e -> do
+                                               let checked = unsafeChecked e
+                                               when checked $ dispatch $ SetPref (Just PreferToBeAlone)
+                                           ]
+                                           [ ]
+                                , RD.label [ RP.className "action-label"
+                                           , RP.htmlFor "pref-alone-1" ]
+                                           [ renderPref PreferToBeAlone
+                                           , RD.text "I prefer to be on my own"
                                            ]
                                 ]
                        , RD.div [ RP.className "ui radio checkbox" ]
@@ -97,12 +99,12 @@ spec = T.simpleSpec performAction render
                                            [ ]
                                 , RD.label [ RP.className "action-label"
                                            , RP.htmlFor "pref-alone-none" ]
-                                           [ RD.text "No preference"
+                                           [ RD.text "I don't mind"
                                            ]
                                 ]
                        ]
               , RD.div [ className [ "field " ] ]
-                       [ RD.label' [ RD.text "Gender preferences" ]
+                       [ RD.label' [ RD.text "Who would you prefer to share the volunteers' room with?" ]
                        , RD.div [ RP.className "ui radio checkbox" ]
                                 [ RD.input [ RP._type "radio"
                                            , RP._id "pref-gender-f"
@@ -116,7 +118,7 @@ spec = T.simpleSpec performAction render
                                 , RD.label [ RP.className "action-label"
                                            , RP.htmlFor "pref-gender-f" ]
                                            [ renderGenderPref Female
-                                           , RD.text "female only"
+                                           , RD.text "Females only"
                                            ]
                                 ]
                        , RD.div [ RP.className "ui radio checkbox" ]
@@ -132,7 +134,7 @@ spec = T.simpleSpec performAction render
                                 , RD.label [ RP.className "action-label"
                                            , RP.htmlFor "pref-gender-m" ]
                                            [ renderGenderPref Male 
-                                           , RD.text "male only"
+                                           , RD.text "Males only"
                                            ]
                                 ]
                        , RD.div [ RP.className "ui radio checkbox" ]
@@ -147,13 +149,13 @@ spec = T.simpleSpec performAction render
                                            [ ]
                                 , RD.label [ RP.className "action-label"
                                            , RP.htmlFor "pref-gender-none" ]
-                                           [ RD.text "No preference"
+                                           [ RD.text "I don't mind"
                                            ]
                                 ]
                        ]
               , RD.div [ className [ "field " ] ]
                        [ RD.label [ RP.htmlFor "volNotes" ]
-                                  [ RD.text "Notes"
+                                  [ RD.text "Any other preferences?"
                                   ]
                        , RD.input [ RP._type "text"
                                   , RP.value state.details.notes
@@ -228,6 +230,7 @@ initialState currentVol =
                              }
       details = maybe defaultDetails currentVolDetails currentVol
   in { details
+     , title: maybe "Add new volunteer" (\cv -> cv.name <> "'s details") currentVol
      , formValid: isValid details
      , formSubmitted: false
      }

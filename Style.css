@@ -168,7 +168,7 @@ i.vol-icon {
 
 a.action {
   cursor: pointer;
-  border-bottom: 1px dashed #4183c4;
+  /* border-bottom: 1px dashed #4183c4; */
 }
 
 a.action[disabled] {
@@ -284,4 +284,8 @@ label .sharing-pref span {
 
 .action-label {
   cursor: pointer !important;
+}
+
+h2, h2:first-child {
+  margin-top: 15px;
 }
