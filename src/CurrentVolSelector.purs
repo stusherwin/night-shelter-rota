@@ -12,7 +12,7 @@ import React.DOM as RD
 import React.DOM.Props as RP
 import Thermite as T
 
-import App.Common (unsafeEventSelectedIndex, isJustWith)
+import App.Common (unsafeEventSelectedIndex, isJustWith, sortWith)
 import App.Data (Volunteer(..), VolId(..), parseVolId)
 
 type State = { vols :: List Volunteer
@@ -37,7 +37,6 @@ spec = T.simpleSpec performAction render
     ]
 
   respond :: State -> Int -> Action
-  -- respond _     1 = DefineNewVol
   respond state i | i > 0 = ChangeCurrentVol $ state.vols !! (i - 1)
   respond _ _ = ChangeCurrentVol Nothing
 
@@ -55,11 +54,11 @@ spec = T.simpleSpec performAction render
   performAction _ _ _ = pure unit 
 
 initialState :: List Volunteer -> Maybe Volunteer -> State
-initialState vols currentVol = { vols: vols
+initialState vols currentVol = { vols: sortWith _.name vols
                                , currentVol: currentVol
                                }
 
 changeVols :: List Volunteer -> Maybe Volunteer -> State -> State
-changeVols vols currentVol state = state { vols = vols
+changeVols vols currentVol state = state { vols = sortWith _.name vols
                                          , currentVol = currentVol
                                          }

@@ -186,7 +186,7 @@ addOrUpdateVol d s =
        , vols': updateWhere (\v -> v.id == cv.id) cv' vols
        }
   addOrUpdate d { vols } =
-    let maxId  = maybe (VolId 0) (_.id) $ last $ sortWith (\v -> v.id) vols
+    let maxId  = maybe (VolId 0) _.id $ last $ sortWith _.id vols
         newVol = { id: nextVolId maxId
                  , name: d.name
                  , overnightPreference: d.pref
