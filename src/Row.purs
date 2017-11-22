@@ -1,16 +1,14 @@
 module App.Row (State(..), HeaderState, Action(..), HeaderRowAction(..), spec) where
 
 import Prelude
-
-import Data.Lens (Lens', lens, Prism', prism, over)
+ 
+import Data.Lens (Prism', prism)
 import Data.Either (Either(..))
-import React (ReactElement)
-import React as R
 import React.DOM as RD
 import React.DOM.Props as RP
 import Thermite as T
 
-import App.ShiftRow (Action(..), State(..), ShiftStatus(..), ShiftType(..), spec) as SR
+import App.ShiftRow (Action, State, spec) as SR
 
 data HeaderRowAction = PrevPeriod
                      | NextPeriod

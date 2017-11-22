@@ -5,10 +5,8 @@ import Prelude
 import React as R
 import React.DOM as RD
 import React.DOM.Props as RP
-import ReactDOM (render)
-import ReactDOM as RDOM
 import Thermite as T
-
+ 
 type State = {}
 
 type Action = Unit

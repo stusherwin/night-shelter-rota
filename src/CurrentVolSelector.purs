@@ -2,18 +2,15 @@ module App.CurrentVolSelector (State, Action(..), spec, initialState, changeVols
 
 import Prelude 
 
-import Data.List (List(..), (!!), find, toUnfoldable)
-import Data.Int (fromString)
-import Data.Maybe (Maybe(..), maybe)
-import Data.Newtype (unwrap)
-import Data.Tuple (Tuple(..))
+import Data.List (List, (!!), find, toUnfoldable)
+import Data.Maybe (Maybe(..))
 import React (ReactElement)
 import React.DOM as RD
 import React.DOM.Props as RP
 import Thermite as T
 
 import App.Common (unsafeEventSelectedIndex, isJustWith, sortWith)
-import App.Data (Volunteer(..), VolId(..), parseVolId)
+import App.Data (Volunteer, VolId)
 
 type State = { vols :: List Volunteer
              , currentVol :: Maybe Volunteer
@@ -51,7 +48,6 @@ spec = T.simpleSpec performAction render
 
   performAction :: T.PerformAction _ State _ Action
   performAction (ChangeCurrentVol v) _ _ = void $ T.modifyState \state -> state{ currentVol = v }
-  performAction _ _ _ = pure unit 
 
 initialState :: List Volunteer -> Maybe Volunteer -> State
 initialState vols currentVol = { vols: sortWith _.name vols

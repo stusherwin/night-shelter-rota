@@ -1,24 +1,20 @@
-module App.Common (unsafeEventValue, unsafeEventSelectedIndex, lensWithProps, lensOfListWithProps, midnight, tomorrow, toDateString, updateWhere, modifyWhere, updateListWhere, modifyListWhere, surroundIf, justIf, default, onlyIf, className, isJustWith, addDays, toMonthYearString, isFirstDayOfMonth, daysLeftInMonth, toDayString, sortWith, previousWeekday, nextWeekday, unsafeChecked) where
+module App.Common (unsafeEventValue, unsafeEventSelectedIndex, midnight, tomorrow, toDateString, updateWhere, modifyWhere, justIf, default, onlyIf, className, isJustWith, addDays, toMonthYearString, isFirstDayOfMonth, daysLeftInMonth, toDayString, sortWith, previousWeekday, nextWeekday, unsafeChecked) where
   
 import Prelude 
 
 import Data.Array (filter, elemIndex) as A
-import Data.List (List(..), findIndex, updateAt, modifyAt, sortBy, findIndex, updateAt, modifyAt, filter)
-import Data.DateTime (DateTime(..), Date(..), Time(..), canonicalDate, date, adjust, month, year, day)
-import Data.Date (lastDayOfMonth, diff, Weekday(..), weekday)
-import Data.Either (Either(..), fromRight, either)
+import Data.List (List, sortBy, findIndex, updateAt, modifyAt)
+import Data.DateTime (DateTime(..), Date, Time(..), canonicalDate, date, adjust, month, year, day)
+import Data.Date (lastDayOfMonth, diff, Weekday, weekday)
+import Data.Either (fromRight)
 import Data.Enum (fromEnum, toEnum)
 import Data.Formatter.DateTime (formatDateTime)
 import Data.Int (toNumber, floor)
-import Data.Lens (Lens', lens)
 import Data.Maybe (Maybe(..), fromJust, maybe, fromMaybe, isJust)
 import Data.String (joinWith, length)
 import Data.Time.Duration (Days(..))
-import Data.Tuple (Tuple(..), snd, curry, uncurry)
 import Partial.Unsafe (unsafePartial)
-import React.DOM.Dynamic (a)
 import Unsafe.Coerce (unsafeCoerce)
-import React (ReactElement)
 import React.DOM.Props as RP
 
 unsafeChecked :: forall event. event -> Boolean
@@ -29,24 +25,6 @@ unsafeEventValue e = (unsafeCoerce e).target.value
 
 unsafeEventSelectedIndex :: forall event. event -> Int
 unsafeEventSelectedIndex e = (unsafeCoerce e).target.selectedIndex
-
-lensWithProps :: forall s t p. (s -> t) -> (s -> t -> s) -> (s -> p) -> Lens' s (Tuple p t)
-lensWithProps get set props = lens getter setter
-  where
-  getter :: s -> Tuple p t
-  getter s = Tuple (props s) (get s)
-  
-  setter :: s -> Tuple p t -> s
-  setter s (Tuple _ a) = set s a
-
-lensOfListWithProps :: forall s t p. (s -> List t) -> (s -> List t -> s) -> (s -> p) -> Lens' s (List (Tuple p t))
-lensOfListWithProps get set props = lens getter setter
-  where 
-  getter :: s -> List (Tuple p t)
-  getter s = map (Tuple (props s)) (get s)
-  
-  setter :: s -> List (Tuple p t) -> s
-  setter s a = set s $ map snd a
 
 midnight :: Time
 midnight = unsafePartial fromJust $ Time <$> pure bottom <*> pure bottom <*> pure bottom <*> pure bottom
@@ -71,22 +49,6 @@ modifyWhere predicate item list = fromMaybe list $ do
   i <- findIndex predicate list
   result <- modifyAt i item list
   pure result
-
-updateListWhere :: forall a. (a -> Boolean) -> a -> List a -> List a
-updateListWhere predicate item list = fromMaybe list $ do
-  i <- findIndex predicate list
-  result <- updateAt i item list
-  pure result 
-
-modifyListWhere :: forall a. (a -> Boolean) -> (a -> a) -> List a -> List a
-modifyListWhere predicate item list = fromMaybe list $ do
-  i <- findIndex predicate list
-  result <- modifyAt i item list
-  pure result
-
-surroundIf :: String -> String -> String -> String
-surroundIf _ _ "" = ""
-surroundIf start end text = start <> text <> end
 
 justIf :: forall a. a -> Boolean -> Maybe a
 justIf a condition = if condition then Just a else Nothing

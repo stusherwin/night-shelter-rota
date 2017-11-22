@@ -2,24 +2,21 @@ module App.ShiftRow (State, ShiftType(..), Action(..), ShiftStatus(..), RosterDa
  
 import Prelude
  
-import Data.Array ((:), concatMap, catMaybes)
-import Data.DateTime (Date, Weekday(..), year, month, day, weekday)
-import Data.Enum (fromEnum)
+import Data.DateTime (Date, Weekday(..), weekday)
 import Data.Either (Either(..))
 import Data.Foldable (fold)
 import Data.Lens (Lens', lens, Prism', prism, over, _Just)
-import Data.List (List(..), find, filter, head, foldl, length, (!!), toUnfoldable, take, fromFoldable)
-import Data.List.Lazy (List(..), repeat, zipWith, fromFoldable, take) as Laz
+import Data.List (List(..), find, head, foldl, length)
 import Data.Maybe (Maybe(..), maybe)
-import Data.String (take, toUpper, joinWith, length) as S
+import Data.String (take, toUpper) as S
 import Data.Tuple (Tuple(..), uncurry)
 import React (ReactElement)
 import React.DOM as RD
 import React.DOM.Props as RP
 import Thermite as T
-
-import App.Common (unsafeEventValue, toDateString, surroundIf, onlyIf, className, toDayString, sortWith, justIf)
-import App.Data (OvernightPreference(..), OvernightGenderPreference(..), Volunteer(..), VolunteerShift(..), Shift(..), RuleResult(..), Config, canChangeVolunteerShiftType, hasVolWithId, validate, canAddVolunteer) as D
+ 
+import App.Common (onlyIf, className, toDayString, sortWith)
+import App.Data (Volunteer, Shift, RuleResult(..), Config, validate) as D
 import App.CurrentVolShiftEdit (State, Action(..), spec, initialState) as CVSE
 import App.VolMarker (State, spec, initialState) as VM
 

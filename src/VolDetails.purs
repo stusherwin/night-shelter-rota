@@ -2,19 +2,15 @@ module App.VolDetails (State, Details, Action(..), spec, initialState) where
 
 import Prelude
 
-import Data.List ((!!))
-import Data.Maybe (Maybe(..), isJust, maybe)
-import Data.Newtype (unwrap)
+import Data.Maybe (Maybe(..), maybe)
 import Data.String (length)
-import Data.Tuple (Tuple(..))
-import Math (e)
 import React (ReactElement, preventDefault)
 import React.DOM as RD
 import React.DOM.Props as RP
 import Thermite as T
-
+ 
 import App.Common (unsafeEventValue, className, onlyIf, unsafeChecked)
-import App.Data (OvernightPreference(..), OvernightGenderPreference(..), VolId(..), Volunteer(..), parseVolId)
+import App.Data (OvernightPreference(..), OvernightGenderPreference(..), Volunteer)
 
 type Details = { name :: String 
                , notes :: String
@@ -190,7 +186,6 @@ spec = T.simpleSpec performAction render
     where
     formError :: Boolean
     formError = state.formSubmitted && not state.formValid
-  render _ _ _ _ = []
   
   performAction :: T.PerformAction _ State _ Action
   performAction (SetName name) _ _ = void $ T.modifyState \state ->

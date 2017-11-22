@@ -5,31 +5,22 @@ import Prelude
 import Control.Monad.Aff (delay)
 import Control.Monad.Aff.Class (liftAff)
 import Control.Monad.Trans.Class (lift)
-import DOM.HTML.HTMLElement (offsetHeight)
-import Data.Date (diff, lastDayOfMonth, canonicalDate)
-import Data.DateTime (Date(..), DateTime(..), Millisecond, Time(..), adjust, canonicalDate, date, day, month, year, Day(..), Year(..), Weekday(..))
+import Data.DateTime (Date, Weekday(..))
 import Data.Either (Either(..))
-import Data.Enum (fromEnum, toEnum)
-import Data.Int (floor)
 import Data.Lens (Lens', lens, Prism', prism, over)
-import Data.List (List(..), find, filter, (!!), length, take, foldl, head, snoc, last, zipWith)
-import Data.Maybe (Maybe(..), fromJust, maybe, isJust)
-import Data.String (length) as S
-import Data.Time.Duration (Days(..), Milliseconds(..))
-import Data.Tuple (Tuple(..), uncurry, fst, snd)
-import Math (e)
-import Partial.Unsafe (unsafePartial)
-import React (ReactElement)
-import React as R
+import Data.List (List(..), zipWith)
+import Data.Maybe (Maybe(..), maybe)
+import Data.Time.Duration (Milliseconds(..))
+import Data.Tuple (Tuple(..), uncurry)
 import React.DOM as RD 
 import React.DOM.Props as RP
 import Thermite as T
 
-import App.Common (lensOfListWithProps, tomorrow, modifyListWhere, surroundIf, default, toMonthYearString, daysLeftInMonth, isFirstDayOfMonth, sortWith, addDays, previousWeekday)
-import App.Data (OvernightPreference(..), Shift(..), Volunteer(..), VolunteerShift(..), RuleResult(..), Config, canAddVolunteer, addVolunteerShift, changeVolunteerShift, removeVolunteerShift, hasVolWithId, validate, filterOut, canChangeVolunteerShiftType, updateVolunteer) as D
-import App.ShiftRow (Action(..), State(..), ShiftStatus(..), ShiftType(..), spec, initialState) as SR
-import App.Row (State(..), Action(..), HeaderRowAction(..), HeaderState, spec) as R
-import App.CurrentVolShiftEdit (State, Action(..), ShiftType(..), spec, initialState) as CVSE
+import App.Common (tomorrow, modifyWhere, toMonthYearString, isFirstDayOfMonth, addDays, previousWeekday)
+import App.Data (Config, Shift, Volunteer, VolunteerShift(Evening, Overnight), addVolunteerShift, changeVolunteerShift, removeVolunteerShift, updateVolunteer) as D
+import App.ShiftRow (Action(..), initialState) as SR
+import App.Row (Action(..), HeaderRowAction(..), State(..), spec) as R
+import App.CurrentVolShiftEdit (Action(..), ShiftType(..)) as CVSE
 
 shiftCount :: Int
 shiftCount = 28
@@ -171,5 +162,5 @@ modifyShifts state date modify =
       cancelLoading (R.ShiftRow s) = R.ShiftRow s{ loading = false }
       cancelLoading r = r 
   in state { roster = roster'
-           , rows = modifyListWhere isShiftOnDate cancelLoading $ preserveLoading state.rows $ rows roster' state.config
+           , rows = modifyWhere isShiftOnDate cancelLoading $ preserveLoading state.rows $ rows roster' state.config
            }

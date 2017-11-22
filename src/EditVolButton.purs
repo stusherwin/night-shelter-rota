@@ -5,10 +5,8 @@ import Prelude
 import React as R
 import React.DOM as RD
 import React.DOM.Props as RP
-import ReactDOM (render)
-import ReactDOM as RDOM
 import Thermite as T
-
+ 
 type State = { currentVolName :: String }
 
 type Action = Unit
@@ -28,7 +26,6 @@ spec = T.simpleSpec T.defaultPerformAction render
                 , RD.text $ "Edit " <> state.currentVolName <> "'s details"
                 ]
     ]
-  render _ _ _ _ = []
 
 initialState :: String -> State
 initialState = { currentVolName: _ }

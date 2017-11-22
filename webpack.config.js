@@ -49,6 +49,7 @@ module.exports = {
               ],
               bundle: false,
               psc: 'psa',
+              pscArgs: { censorCodes: "WildcardInferredType" },
               watch: isWebpackDevServer || isWatch,
               pscIde: false
             }

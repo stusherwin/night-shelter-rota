@@ -1,25 +1,16 @@
 module App.VolMarker (State, ShiftType(..), SharingPref(..), spec, initialState) where
 
 import Prelude
- 
-import Data.Array ((:), concatMap, catMaybes)
-import Data.DateTime (Date, Weekday(..), year, month, day, weekday)
-import Data.Enum (fromEnum)
-import Data.Either (Either(..))
-import Data.Foldable (fold)
-import Data.Lens (Lens', lens, Prism', prism, over, _Just)
-import Data.List (List(..), find, filter, head, foldl, length, (!!), toUnfoldable, take, fromFoldable)
-import Data.List.Lazy (List(..), repeat, zipWith, fromFoldable, take) as Laz
-import Data.Maybe (Maybe(..), maybe)
-import Data.String (take, toUpper, joinWith, length) as S
-import Data.Tuple (Tuple(..), uncurry)
+
+import Data.Array (catMaybes)
+import Data.String (length) as S
 import React (ReactElement)
 import React.DOM as RD
 import React.DOM.Props as RP
 import Thermite as T
 
-import App.Common (unsafeEventValue, toDateString, surroundIf, onlyIf, className, toDayString, sortWith, justIf)
-import App.Data (OvernightPreference(..), OvernightGenderPreference(..), Volunteer(..), VolunteerShift(..), Shift(..), RuleResult(..), Config, canChangeVolunteerShiftType, hasVolWithId, validate, canAddVolunteer) as D
+import App.Common (justIf)
+import App.Data (OvernightPreference(..), OvernightGenderPreference(..), Volunteer, VolunteerShift(..)) as D
 
 data ShiftType = Overnight
                | Evening

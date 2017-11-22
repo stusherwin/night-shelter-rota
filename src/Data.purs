@@ -1,22 +1,15 @@
 module App.Data (Shift (..), Volunteer(..), VolId(..), OvernightPreference(..), OvernightGenderPreference(..), VolunteerShift(..), RuleResult(..), Config, addVolunteerShift, changeVolunteerShift, removeVolunteerShift, canAddVolunteer, hasVolWithId, validate, filterOut, canChangeVolunteerShiftType, parseVolId, nextVolId, updateVolunteer) where
 
 import Prelude
- 
+  
 import Data.Array (toUnfoldable)
-import App.Common (toDateString, justIf, sortWith)
-import Data.List (List(..), findIndex, find, modifyAt, snoc, updateAt, deleteAt, length, all, nub, nubBy, (:), filter, catMaybes, any, singleton)
+import App.Common (justIf, sortWith)
+import Data.List (List, findIndex, find, modifyAt, snoc, deleteAt, length, all, nubBy, (:), filter, catMaybes, any, singleton)
 import Data.Date (diff)
-import Data.DateTime (DateTime(..), Date(..), Time(..), canonicalDate, date, adjust)
-import Data.Either (Either(..))
-import Data.Foldable (foldMap)
+import Data.DateTime (Date)
 import Data.Int (fromString, toNumber)
-import Data.Lens (_1)
-import Data.Maybe (Maybe(..), fromMaybe, isNothing, isJust, fromJust)
-import Data.Newtype
+import Data.Maybe (Maybe(..), fromMaybe, isJust)
 import Data.Time.Duration (Days(..))
-import Data.Tuple.Nested (Tuple3(..))
-import React.DOM.Dynamic (a)
-import Type.Data.Boolean (False)
 
 data OvernightPreference = PreferToBeAlone
                          | PreferAnotherVolunteer 

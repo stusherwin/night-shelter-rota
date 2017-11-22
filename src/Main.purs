@@ -3,42 +3,32 @@ module App.Main where
 import Prelude
  
 import Data.Array (toUnfoldable) 
-import Control.Monad.Aff.Class (liftAff) 
 import Control.Monad.Eff (Eff)
-import Control.Monad.Eff.Class (liftEff)
 import Control.Monad.Eff.Console (log, CONSOLE)
 import Control.Monad.Eff.Now (nowDate)
 import Control.Monad.Eff.Unsafe (unsafePerformEff)
-import Control.Monad.Gen (frequency)
-import Control.Monad.Trans.Class (lift)
-import DOM.HTML.History (state)
 import DOM.Node.Types (Element)
-import Data.List (List(..), find, (:), (!!), length, snoc, last)
+import Data.List (List, snoc, last)
 import Data.DateTime (Date, Weekday(..))
 import Data.DateTime.Locale (LocalValue(..))
 import Data.Either (Either(..))
 import Data.Foldable (fold)
 import Data.Lens (Lens', lens, Prism', prism, over, _Just)
-import Data.Maybe (Maybe(..), fromJust, maybe, fromMaybe)
-import Data.Newtype (unwrap)
-import Data.String (joinWith)
-import Data.Tuple (Tuple(..), uncurry)
-import Partial.Unsafe (unsafePartial)
+import Data.Maybe (Maybe(..), maybe)
 import React as R
 import React.DOM as RD
 import React.DOM.Props as RP
-import ReactDOM (render)
 import ReactDOM as RDOM
 import Thermite as T
 
-import App.Common (lensWithProps, modifyWhere, updateWhere, addDays, sortWith, nextWeekday)
+import App.Common (updateWhere, sortWith, nextWeekday)
 import App.VolDetails (State, Action(..), Details, spec, initialState) as VD
 import App.CurrentVolSelector (State, Action(..), spec, initialState, changeVols) as CVS
-import App.Data (OvernightPreference(..), OvernightGenderPreference(..), Shift(..), Volunteer(..), VolunteerShift(..), VolId(..), Config, nextVolId)
-import App.ShiftList (State, Action(..), spec, initialState, changeCurrentVol) as SL
+import App.Data (OvernightPreference(..), OvernightGenderPreference(..), Volunteer, VolunteerShift(..), VolId(..), nextVolId)
+import App.ShiftList (State, Action, spec, initialState, changeCurrentVol) as SL
 import App.NewVolButton (State, Action, spec, initialState) as NVB
 import App.EditVolButton (State, Action, spec, initialState) as EVB
-
+ 
 data Action = ShiftListAction SL.Action
             | CurrentVolSelectorAction CVS.Action
             | VolDetailsAction VD.Action
@@ -163,10 +153,10 @@ startEditingCurrentVol s@{ currentVol: Just _ } =
    , editVolButton = Nothing
    }
 startEditingCurrentVol s = s
-
+ 
 addOrUpdateVol :: VD.Details -> State -> State
 addOrUpdateVol d s =
-  let { currentVol', vols' } = addOrUpdate d s
+  let { currentVol', vols' } = addOrUpdate s
   in  s{ currentVol = currentVol'
        , vols = vols'
        , shiftList = SL.changeCurrentVol currentVol' s.shiftList
@@ -176,7 +166,7 @@ addOrUpdateVol d s =
        , editVolButton = map (EVB.initialState <<< _.name) currentVol'
        }
   where
-  addOrUpdate d { currentVol: Just cv, vols } =
+  addOrUpdate { currentVol: Just cv, vols } =
     let cv'  = cv{ name = d.name
                  , overnightPreference = d.pref
                  , overnightGenderPreference = d.genderPref
@@ -185,7 +175,7 @@ addOrUpdateVol d s =
     in { currentVol': Just cv'
        , vols': updateWhere (\v -> v.id == cv.id) cv' vols
        }
-  addOrUpdate d { vols } =
+  addOrUpdate { vols } =
     let maxId  = maybe (VolId 0) _.id $ last $ sortWith _.id vols
         newVol = { id: nextVolId maxId
                  , name: d.name
