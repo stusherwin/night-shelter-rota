@@ -17,7 +17,8 @@ data ShiftType = Overnight
                | Evening
 derive instance shiftTypeEq :: Eq ShiftType
 
-type State = { date :: Date
+type State = { name :: String
+             , date :: Date
              , loading :: Boolean
              , shiftType :: Maybe ShiftType
              , canAddOvernight :: Boolean
@@ -123,7 +124,8 @@ renderShiftTypeRadio dispatch s =
 
 
 initialState :: D.Config -> D.Shift -> D.Volunteer -> State
-initialState config shift cv = { date: shift.date
+initialState config shift cv = { name: cv.name
+                               , date: shift.date
                                , loading: false
                                , shiftType: shiftType
                                , canAddOvernight: D.canAddVolunteer config (D.Overnight cv) shift

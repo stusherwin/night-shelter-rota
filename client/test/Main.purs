@@ -1,25 +1,23 @@
 module Test.Main where
- 
-import Prelude
 
-import Data.Array (all, toUnfoldable, catMaybes, fromFoldable)
+import Prelude
+ 
+import Control.Monad.Eff (Eff)
+import Data.Array (all, toUnfoldable, fromFoldable)
 import Data.Date (Date, canonicalDate)
 import Data.Enum (toEnum)
 import Data.List (find, singleton)
 import Data.Maybe (Maybe(..), fromJust, maybe)
 import Partial.Unsafe (unsafePartial)
 import Test.Assert (assert', ASSERT)
-import Control.Monad.Eff (Eff)
 
-import App.Common
-import App.Data
-import App.Main as M
 import App.CurrentVolSelector as CVS
+import App.CurrentVolShiftEdit as CVSE
+import App.Main as M
+import App.Row as R
 import App.ShiftList as SL
 import App.ShiftRow as SR
-import App.CurrentVolShiftEdit as CVSE
-import App.VolMarker as VM
-import App.Row as R
+import App.Data
 
 mkDate :: Int -> Int -> Int -> Date
 mkDate d m y = canonicalDate (unsafePartial $ fromJust $ toEnum y) (unsafePartial $ fromJust $ toEnum m) (unsafePartial $ fromJust $ toEnum d)  
@@ -81,6 +79,8 @@ updating_current_vol_name_updates_all_shifts = do
 
       details = { name: "Fred1"
                 , notes: ""
+                , pref: Nothing
+                , genderPref: Nothing
                 }
 
       newState = M.addOrUpdateVol details oldState
@@ -110,6 +110,8 @@ updating_current_vol_name_updates_all_shift_rows = do
 
       details = { name: "Fred1"
                 , notes: ""
+                , pref: Nothing
+                , genderPref: Nothing
                 }
  
       newState = M.addOrUpdateVol details oldState

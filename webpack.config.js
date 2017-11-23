@@ -27,12 +27,12 @@ module.exports = {
     stats: 'errors-only'
   },
 
-  entry: './src/Main.purs',
+  entry: './client/src/Main.purs',
 
   output: {
     path: __dirname,
     pathinfo: true,
-    filename: 'bundle.js'
+    filename: 'client/content/js/bundle.js'
   },
 
   module: {
@@ -45,7 +45,7 @@ module.exports = {
             options: {
               src: [
                 'bower_components/purescript-*/src/**/*.purs',
-                'src/**/*.purs'
+                'client/src/**/*.purs'
               ],
               bundle: false,
               psc: 'psa',

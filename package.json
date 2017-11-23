@@ -1,13 +1,13 @@
 {
-  "name": "purescript-webpack-example",
+  "name": "shelter-rota",
   "version": "0.1.0",
   "private": true,
-  "description": "Example using PureScript with webpack",
+  "description": "Rota tool for the Night Shelter",
   "license": "MIT",
-  "repository": "ethul/purescript-webpack-example",
+  "repository": "stusherwin/shelter-rota",
   "author": {
-    "name": "Eric Thul",
-    "email": "thul.eric@gmail.com"
+    "name": "Stu Sherwin",
+    "email": "stu.sherwin@gmail.com"
   },
   "files": [],
   "scripts": {
@@ -15,9 +15,9 @@
     "webpack:watch": "PATH=$PATH:../releases/psc-package DEBUG=purs-loader DEBUG_DEPTH=100 webpack --progress --display-error-details --watch",
     "webpack:server": "webpack-dev-server --progress --inline --hot",
     "webpack:server:debug": "DEBUG=purs-loader* DEBUG_DEPTH=100 webpack-dev-server --progress --inline --hot",
-    "purs:compile": "purs compile 'bower_components/purescript-*/src/**/*.purs' 'src/**/*.purs'",
-    "purs:bundle": "purs bundle output/**/*.js",
-    "start": "node bundle.js"
+    "purs:compile": "purs compile 'bower_components/purescript-*/src/**/*.purs' 'client/src/**/*.purs'",
+    "purs:bundle": "purs bundle output/**/*.js client/content/js/bundle.js",
+    "start": "node client/content/js/bundle.js"
   },
   "dependencies": {
     "lodash.difference": "^4.5.0",
