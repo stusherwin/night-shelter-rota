@@ -16,6 +16,10 @@ import App.Data (Volunteer, VolunteerShift(..), Shift, Config, canChangeVoluntee
 data ShiftType = Overnight
                | Evening
 derive instance shiftTypeEq :: Eq ShiftType
+instance shiftTypeShow :: Show ShiftType
+  where
+  show Overnight = "Overnight"
+  show Evening = "Evening"
 
 type State = { name :: String
              , date :: Date
