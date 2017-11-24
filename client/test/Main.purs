@@ -2,17 +2,14 @@ module Test.Main where
 
 import Prelude
 
-import Control.Monad.Eff (Eff)
-import Data.Array (all, toUnfoldable, fromFoldable)
+import Data.Array (toUnfoldable, fromFoldable)
 import Data.Date (Date, canonicalDate)
 import Data.Enum (toEnum)
-import Data.Int.Bits (xor)
 import Data.List (find, singleton)
-import Data.Maybe (Maybe(..), fromJust, maybe)
+import Data.Maybe (Maybe(..), fromJust)
 import Data.Tuple (Tuple(..))
 import Partial.Unsafe (unsafePartial)
-import Test.Assert (assert', ASSERT)
-import Test.Unit (suite, test, timeout)
+import Test.Unit (suite, test)
 import Test.Unit.Assert as Assert
 import Test.Unit.Main (runTest)
 
@@ -92,7 +89,7 @@ main = runTest do
 
       Assert.equal [ Just "Fred1", Just "Fred1" ]
         $ map (map _.name <<< findVol (VolId 1) <=< findShift newState)
-        [mkDate 1 1 2017, mkDate 2 1 2017]
+        [ mkDate 1 1 2017, mkDate 2 1 2017 ]
       
     test "Updating current vol name updates all shift rows" do
       let oldState = state [ fred ]
@@ -104,7 +101,7 @@ main = runTest do
 
       Assert.equal [ Just "Fred1", Just "Fred1" ]
         $ map (map _.name <<< _.currentVolShiftEdit <=< findShiftRow newState)
-        [mkDate 1 1 2017, mkDate 2 1 2017]
+        [ mkDate 1 1 2017, mkDate 2 1 2017 ]
   
   suite "Change current vol" do
     test "Changing current vol shows each shift row with current vol as volunteer" do
@@ -117,7 +114,7 @@ main = runTest do
 
       Assert.equal [ Just (Tuple "Jim" (Just CVSE.Evening)), Just (Tuple "Jim" (Just CVSE.Overnight)) ]
         $ map (map (\v -> Tuple v.name v.shiftType) <<< _.currentVolShiftEdit <=< findShiftRow newState)
-        [mkDate 1 1 2017, mkDate 2 1 2017]
+        [ mkDate 1 1 2017, mkDate 2 1 2017 ]
 
     test "Changing current vol to nothing shows all vols in each shift row" do
       let oldState = state [ fred, bob, jim ]

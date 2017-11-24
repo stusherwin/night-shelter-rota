@@ -22,7 +22,7 @@ module.exports = {
   devtool: 'eval-source-map',
 
   devServer: {
-    contentBase: '.',
+    contentBase: './client/static',
     port: 4022,
     stats: 'errors-only'
   },
@@ -32,7 +32,7 @@ module.exports = {
   output: {
     path: __dirname,
     pathinfo: true,
-    filename: 'client/content/js/bundle.js'
+    filename: 'js/bundle.js'
   },
 
   module: {

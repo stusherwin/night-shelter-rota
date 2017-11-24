@@ -26,6 +26,12 @@ executable shelter-rota-exe
   build-depends:       base
                      , shelter-rota
                      , servant
+                     , servant-server
+                     , servant-purescript
+                     , warp
+                     , wai
+                     , aeson
+                     , transformers
   default-language:    Haskell2010
 
 test-suite shelter-rota-test
