@@ -14,6 +14,7 @@ import Test.Unit.Assert as Assert
 import Test.Unit.Main (runTest)
 
 import App.Data
+import App.Common
 import App.CurrentVolSelector as CVS
 import App.CurrentVolShiftEdit as CVSE
 import App.Main as M
@@ -21,9 +22,6 @@ import App.Row as R
 import App.ShiftList as SL
 import App.ShiftRow as SR
 import App.VolDetails as VD
-
-mkDate :: Int -> Int -> Int -> Date
-mkDate d m y = canonicalDate (unsafePartial $ fromJust $ toEnum y) (unsafePartial $ fromJust $ toEnum m) (unsafePartial $ fromJust $ toEnum d)  
 
 findShift :: M.State -> Date -> Maybe Shift
 findShift state date = find (\s -> s.date == date) state.shiftList.roster.shifts

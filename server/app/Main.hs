@@ -5,32 +5,40 @@
 
 module Main where
   
-  import           Control.Monad.Trans.Except
-  import           Data.Aeson
-  import           GHC.Generics
-  import           Network.Wai
-  import           Network.Wai.Handler.Warp
-  import           Servant
-  import           System.IO
+  import Control.Monad.Trans.Except
+  import Data.Aeson
+  import GHC.Generics
+  import Network.Wai
+  import Network.Wai.Handler.Warp
+  import Servant
+  import System.IO
+  import Types
+  import Api
     
   main :: IO ()
   main = run 8081 app
-    
-  type StuAPI =
-         "stu" :> Get '[JSON] Int
-    :<|> Raw
+                         
+  appServer :: Server AppAPI
+  appServer = vols
+      :<|> shifts
 
-  api :: Proxy StuAPI
-  api = Proxy
-
-  server :: Server StuAPI
-  server = stu :<|> content
+  server :: Server FullAPI
+  server = appServer
+      :<|> serveDirectoryFileServer "client/static"
   
-  stu :: Handler Int
-  stu = return 123
+  fred :: Volunteer
+  fred = Volunteer 1 "Fred" Nothing Nothing ""
 
-  content :: Server Raw
-  content = serveDirectoryFileServer "client/static"
+  jim :: Volunteer
+  jim = Volunteer 2 "Jim" (Just PreferToBeAlone) (Just Male) "hi"
+
+  vols :: Handler [Volunteer]
+  vols = return [ fred, jim ]
+
+  shifts :: Handler [Shift]
+  shifts = return [ Shift (Date 2017 1 1) []
+                  , Shift (Date 2017 1 2) [Overnight fred, Evening jim]
+                  ]
 
   app :: Application
-  app = serve api server
+  app = serve fullAPI server
