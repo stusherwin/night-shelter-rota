@@ -1,6 +1,6 @@
 module App.ShiftList (Action(..), State, RosterState, spec, initialState, changeCurrentVol) where
    
-import Prelude
+import Prelude 
 
 import Control.Monad.Aff (delay)
 import Control.Monad.Aff.Class (liftAff)
@@ -17,7 +17,8 @@ import React.DOM.Props as RP
 import Thermite as T
 
 import App.Common (tomorrow, modifyWhere, toMonthYearString, isFirstDayOfMonth, addDays, previousWeekday)
-import App.Data (Config, Shift, Volunteer, VolunteerShift(Evening, Overnight), addVolunteerShift, changeVolunteerShift, removeVolunteerShift, updateVolunteer) as D
+import App.Data (Config, addVolunteerShift, changeVolunteerShift, removeVolunteerShift, updateVolunteer) as D
+import ServerTypes (Shift, Volunteer(..), VolunteerShift(..)) as D
 import App.ShiftRow (Action(..), initialState) as SR
 import App.Row (Action(..), HeaderRowAction(..), State(..), spec) as R
 import App.CurrentVolShiftEdit (Action(..), ShiftType(..)) as CVSE
@@ -74,7 +75,7 @@ spec =
     performAction (RowAction _ (R.ShiftRowAction (SR.CurrentVolShiftEditAction (CVSE.AddCurrentVol shiftDate CVSE.Evening)))) _ { roster: { currentVol: Just cv } } = void do
       delay'
       T.modifyState \state -> modifyShifts state shiftDate $ D.addVolunteerShift shiftDate (D.Evening cv)
-    performAction (RowAction _ (R.ShiftRowAction (SR.CurrentVolShiftEditAction (CVSE.ChangeCurrentVolShiftType shiftDate)))) _ { roster: { currentVol: Just cv } } = void do
+    performAction (RowAction _ (R.ShiftRowAction (SR.CurrentVolShiftEditAction (CVSE.ChangeCurrentVolShiftType shiftDate)))) _ { roster: { currentVol: Just (D.Volunteer cv) } } = void do
       delay'
       T.modifyState \state -> modifyShifts state shiftDate $ D.changeVolunteerShift shiftDate cv.id
     performAction (RowAction _ (R.ShiftRowAction (SR.CurrentVolShiftEditAction (CVSE.RemoveCurrentVol shiftDate)))) _ { roster: { currentVol: Just cv } } = void do

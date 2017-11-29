@@ -10,7 +10,7 @@ import React.DOM.Props as RP
 import Thermite as T
 
 import App.Common (justIf)
-import App.Data (OvernightPreference(..), OvernightGenderPreference(..), Volunteer, VolunteerShift(..)) as D
+import ServerTypes (OvernightPreference(..), OvernightGenderPreference(..), Volunteer(..), VolunteerShift(..)) as D
 
 data ShiftType = Overnight
                | Evening
@@ -67,16 +67,16 @@ renderIcon Evening   = RD.i [ RP.className "vol-icon icon-no-bed" ] []
 renderIcon Overnight = RD.i [ RP.className "vol-icon icon-bed" ]    []
 
 initialState :: D.VolunteerShift -> State
-initialState (D.Overnight v) = { name: v.name
+initialState (D.Overnight (D.Volunteer v)) = { name: v.name
                                , shiftType: Overnight
                                , sharingPrefs: sharingPrefs v
                                } 
-initialState (D.Evening v)   = { name: v.name
+initialState (D.Evening (D.Volunteer v))   = { name: v.name
                                , shiftType: Evening
                                , sharingPrefs: sharingPrefs v
                                }
 
-sharingPrefs :: D.Volunteer -> Array SharingPref
+sharingPrefs :: _ -> Array SharingPref
 sharingPrefs vol = catMaybes [ map overnight vol.overnightPreference
                              , map gender vol.overnightGenderPreference
                              , justIf (Notes vol.notes) $ S.length vol.notes > 0

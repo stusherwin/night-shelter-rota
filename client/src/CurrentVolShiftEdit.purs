@@ -11,7 +11,8 @@ import React.DOM.Props as RP
 import Thermite as T
 
 import App.Common (toDateString)
-import App.Data (Volunteer, VolunteerShift(..), Shift, Config, canChangeVolunteerShiftType, hasVolWithId, canAddVolunteer) as D
+import ServerTypes (Volunteer(..), VolunteerShift(..), Shift(..)) as D
+import App.Data (Config, canChangeVolunteerShiftType, hasVolWithId, canAddVolunteer, toDate) as D
 
 data ShiftType = Overnight
                | Evening
@@ -128,13 +129,13 @@ renderShiftTypeRadio dispatch s =
 
 
 initialState :: D.Config -> D.Shift -> D.Volunteer -> State
-initialState config shift cv = { name: cv.name
-                               , date: shift.date
+initialState config (D.Shift shift) (D.Volunteer cv) = { name: cv.name
+                               , date: D.toDate shift.date
                                , loading: false
                                , shiftType: shiftType
-                               , canAddOvernight: D.canAddVolunteer config (D.Overnight cv) shift
-                               , canAddEvening: D.canAddVolunteer config (D.Evening cv) shift
-                               , canChangeShiftType: D.canChangeVolunteerShiftType config cv shift
+                               , canAddOvernight: D.canAddVolunteer config (D.Overnight (D.Volunteer cv)) (D.Shift shift)
+                               , canAddEvening: D.canAddVolunteer config (D.Evening (D.Volunteer cv)) (D.Shift shift)
+                               , canChangeShiftType: D.canChangeVolunteerShiftType config (D.Volunteer cv) (D.Shift shift)
                                }
   where
   shiftType = find (D.hasVolWithId cv.id) shift.volunteers >>= case _ of

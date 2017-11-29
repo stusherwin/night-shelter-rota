@@ -1,5 +1,5 @@
 module App.Main where 
-    
+     
 import Prelude
  
 import Data.Array (toUnfoldable) 
@@ -19,12 +19,13 @@ import React as R
 import React.DOM as RD
 import React.DOM.Props as RP
 import ReactDOM as RDOM
-import Thermite as T
+import Thermite as T 
 
 import App.Common (updateWhere, sortWith, nextWeekday)
 import App.VolDetails (State, Action(..), Details, spec, initialState) as VD
 import App.CurrentVolSelector (State, Action(..), spec, initialState, changeVols) as CVS
-import App.Data (OvernightPreference(..), OvernightGenderPreference(..), Volunteer, VolunteerShift(..), VolId(..), nextVolId)
+import App.Data (fromDate)
+import ServerTypes (OvernightPreference(..), OvernightGenderPreference(..), Volunteer(..), VolunteerShift(..), Shift(..))
 import App.ShiftList (State, Action, spec, initialState, changeCurrentVol) as SL
 import App.NewVolButton (State, Action, spec, initialState) as NVB
 import App.EditVolButton (State, Action, spec, initialState) as EVB
@@ -134,7 +135,7 @@ changeCurrentVol currentVol' s = s{ currentVol = currentVol'
                                   , shiftList = SL.changeCurrentVol currentVol' s.shiftList
                                   , volDetails = Nothing
                                   , newVolButton = Just NVB.initialState
-                                  , editVolButton = map (EVB.initialState <<< _.name) currentVol'
+                                  , editVolButton = map (EVB.initialState <<< (\(Volunteer v) -> v.name)) currentVol'
                                   }
 
 startEditingNewVol :: State -> State
@@ -163,21 +164,21 @@ addOrUpdateVol d s =
        , currentVolSelector = CVS.changeVols vols' currentVol' s.currentVolSelector
        , volDetails = Nothing
        , newVolButton = Just NVB.initialState
-       , editVolButton = map (EVB.initialState <<< _.name) currentVol'
+       , editVolButton = map (EVB.initialState <<< (\(Volunteer v) -> v.name)) currentVol'
        }
   where
-  addOrUpdate { currentVol: Just cv, vols } =
-    let cv'  = cv{ name = d.name
+  addOrUpdate { currentVol: Just cv@(Volunteer v), vols } =
+    let cv'  = Volunteer v{ name = d.name
                  , overnightPreference = d.pref
                  , overnightGenderPreference = d.genderPref
                  , notes = d.notes
                  }
     in { currentVol': Just cv'
-       , vols': updateWhere (\v -> v.id == cv.id) cv' vols
+       , vols': updateWhere (\(Volunteer v') -> v'.id == v.id) cv' vols
        }
   addOrUpdate { vols } =
-    let maxId  = maybe (VolId 0) _.id $ last $ sortWith _.id vols
-        newVol = { id: nextVolId maxId
+    let maxId  = maybe 0 (\(Volunteer v) -> v.id) $ last $ sortWith (\(Volunteer v) -> v.id) vols
+        newVol = Volunteer { id: maxId + 1
                  , name: d.name
                  , overnightPreference: d.pref
                  , overnightGenderPreference: d.genderPref
@@ -190,48 +191,48 @@ addOrUpdateVol d s =
 cancelEditing :: State -> State
 cancelEditing s = s{ volDetails = Nothing
                    , newVolButton = Just NVB.initialState
-                   , editVolButton = map (EVB.initialState <<< _.name) s.currentVol
+                   , editVolButton = map (EVB.initialState <<< (\(Volunteer v) -> v.name)) s.currentVol
                    }
 
 initialState :: Date -> State
 initialState currentDate =
-  let fred  = { id: VolId 1
+  let fred  = Volunteer { id: 1
               , name: "Fred"
               , overnightPreference: Just PreferAnotherVolunteer
               , overnightGenderPreference: Nothing
               , notes: ""
               }
-      alice = { id: VolId 2
+      alice = Volunteer { id: 2
               , name: "Alice"
               , overnightPreference: Nothing
               , overnightGenderPreference: Just Female
               , notes: ""
               }
-      jim   = { id: VolId 3
+      jim   = Volunteer { id: 3
               , name: "Jim"
               , overnightPreference: Just PreferToBeAlone
               , overnightGenderPreference: Just Male
               , notes: ""
               }
-      mary  = { id: VolId 4
+      mary  = Volunteer { id: 4
               , name: "Mary"
               , overnightPreference: Nothing
               , overnightGenderPreference: Nothing
               , notes: "Only nice people"
               }
       vols = toUnfoldable [ fred, alice, jim, mary ]
-      shifts = toUnfoldable [ { date: currentDate
-                              , volunteers: toUnfoldable [ Overnight fred
-                                                         , Evening alice
-                                                         , Overnight jim
-                                                         , Evening mary
-                                                         ]
+      shifts = toUnfoldable [ Shift { date: fromDate $ currentDate
+                              , volunteers: [ Overnight fred
+                                            , Evening alice
+                                            , Overnight jim
+                                            , Evening mary
+                                            ]
                               }
-                            , { date: nextWeekday Sunday currentDate
-                              , volunteers: toUnfoldable [ Overnight fred
-                                                         , Overnight jim
-                                                         , Evening mary
-                                                         ]
+                            , Shift { date: fromDate $ nextWeekday Sunday currentDate
+                              , volunteers: [ Overnight fred
+                                            , Overnight jim
+                                            , Evening mary
+                                            ]
                               }
                             ] 
       currentVol = Nothing --Just fred

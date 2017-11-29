@@ -2,7 +2,7 @@ module App.VolDetails (State, Details, Action(..), spec, initialState) where
 
 import Prelude
 
-import Data.Maybe (Maybe(..), maybe)
+import Data.Maybe (Maybe(..), maybe, isNothing)
 import Data.String (length)
 import React (ReactElement, preventDefault)
 import React.DOM as RD
@@ -10,7 +10,7 @@ import React.DOM.Props as RP
 import Thermite as T
  
 import App.Common (unsafeEventValue, className, onlyIf, unsafeChecked)
-import App.Data (OvernightPreference(..), OvernightGenderPreference(..), Volunteer)
+import ServerTypes (OvernightPreference(..), OvernightGenderPreference(..), Volunteer (..))
 
 type Details = { name :: String 
                , notes :: String
@@ -31,6 +31,16 @@ data Action = SetName String
             | SetSubmitted
             | Save Details
             | Cancel
+
+hasPref :: OvernightPreference -> Details -> Boolean
+hasPref PreferToBeAlone { pref: Just PreferToBeAlone } = true
+hasPref PreferAnotherVolunteer { pref: Just PreferAnotherVolunteer } = true
+hasPref _ _ = false
+
+hasGenderPref :: OvernightGenderPreference -> Details -> Boolean
+hasGenderPref Male { genderPref: Just Male } = true
+hasGenderPref Female { genderPref: Just Female } = true
+hasGenderPref _ _ = false
 
 spec :: T.Spec _ State _ Action
 spec = T.simpleSpec performAction render
@@ -55,7 +65,7 @@ spec = T.simpleSpec performAction render
                                 [ RD.input [ RP._type "radio"
                                            , RP._id "pref-alone-2"
                                            , RP.name "pref-alone"
-                                           , RP.checked $ state.details.pref == (Just PreferAnotherVolunteer)
+                                           , RP.checked $ hasPref PreferAnotherVolunteer state.details
                                            , RP.onChange \e -> do
                                                let checked = unsafeChecked e
                                                when checked $ dispatch $ SetPref (Just PreferAnotherVolunteer)
@@ -71,7 +81,7 @@ spec = T.simpleSpec performAction render
                                 [ RD.input [ RP._type "radio"
                                            , RP._id "pref-alone-1"
                                            , RP.name "pref-alone"
-                                           , RP.checked $ state.details.pref == (Just PreferToBeAlone)
+                                           , RP.checked $ hasPref PreferToBeAlone state.details
                                            , RP.onChange \e -> do
                                                let checked = unsafeChecked e
                                                when checked $ dispatch $ SetPref (Just PreferToBeAlone)
@@ -87,7 +97,7 @@ spec = T.simpleSpec performAction render
                                 [ RD.input [ RP._type "radio"
                                            , RP._id "pref-alone-none"
                                            , RP.name "pref-alone"
-                                           , RP.checked $ state.details.pref == Nothing
+                                           , RP.checked $ isNothing state.details.pref
                                            , RP.onChange \e -> do
                                                let checked = unsafeChecked e
                                                when checked $ dispatch $ SetPref Nothing
@@ -105,7 +115,7 @@ spec = T.simpleSpec performAction render
                                 [ RD.input [ RP._type "radio"
                                            , RP._id "pref-gender-f"
                                            , RP.name "pref-gender"
-                                           , RP.checked $ state.details.genderPref == (Just Female)
+                                           , RP.checked $ hasGenderPref Female state.details
                                            , RP.onChange \e -> do
                                                let checked = unsafeChecked e
                                                when checked $ dispatch $ SetGenderPref (Just Female)
@@ -121,7 +131,7 @@ spec = T.simpleSpec performAction render
                                 [ RD.input [ RP._type "radio"
                                            , RP._id "pref-gender-m"
                                            , RP.name "pref-gender"
-                                           , RP.checked $ state.details.genderPref == (Just Male)
+                                           , RP.checked $ hasGenderPref Male state.details
                                            , RP.onChange \e -> do
                                                let checked = unsafeChecked e
                                                when checked $ dispatch $ SetGenderPref (Just Male)
@@ -137,7 +147,7 @@ spec = T.simpleSpec performAction render
                                 [ RD.input [ RP._type "radio"
                                            , RP._id "pref-gender-none"
                                            , RP.name "pref-gender"
-                                           , RP.checked $ state.details.genderPref == Nothing
+                                           , RP.checked $ isNothing state.details.genderPref
                                            , RP.onChange \e -> do
                                                let checked = unsafeChecked e
                                                when checked $ dispatch $ SetGenderPref Nothing
@@ -218,14 +228,14 @@ initialState currentVol =
                        , pref: Nothing
                        , genderPref: Nothing
                        }
-      currentVolDetails cv = { name: cv.name
-                             , notes: notes cv
+      currentVolDetails (Volunteer cv) = { name: cv.name
+                             , notes: cv.notes
                              , pref: cv.overnightPreference
                              , genderPref: cv.overnightGenderPreference
                              }
       details = maybe defaultDetails currentVolDetails currentVol
   in { details
-     , title: maybe "Add new volunteer" (\cv -> cv.name <> "'s details") currentVol
+     , title: maybe "Add new volunteer" (\(Volunteer cv) -> cv.name <> "'s details") currentVol
      , formValid: isValid details
      , formSubmitted: false
      }
@@ -233,9 +243,6 @@ initialState currentVol =
 isValid :: Details -> Boolean
 isValid { name } | length name == 0 = false
 isValid _ = true
-
-notes :: Volunteer -> String
-notes = _.notes
 
 renderGenderPref :: OvernightGenderPreference -> ReactElement
 renderGenderPref Male   = RD.div [ RP.className "sharing-pref gender" 

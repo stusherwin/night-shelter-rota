@@ -1,103 +1,82 @@
-module App.Data (Shift (..), Volunteer(..), VolId(..), OvernightPreference(..), OvernightGenderPreference(..), VolunteerShift(..), RuleResult(..), Config, addVolunteerShift, changeVolunteerShift, removeVolunteerShift, canAddVolunteer, hasVolWithId, validate, filterOut, canChangeVolunteerShiftType, parseVolId, nextVolId, updateVolunteer) where
+module App.Data (RuleResult(..), Config, addVolunteerShift, changeVolunteerShift, removeVolunteerShift, canAddVolunteer, hasVolWithId, validate, filterOut, canChangeVolunteerShiftType, updateVolunteer, toDate, hasDate, fromDate) where
 
 import Prelude
   
-import Data.Array (toUnfoldable)
-import App.Common (justIf, sortWith)
-import Data.List (List, findIndex, find, modifyAt, snoc, deleteAt, length, all, nubBy, (:), filter, catMaybes, any, singleton)
-import Data.Date (diff)
+import Data.Array ((:))
+import Data.Array (toUnfoldable, length, filter, nubBy, any, findIndex, deleteAt, modifyAt, snoc) as A
+import App.Common (justIf, sortWith, mkDate)
+import Data.List (List, findIndex, find, modifyAt, snoc, deleteAt, length, all, nubBy, filter, catMaybes, any, singleton)
+import Data.Date (diff, year, month, day)
 import Data.DateTime (Date)
+import Data.Enum (fromEnum)
 import Data.Int (fromString, toNumber)
 import Data.Maybe (Maybe(..), fromMaybe, isJust)
 import Data.Time.Duration (Days(..))
 
-data OvernightPreference = PreferToBeAlone
-                         | PreferAnotherVolunteer 
-derive instance overnightPreferenceEq :: Eq OvernightPreference
-instance overnightPreferenceShow :: Show OvernightPreference
-  where
-  show PreferToBeAlone = "PreferToBeAlone"
-  show PreferAnotherVolunteer = "PreferAnotherVolunteer" 
+import ServerTypes (Shift (..), Volunteer(..), OvernightPreference(..), OvernightGenderPreference(..), VolunteerShift(..))
+import ServerTypes (Date (..)) as ST
 
-data OvernightGenderPreference = Male
-                               | Female
-derive instance overnightGenderPreferenceEq :: Eq OvernightGenderPreference
-instance overnightGenderPreferenceShow :: Show OvernightGenderPreference
-  where
-  show Male = "Male"
-  show Female = "Female" 
-
-newtype VolId = VolId Int
-derive instance volIdEq :: Eq VolId
-derive instance volIdOrd :: Ord VolId
-instance volIdShow :: Show VolId where show (VolId v) = show v
-
-nextVolId :: VolId -> VolId
-nextVolId (VolId i) = VolId (i + 1)
-
-parseVolId :: String -> Maybe VolId
-parseVolId = map VolId <<< fromString
- 
-type Volunteer = { id :: VolId
-                 , name :: String
-                 , overnightPreference :: Maybe OvernightPreference
-                 , overnightGenderPreference :: Maybe OvernightGenderPreference
-                 , notes :: String
-                 }
-
-data VolunteerShift = Overnight Volunteer
-                    | Evening Volunteer
-
-type Shift = { date :: Date
-             , volunteers :: List VolunteerShift
-             }
-
-hasVolWithId :: VolId -> VolunteerShift -> Boolean
-hasVolWithId id (Overnight v) = v.id == id
-hasVolWithId id (Evening v) = v.id == id
+hasVolWithId :: Int -> VolunteerShift -> Boolean
+hasVolWithId id (Overnight (Volunteer v)) = v.id == id
+hasVolWithId id (Evening (Volunteer v)) = v.id == id
 
 volThat :: forall a. (Volunteer -> a) -> VolunteerShift -> a
 volThat f (Overnight v) = f v
 volThat f (Evening v)   = f v
-
-volId :: VolunteerShift -> VolId
-volId (Overnight v) = v.id
-volId (Evening v) = v.id
+ 
+volId :: VolunteerShift -> Int
+volId (Overnight (Volunteer v)) = v.id
+volId (Evening (Volunteer v)) = v.id
 
 addVolunteerShift :: Date -> VolunteerShift -> List Shift -> List Shift
 addVolunteerShift date vol shifts =
-  case findIndex (\s -> s.date == date) shifts of
-    Just i -> fromMaybe shifts $ modifyAt i (\s -> s{ volunteers = (flip snoc) vol s.volunteers }) shifts
-    _      -> snoc shifts $ { date, volunteers: singleton vol }
+  case findIndex (hasDate date) shifts of
+    Just i -> fromMaybe shifts $ modifyAt i (\(Shift s) -> Shift s{ volunteers = (flip A.snoc) vol s.volunteers }) shifts
+    _      -> snoc shifts $ Shift { date: fromDate date, volunteers: [vol] }
 
-changeVolunteerShift :: Date -> VolId -> List Shift -> List Shift
+changeVolunteerShift :: Date -> Int -> List Shift -> List Shift
 changeVolunteerShift date volId shifts =
-  case findIndex (\s -> s.date == date) shifts of
-    Just i -> fromMaybe shifts $ modifyAt i (\s ->
-                case findIndex (hasVolWithId volId) s.volunteers of
-                  Just j -> s{ volunteers = fromMaybe s.volunteers $ modifyAt j otherShiftType s.volunteers }
-                  _      -> s) shifts
+  case findIndex (hasDate date) shifts of
+    Just i -> fromMaybe shifts $ modifyAt i (\(Shift s) ->
+                case A.findIndex (hasVolWithId volId) s.volunteers of
+                  Just j -> Shift s{ volunteers = fromMaybe s.volunteers $ A.modifyAt j otherShiftType s.volunteers }
+                  _      -> Shift s) shifts
     _      -> shifts
 
 otherShiftType :: VolunteerShift -> VolunteerShift
 otherShiftType (Overnight v) = Evening v
 otherShiftType (Evening v) = Overnight v
 
+hasDate :: Date -> Shift -> Boolean
+hasDate date (Shift { date: ST.Date { year: y, month: m, day: d } }) =
+     fromEnum (year date) == y
+  && fromEnum (month date) == m
+  && fromEnum (day date) == d
+
+toDate :: ST.Date -> Date
+toDate (ST.Date { year: y, month: m, day: d }) = mkDate d m y
+
+fromDate :: Date -> ST.Date
+fromDate date = ST.Date { day: fromEnum (day date)
+                        , month: fromEnum (month date)
+                        , year: fromEnum (year date)
+                        }
+
 removeVolunteerShift :: Date -> Volunteer -> List Shift -> List Shift
-removeVolunteerShift date vol shifts =
-  case findIndex (\s -> s.date == date) shifts of
-    Just i -> fromMaybe shifts $ modifyAt i (\s ->
-                case findIndex (hasVolWithId vol.id) s.volunteers of
-                  Just j -> s{ volunteers = fromMaybe s.volunteers $ deleteAt j s.volunteers }
-                  _      -> s) shifts
+removeVolunteerShift date (Volunteer {id}) shifts =
+  case findIndex (hasDate date) shifts of
+    Just i -> fromMaybe shifts $ modifyAt i (\(Shift s) ->
+                case A.findIndex (hasVolWithId id) s.volunteers of
+                  Just j -> Shift s{ volunteers = fromMaybe s.volunteers $ A.deleteAt j s.volunteers }
+                  _      -> Shift s) shifts
     _      -> shifts
 
 updateVolunteer :: Volunteer -> List Shift -> List Shift
-updateVolunteer vol = map updateShift
+updateVolunteer v'@(Volunteer {id: id'}) = map updateShift
   where
-  updateShift s = s { volunteers = map updateVol s.volunteers }
-  updateVol (Overnight v) | v.id == vol.id = Overnight vol
-  updateVol (Evening   v) | v.id == vol.id = Evening vol
+  updateShift (Shift s) = Shift s { volunteers = map updateVol s.volunteers }
+  updateVol (Overnight (Volunteer {id})) | id == id' = Overnight v'
+  updateVol (Evening   (Volunteer {id})) | id == id' = Evening v'
   updateVol v = v
 
 type Config = { currentDate :: Date
@@ -124,56 +103,56 @@ isOvernight :: VolunteerShift -> Boolean
 isOvernight (Overnight _) = true
 isOvernight _ = false
 
-filterOut :: Volunteer -> List VolunteerShift -> List VolunteerShift
-filterOut v = filter (not <<< hasVolWithId $ v.id)
+filterOut :: Volunteer -> Array VolunteerShift -> Array VolunteerShift
+filterOut (Volunteer v) = A.filter (not <<< hasVolWithId $ v.id)
 
 isAllowed :: RuleParams -> Boolean
-isAllowed params = satisfies params $ toUnfoldable [ notHaveSameVolunteerTwice
-                                                   ]
+isAllowed params = satisfies params $ A.toUnfoldable [ notHaveSameVolunteerTwice
+                                                     ]
   where
   satisfies :: RuleParams -> List Rule -> Boolean
   satisfies p = all id <<< map (not <<< isJust) <<< (flip flap) p
 
 canAddVolunteer :: Config -> VolunteerShift -> Shift -> Boolean
-canAddVolunteer config volShift s =
-  isAllowed { shift: s{ volunteers = volShift:s.volunteers }
+canAddVolunteer config volShift (Shift s) =
+  isAllowed { shift: Shift s{ volunteers = volShift : s.volunteers }
             , config
             }
 
 canChangeVolunteerShiftType :: Config -> Volunteer -> Shift -> Boolean
-canChangeVolunteerShiftType config v s =
+canChangeVolunteerShiftType config vol@(Volunteer v) (Shift s ) =
   case find (hasVolWithId v.id) s.volunteers of
     Nothing -> false
     (Just volShift) ->
       let changedShift = case volShift of
-                           (Overnight _) -> (Evening v)
-                           (Evening _)   -> (Overnight v)
-      in isAllowed { shift: s{ volunteers = changedShift:(filterOut v s.volunteers) }
+                           (Overnight _) -> (Evening vol)
+                           (Evening _)   -> (Overnight vol)
+      in isAllowed { shift: Shift s{ volunteers = changedShift : (filterOut vol s.volunteers) }
                    , config
                    }
 
 validate :: Config -> Shift -> List RuleResult
 validate config shift =
-  collectViolations params $ toUnfoldable [ must <<< notHaveSameVolunteerTwice
-                                          , ignoreIf (isPast shift) <<< should <<< notExceedMaxVolunteers
-                                          , ignoreIf (isPast shift) <<< mustIf (isLooming shift) <<< haveAtLeastOneVolunteer
-                                          , ignoreIf (isPast shift) <<< could <<< haveMoreThanOneVolunteer
-                                          , ignoreIf (isPast shift) <<< mustIf (isLooming shift) <<< haveAnOvernightVolunteer
-                                          , ignoreIf (isPast shift) <<< should <<< notViolateAnyVolsSharingPrefs
-                                          ]
+  collectViolations params $ A.toUnfoldable [ must <<< notHaveSameVolunteerTwice
+                                            , ignoreIf (isPast shift) <<< should <<< notExceedMaxVolunteers
+                                            , ignoreIf (isPast shift) <<< mustIf (isLooming shift) <<< haveAtLeastOneVolunteer
+                                            , ignoreIf (isPast shift) <<< could <<< haveMoreThanOneVolunteer
+                                            , ignoreIf (isPast shift) <<< mustIf (isLooming shift) <<< haveAnOvernightVolunteer
+                                            , ignoreIf (isPast shift) <<< should <<< notViolateAnyVolsSharingPrefs
+                                            ]
   where
   params = { shift
            , config
            }
 
   isLooming :: Shift -> Boolean
-  isLooming shift =
-    let (Days d) = shift.date `diff` config.currentDate
+  isLooming (Shift s) =
+    let (Days d) = (toDate s.date) `diff` config.currentDate
     in d >= 0.0 && d < (toNumber config.urgentPeriodDays)
 
   isPast :: Shift -> Boolean
-  isPast shift =
-    let (Days d) = shift.date `diff` config.currentDate
+  isPast (Shift s) =
+    let (Days d) = (toDate s.date) `diff` config.currentDate
     in d < 0.0
 
   collectViolations :: RuleParams -> List (RuleParams -> Maybe RuleResult) -> List RuleResult
@@ -192,40 +171,40 @@ validate config shift =
   priority _           = 3
 
 notExceedMaxVolunteers :: Rule
-notExceedMaxVolunteers { shift, config: { maxVolsPerShift } } =
+notExceedMaxVolunteers { shift: Shift s, config: { maxVolsPerShift } } =
   justIf ("has more than " <> show maxVolsPerShift <> " volunteers")
-       $ length shift.volunteers > maxVolsPerShift
+       $ A.length s.volunteers > maxVolsPerShift
 
 notHaveSameVolunteerTwice :: Rule
-notHaveSameVolunteerTwice { shift } =
+notHaveSameVolunteerTwice { shift: Shift s } =
   justIf "has the same volunteer down twice"
-       $ length (nubBy (\a b -> volId a == volId b) shift.volunteers) > length shift.volunteers
+       $ A.length (A.nubBy (\a b -> volId a == volId b) s.volunteers) > A.length s.volunteers
 
 haveAtLeastOneVolunteer :: Rule
-haveAtLeastOneVolunteer { shift } =
+haveAtLeastOneVolunteer { shift: Shift s } =
   justIf "has no volunteers"
-       $ length shift.volunteers == 0
+       $ A.length s.volunteers == 0
 
 haveMoreThanOneVolunteer :: Rule
-haveMoreThanOneVolunteer { shift } =
+haveMoreThanOneVolunteer { shift: Shift s } =
   justIf "has only one volunteer"
-       $ length shift.volunteers == 1
+       $ A.length s.volunteers == 1
 
 haveAnOvernightVolunteer :: Rule
-haveAnOvernightVolunteer { shift, config: { currentDate } } =
+haveAnOvernightVolunteer { shift: Shift s, config: { currentDate } } =
   justIf "has no overnight volunteer"
-       $ length shift.volunteers /= 0 && (length $ filter isOvernight shift.volunteers) == 0
+       $ A.length s.volunteers /= 0 && (A.length $ A.filter isOvernight s.volunteers) == 0
   where
   isOvernight :: VolunteerShift -> Boolean
   isOvernight (Overnight _) = true
   isOvernight _ = false
 
 notViolateAnyVolsSharingPrefs :: Rule
-notViolateAnyVolsSharingPrefs { shift } =
+notViolateAnyVolsSharingPrefs { shift: Shift s } =
   justIf "goes against a volunteer's preferences"
-       $ any violatesSharingPrefs shift.volunteers
+       $ A.any violatesSharingPrefs s.volunteers
   where
   violatesSharingPrefs :: VolunteerShift -> Boolean
-  violatesSharingPrefs (Overnight vol@{ overnightPreference: Just PreferToBeAlone }) = any isOvernight $ filterOut vol shift.volunteers
-  violatesSharingPrefs (Overnight vol@{ overnightPreference: Just PreferAnotherVolunteer }) = (not <<< any) isOvernight $ filterOut vol shift.volunteers
+  violatesSharingPrefs (Overnight vol@Volunteer { overnightPreference: Just PreferToBeAlone }) = A.any isOvernight $ filterOut vol s.volunteers
+  violatesSharingPrefs (Overnight vol@Volunteer { overnightPreference: Just PreferAnotherVolunteer }) = (not <<< A.any) isOvernight $ filterOut vol s.volunteers
   violatesSharingPrefs _ = false

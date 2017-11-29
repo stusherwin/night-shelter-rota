@@ -10,7 +10,7 @@ import React.DOM.Props as RP
 import Thermite as T
 
 import App.Common (unsafeEventSelectedIndex, isJustWith, sortWith)
-import App.Data (Volunteer, VolId)
+import ServerTypes (Volunteer(..))
 
 type State = { vols :: List Volunteer
              , currentVol :: Maybe Volunteer
@@ -37,11 +37,11 @@ spec = T.simpleSpec performAction render
   respond state i | i > 0 = ChangeCurrentVol $ state.vols !! (i - 1)
   respond _ _ = ChangeCurrentVol Nothing
 
-  findVol :: List Volunteer -> Maybe VolId -> Maybe Volunteer
-  findVol vols = (=<<) \id -> find (\v -> v.id == id) vols
+  findVol :: List Volunteer -> Maybe Int -> Maybe Volunteer
+  findVol vols = (=<<) \id -> find (\(Volunteer v) -> v.id == id) vols
 
   option :: _ -> Maybe Volunteer -> Volunteer -> ReactElement
-  option dispatch currentVolId v = RD.option [ RP.selected $ isJustWith (\cv -> cv.id == v.id) currentVolId
+  option dispatch currentVolId (Volunteer v) = RD.option [ RP.selected $ isJustWith (\(Volunteer cv) -> cv.id == v.id) currentVolId
                                              , RP.value $ show v.id
                                              ]
                                              [ RD.text v.name ]
@@ -50,11 +50,11 @@ spec = T.simpleSpec performAction render
   performAction (ChangeCurrentVol v) _ _ = void $ T.modifyState \state -> state{ currentVol = v }
 
 initialState :: List Volunteer -> Maybe Volunteer -> State
-initialState vols currentVol = { vols: sortWith _.name vols
+initialState vols currentVol = { vols: sortWith (\(Volunteer v) -> v.name) vols
                                , currentVol: currentVol
                                }
 
 changeVols :: List Volunteer -> Maybe Volunteer -> State -> State
-changeVols vols currentVol state = state { vols = sortWith _.name vols
+changeVols vols currentVol state = state { vols = sortWith (\(Volunteer v) -> v.name) vols
                                          , currentVol = currentVol
                                          }

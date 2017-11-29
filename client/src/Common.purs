@@ -1,4 +1,4 @@
-module App.Common (unsafeEventValue, unsafeEventSelectedIndex, midnight, tomorrow, toDateString, updateWhere, modifyWhere, justIf, default, onlyIf, className, isJustWith, addDays, toMonthYearString, isFirstDayOfMonth, daysLeftInMonth, toDayString, sortWith, previousWeekday, nextWeekday, unsafeChecked) where
+module App.Common (unsafeEventValue, unsafeEventSelectedIndex, midnight, tomorrow, toDateString, updateWhere, modifyWhere, justIf, default, onlyIf, className, isJustWith, addDays, toMonthYearString, isFirstDayOfMonth, daysLeftInMonth, toDayString, sortWith, previousWeekday, nextWeekday, unsafeChecked, mkDate) where
   
 import Prelude 
 
@@ -16,6 +16,9 @@ import Data.Time.Duration (Days(..))
 import Partial.Unsafe (unsafePartial)
 import Unsafe.Coerce (unsafeCoerce)
 import React.DOM.Props as RP
+
+mkDate :: Int -> Int -> Int -> Date
+mkDate d m y = canonicalDate (unsafePartial $ fromJust $ toEnum y) (unsafePartial $ fromJust $ toEnum m) (unsafePartial $ fromJust $ toEnum d)  
 
 unsafeChecked :: forall event. event -> Boolean
 unsafeChecked e = (unsafeCoerce e).target.checked

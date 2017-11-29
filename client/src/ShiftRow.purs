@@ -6,7 +6,8 @@ import Data.DateTime (Date, Weekday(..), weekday)
 import Data.Either (Either(..))
 import Data.Foldable (fold)
 import Data.Lens (Lens', lens, Prism', prism, over, _Just)
-import Data.List (List(..), find, head, foldl, length)
+import Data.Array (length) as A
+import Data.List (List(..), find, head, foldl, length, fromFoldable)
 import Data.Maybe (Maybe(..), maybe)
 import Data.String (take, toUpper) as S
 import Data.Tuple (Tuple(..), uncurry)
@@ -16,7 +17,8 @@ import React.DOM.Props as RP
 import Thermite as T
  
 import App.Common (onlyIf, className, toDayString, sortWith)
-import App.Data (Volunteer, Shift, RuleResult(..), Config, validate) as D
+import App.Data (RuleResult(..), Config, validate, toDate, hasDate, fromDate) as D
+import ServerTypes (Volunteer(..), Shift(..)) as D
 import App.CurrentVolShiftEdit (State, Action(..), spec, initialState) as CVSE
 import App.VolMarker (State, spec, initialState) as VM
 
@@ -139,21 +141,21 @@ spec =
 
 initialState :: forall d. RosterData d -> D.Config -> Date -> State
 initialState roster config date = 
-  let shift = maybe {date: date, volunteers: Nil} id
-                $ find (\s -> s.date == date) roster.shifts
+  let shift@(D.Shift sh) = maybe (D.Shift {date: D.fromDate date, volunteers: []}) id
+                $ find (D.hasDate date) roster.shifts
   in { date 
-     , noOfVols: length shift.volunteers
+     , noOfVols: A.length sh.volunteers
      , maxVols: config.maxVolsPerShift
      , status: status config shift
      , loading: false
      , currentVolShiftEdit: map (CVSE.initialState config shift) roster.currentVol
-     , volMarkers: sortWith _.name $ map VM.initialState $ shift.volunteers
+     , volMarkers: sortWith _.name $ map VM.initialState $ fromFoldable sh.volunteers
      }
   where
   status :: D.Config -> D.Shift -> ShiftStatus
-  status config s | s.date < config.currentDate = Past
-  status config s =
-    let errors = D.validate config s
+  status config (D.Shift s) | (D.toDate s.date) < config.currentDate = Past
+  status config (D.Shift s) =
+    let errors = D.validate config (D.Shift s)
         firstErrorStatus = case head errors of
           Just (D.Error e)   -> Error
           Just (D.Warning w) -> Warning
