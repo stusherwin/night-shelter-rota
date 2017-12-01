@@ -129,7 +129,7 @@ renderShiftTypeRadio dispatch s =
 
 
 initialState :: D.Config -> D.Shift -> D.Volunteer -> State
-initialState config (D.Shift shift) (D.Volunteer cv) = { name: cv.name
+initialState config (D.Shift shift) (D.Volunteer cv) = { name: cv.vName
                                , date: D.toDate shift.date
                                , loading: false
                                , shiftType: shiftType
@@ -138,6 +138,6 @@ initialState config (D.Shift shift) (D.Volunteer cv) = { name: cv.name
                                , canChangeShiftType: D.canChangeVolunteerShiftType config (D.Volunteer cv) (D.Shift shift)
                                }
   where
-  shiftType = find (D.hasVolWithId cv.id) shift.volunteers >>= case _ of
+  shiftType = find (D.hasVolWithId cv.vId) shift.volunteers >>= case _ of
     D.Overnight _ -> Just Overnight
     D.Evening   _ -> Just Evening

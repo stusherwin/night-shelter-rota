@@ -14,11 +14,11 @@ import Data.Generic (class Generic)
 
 newtype Volunteer =
     Volunteer {
-      id :: Int
-    , name :: String
-    , overnightPreference :: Maybe OvernightPreference
-    , overnightGenderPreference :: Maybe OvernightGenderPreference
-    , notes :: String
+      vId :: Int
+    , vName :: String
+    , vOvernightPreference :: Maybe OvernightPreference
+    , vOvernightGenderPreference :: Maybe OvernightGenderPreference
+    , vNotes :: String
     }
 
 derive instance genericVolunteer :: Generic Volunteer
@@ -27,7 +27,7 @@ derive instance newtypeVolunteer :: Newtype Volunteer _
 
 
 --------------------------------------------------------------------------------
-_Volunteer :: Iso' Volunteer { id :: Int, name :: String, overnightPreference :: Maybe OvernightPreference, overnightGenderPreference :: Maybe OvernightGenderPreference, notes :: String}
+_Volunteer :: Iso' Volunteer { vId :: Int, vName :: String, vOvernightPreference :: Maybe OvernightPreference, vOvernightGenderPreference :: Maybe OvernightGenderPreference, vNotes :: String}
 _Volunteer = _Newtype
 
 --------------------------------------------------------------------------------
@@ -125,5 +125,20 @@ _Evening = prism' Evening f
   where
     f (Evening a) = Just $ a
     f _ = Nothing
+
+--------------------------------------------------------------------------------
+newtype VolunteerDetails =
+    VolunteerDetails {
+      vdName :: String
+    }
+
+derive instance genericVolunteerDetails :: Generic VolunteerDetails
+
+derive instance newtypeVolunteerDetails :: Newtype VolunteerDetails _
+
+
+--------------------------------------------------------------------------------
+_VolunteerDetails :: Iso' VolunteerDetails { vdName :: String}
+_VolunteerDetails = _Newtype
 
 --------------------------------------------------------------------------------

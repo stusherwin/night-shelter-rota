@@ -15,11 +15,11 @@ module Types where
                                  deriving (Eq, Show, Generic)
   instance ToJSON OvernightGenderPreference
           
-  data Volunteer = Volunteer { id :: Int
-                             , name :: String
-                             , overnightPreference :: Maybe OvernightPreference
-                             , overnightGenderPreference :: Maybe OvernightGenderPreference
-                             , notes :: String
+  data Volunteer = Volunteer { vId :: Int
+                             , vName :: String
+                             , vOvernightPreference :: Maybe OvernightPreference
+                             , vOvernightGenderPreference :: Maybe OvernightGenderPreference
+                             , vNotes :: String
                              } deriving (Eq, Show, Generic)
   instance ToJSON Volunteer
 
@@ -38,3 +38,11 @@ module Types where
                      , volunteers :: [VolunteerShift]
                      } deriving (Eq, Show, Generic)
   instance ToJSON Shift
+
+  data VolunteerDetails = VolunteerDetails { vdName :: String
+                                           } deriving (Eq, Show, Generic)
+  instance FromJSON VolunteerDetails
+  instance ToJSON VolunteerDetails
+  
+  newVolunteer :: Int -> VolunteerDetails -> Volunteer
+  newVolunteer id details = Volunteer id (vdName details) Nothing Nothing ""

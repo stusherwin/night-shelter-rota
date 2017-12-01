@@ -22,12 +22,13 @@ import App.Row as R
 import App.ShiftList as SL
 import App.ShiftRow as SR
 import App.VolDetails as VD
+import ServerTypes
 
 findShift :: M.State -> Date -> Maybe Shift
-findShift state date = find (\s -> s.date == date) state.shiftList.roster.shifts
+findShift state date = find (hasDate date) state.shiftList.roster.shifts
 
-findVol :: VolId -> Shift -> Maybe Volunteer
-findVol id shift = find (\v -> v.id == id) $ map extractVol shift.volunteers
+findVol :: Int -> Shift -> Maybe Volunteer
+findVol id (Shift s) = find (\(Volunteer v) -> v.vId == id) $ map extractVol s.volunteers
   where
   extractVol (Overnight v) = v
   extractVol (Evening v) = v
@@ -66,13 +67,13 @@ volDetailsWithName name = { name
                           }
 
 fred :: Volunteer
-fred = { id: VolId 1, name: "Fred", overnightPreference: Nothing, overnightGenderPreference: Nothing, notes: "" }      
+fred = Volunteer { vId: 1, vName: "Fred", vOvernightPreference: Nothing, vOvernightGenderPreference: Nothing, vNotes: "" }      
 
 bob :: Volunteer
-bob = { id: VolId 2, name: "Bob", overnightPreference: Nothing, overnightGenderPreference: Nothing, notes: "" }
+bob = Volunteer { vId: 2, vName: "Bob", vOvernightPreference: Nothing, vOvernightGenderPreference: Nothing, vNotes: "" }
 
 jim :: Volunteer
-jim = { id: VolId 3, name: "Jim", overnightPreference: Nothing, overnightGenderPreference: Nothing, notes: "" }
+jim = Volunteer { vId: 3, vName: "Jim", vOvernightPreference: Nothing, vOvernightGenderPreference: Nothing, vNotes: "" }
           
 main :: _
 main = runTest do
@@ -80,20 +81,20 @@ main = runTest do
     test "Updating current vol name updates all shifts" do
       let oldState = state [ fred ]
                            (Just fred)
-                           [ { date: mkDate 1 1 2017, volunteers: singleton $ Overnight fred }
-                           , { date: mkDate 2 1 2017, volunteers: singleton $ Overnight fred }
+                           [ Shift { date: fromDate $ mkDate 1 1 2017, volunteers: [ Overnight fred ] }
+                           , Shift { date: fromDate $ mkDate 2 1 2017, volunteers: [ Overnight fred ] }
                            ]
           newState = M.addOrUpdateVol (volDetailsWithName "Fred1") oldState
 
       Assert.equal [ Just "Fred1", Just "Fred1" ]
-        $ map (map _.name <<< findVol (VolId 1) <=< findShift newState)
+        $ map (map (\(Volunteer v) -> v.vName) <<< findVol 1 <=< findShift newState)
         [ mkDate 1 1 2017, mkDate 2 1 2017 ]
       
     test "Updating current vol name updates all shift rows" do
       let oldState = state [ fred ]
                            (Just fred)
-                           [ { date: mkDate 1 1 2017, volunteers: singleton $ Overnight fred }
-                           , { date: mkDate 2 1 2017, volunteers: singleton $ Overnight fred }
+                           [ Shift { date: fromDate $ mkDate 1 1 2017, volunteers: [ Overnight fred ] }
+                           , Shift { date: fromDate $ mkDate 2 1 2017, volunteers: [ Overnight fred ] }
                            ]
           newState = M.addOrUpdateVol (volDetailsWithName "Fred1") oldState
 
@@ -105,8 +106,8 @@ main = runTest do
     test "Changing current vol shows each shift row with current vol as volunteer" do
       let oldState = state [ fred, bob, jim ]
                            (Just fred)
-                           [ { date: mkDate 1 1 2017, volunteers: toUnfoldable [ Overnight fred, Evening jim ] }
-                           , { date: mkDate 2 1 2017, volunteers: toUnfoldable [ Overnight jim, Evening bob ] }
+                           [ Shift { date: fromDate $ mkDate 1 1 2017, volunteers: [ Overnight fred, Evening jim ] }
+                           , Shift { date: fromDate $ mkDate 2 1 2017, volunteers: [ Overnight jim, Evening bob ] }
                            ]
           newState = M.changeCurrentVol (Just jim) oldState
 
@@ -117,11 +118,11 @@ main = runTest do
     test "Changing current vol to nothing shows all vols in each shift row" do
       let oldState = state [ fred, bob, jim ]
                            (Just fred)
-                           [ { date: mkDate 1 1 2017, volunteers: toUnfoldable [ Overnight fred, Evening jim ] }
-                           , { date: mkDate 2 1 2017, volunteers: toUnfoldable [ Overnight jim, Evening bob ] }
+                           [ Shift { date: fromDate $ mkDate 1 1 2017, volunteers: [ Overnight fred, Evening jim ] }
+                           , Shift { date: fromDate $ mkDate 2 1 2017, volunteers: [ Overnight jim, Evening bob ] }
                            ]
           newState = M.changeCurrentVol Nothing oldState
       
       Assert.equal [ Just ["Fred", "Jim"], Just ["Bob", "Jim"] ]
         $ map (map getVolNames <<< findShiftRow newState)
-        [ mkDate 1 1 2017, mkDate 2 1 2017 ]
+        [ mkDate 1 1 2017, mkDate 2 1 2017 ] 

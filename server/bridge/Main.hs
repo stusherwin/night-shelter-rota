@@ -52,6 +52,7 @@ module Main where
             , mkSumType (Proxy :: Proxy OvernightGenderPreference)
             , mkSumType (Proxy :: Proxy Date)
             , mkSumType (Proxy :: Proxy VolunteerShift)
+            , mkSumType (Proxy :: Proxy VolunteerDetails)
             ]
 
   -- mySettings :: Settings

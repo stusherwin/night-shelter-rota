@@ -228,14 +228,14 @@ initialState currentVol =
                        , pref: Nothing
                        , genderPref: Nothing
                        }
-      currentVolDetails (Volunteer cv) = { name: cv.name
-                             , notes: cv.notes
-                             , pref: cv.overnightPreference
-                             , genderPref: cv.overnightGenderPreference
+      currentVolDetails (Volunteer cv) = { name: cv.vName
+                             , notes: cv.vNotes
+                             , pref: cv.vOvernightPreference
+                             , genderPref: cv.vOvernightGenderPreference
                              }
       details = maybe defaultDetails currentVolDetails currentVol
   in { details
-     , title: maybe "Add new volunteer" (\(Volunteer cv) -> cv.name <> "'s details") currentVol
+     , title: maybe "Add new volunteer" (\(Volunteer cv) -> cv.vName <> "'s details") currentVol
      , formValid: isValid details
      , formSubmitted: false
      }

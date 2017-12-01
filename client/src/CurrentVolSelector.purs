@@ -38,23 +38,23 @@ spec = T.simpleSpec performAction render
   respond _ _ = ChangeCurrentVol Nothing
 
   findVol :: List Volunteer -> Maybe Int -> Maybe Volunteer
-  findVol vols = (=<<) \id -> find (\(Volunteer v) -> v.id == id) vols
+  findVol vols = (=<<) \id -> find (\(Volunteer v) -> v.vId == id) vols
 
   option :: _ -> Maybe Volunteer -> Volunteer -> ReactElement
-  option dispatch currentVolId (Volunteer v) = RD.option [ RP.selected $ isJustWith (\(Volunteer cv) -> cv.id == v.id) currentVolId
-                                             , RP.value $ show v.id
+  option dispatch currentVolId (Volunteer v) = RD.option [ RP.selected $ isJustWith (\(Volunteer cv) -> cv.vId == v.vId) currentVolId
+                                             , RP.value $ show v.vId
                                              ]
-                                             [ RD.text v.name ]
+                                             [ RD.text v.vName ]
 
   performAction :: T.PerformAction _ State _ Action
   performAction (ChangeCurrentVol v) _ _ = void $ T.modifyState \state -> state{ currentVol = v }
 
 initialState :: List Volunteer -> Maybe Volunteer -> State
-initialState vols currentVol = { vols: sortWith (\(Volunteer v) -> v.name) vols
+initialState vols currentVol = { vols: sortWith (\(Volunteer v) -> v.vName) vols
                                , currentVol: currentVol
                                }
 
 changeVols :: List Volunteer -> Maybe Volunteer -> State -> State
-changeVols vols currentVol state = state { vols = sortWith (\(Volunteer v) -> v.name) vols
+changeVols vols currentVol state = state { vols = sortWith (\(Volunteer v) -> v.vName) vols
                                          , currentVol = currentVol
                                          }

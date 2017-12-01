@@ -67,19 +67,19 @@ renderIcon Evening   = RD.i [ RP.className "vol-icon icon-no-bed" ] []
 renderIcon Overnight = RD.i [ RP.className "vol-icon icon-bed" ]    []
 
 initialState :: D.VolunteerShift -> State
-initialState (D.Overnight (D.Volunteer v)) = { name: v.name
+initialState (D.Overnight (D.Volunteer v)) = { name: v.vName
                                , shiftType: Overnight
                                , sharingPrefs: sharingPrefs v
                                } 
-initialState (D.Evening (D.Volunteer v))   = { name: v.name
+initialState (D.Evening (D.Volunteer v))   = { name: v.vName
                                , shiftType: Evening
                                , sharingPrefs: sharingPrefs v
                                }
 
 sharingPrefs :: _ -> Array SharingPref
-sharingPrefs vol = catMaybes [ map overnight vol.overnightPreference
-                             , map gender vol.overnightGenderPreference
-                             , justIf (Notes vol.notes) $ S.length vol.notes > 0
+sharingPrefs vol = catMaybes [ map overnight vol.vOvernightPreference
+                             , map gender vol.vOvernightGenderPreference
+                             , justIf (Notes vol.vNotes) $ S.length vol.vNotes > 0
                              ]
 
 overnight :: D.OvernightPreference -> SharingPref

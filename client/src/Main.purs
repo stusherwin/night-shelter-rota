@@ -135,7 +135,7 @@ changeCurrentVol currentVol' s = s{ currentVol = currentVol'
                                   , shiftList = SL.changeCurrentVol currentVol' s.shiftList
                                   , volDetails = Nothing
                                   , newVolButton = Just NVB.initialState
-                                  , editVolButton = map (EVB.initialState <<< (\(Volunteer v) -> v.name)) currentVol'
+                                  , editVolButton = map (EVB.initialState <<< (\(Volunteer v) -> v.vName)) currentVol'
                                   }
 
 startEditingNewVol :: State -> State
@@ -164,61 +164,61 @@ addOrUpdateVol d s =
        , currentVolSelector = CVS.changeVols vols' currentVol' s.currentVolSelector
        , volDetails = Nothing
        , newVolButton = Just NVB.initialState
-       , editVolButton = map (EVB.initialState <<< (\(Volunteer v) -> v.name)) currentVol'
+       , editVolButton = map (EVB.initialState <<< (\(Volunteer v) -> v.vName)) currentVol'
        }
   where
   addOrUpdate { currentVol: Just cv@(Volunteer v), vols } =
-    let cv'  = Volunteer v{ name = d.name
-                 , overnightPreference = d.pref
-                 , overnightGenderPreference = d.genderPref
-                 , notes = d.notes
+    let cv'  = Volunteer v{ vName = d.name
+                 , vOvernightPreference = d.pref
+                 , vOvernightGenderPreference = d.genderPref
+                 , vNotes = d.notes
                  }
     in { currentVol': Just cv'
-       , vols': updateWhere (\(Volunteer v') -> v'.id == v.id) cv' vols
+       , vols': updateWhere (\(Volunteer v') -> v'.vId == v.vId) cv' vols
        }
   addOrUpdate { vols } =
-    let maxId  = maybe 0 (\(Volunteer v) -> v.id) $ last $ sortWith (\(Volunteer v) -> v.id) vols
-        newVol = Volunteer { id: maxId + 1
-                 , name: d.name
-                 , overnightPreference: d.pref
-                 , overnightGenderPreference: d.genderPref
-                 , notes: d.notes
+    let maxId  = maybe 0 (\(Volunteer v) -> v.vId) $ last $ sortWith (\(Volunteer v) -> v.vId) vols
+        newVol = Volunteer { vId: maxId + 1
+                 , vName: d.name
+                 , vOvernightPreference: d.pref
+                 , vOvernightGenderPreference: d.genderPref
+                 , vNotes: d.notes
                  }
     in { currentVol': Just newVol
        , vols': snoc s.vols newVol
        }
-  
+ 
 cancelEditing :: State -> State
 cancelEditing s = s{ volDetails = Nothing
                    , newVolButton = Just NVB.initialState
-                   , editVolButton = map (EVB.initialState <<< (\(Volunteer v) -> v.name)) s.currentVol
+                   , editVolButton = map (EVB.initialState <<< (\(Volunteer v) -> v.vName)) s.currentVol
                    }
 
 initialState :: Date -> State
 initialState currentDate =
-  let fred  = Volunteer { id: 1
-              , name: "Fred"
-              , overnightPreference: Just PreferAnotherVolunteer
-              , overnightGenderPreference: Nothing
-              , notes: ""
+  let fred  = Volunteer { vId: 1
+              , vName: "Fred"
+              , vOvernightPreference: Just PreferAnotherVolunteer
+              , vOvernightGenderPreference: Nothing
+              , vNotes: ""
               }
-      alice = Volunteer { id: 2
-              , name: "Alice"
-              , overnightPreference: Nothing
-              , overnightGenderPreference: Just Female
-              , notes: ""
+      alice = Volunteer { vId: 2
+              , vName: "Alice"
+              , vOvernightPreference: Nothing
+              , vOvernightGenderPreference: Just Female
+              , vNotes: ""
               }
-      jim   = Volunteer { id: 3
-              , name: "Jim"
-              , overnightPreference: Just PreferToBeAlone
-              , overnightGenderPreference: Just Male
-              , notes: ""
+      jim   = Volunteer { vId: 3
+              , vName: "Jim"
+              , vOvernightPreference: Just PreferToBeAlone
+              , vOvernightGenderPreference: Just Male
+              , vNotes: ""
               }
-      mary  = Volunteer { id: 4
-              , name: "Mary"
-              , overnightPreference: Nothing
-              , overnightGenderPreference: Nothing
-              , notes: "Only nice people"
+      mary  = Volunteer { vId: 4
+              , vName: "Mary"
+              , vOvernightPreference: Nothing
+              , vOvernightGenderPreference: Nothing
+              , vNotes: "Only nice people"
               }
       vols = toUnfoldable [ fred, alice, jim, mary ]
       shifts = toUnfoldable [ Shift { date: fromDate $ currentDate

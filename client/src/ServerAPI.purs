@@ -11,11 +11,11 @@ import Data.Argonaut.Generic.Aeson (decodeJson, encodeJson)
 import Data.Maybe (Maybe(..))
 import Data.Nullable (toNullable)
 import Network.HTTP.Affjax (AJAX)
-import Prim (Array, String)
+import Prim (Array, Int, String)
 import Servant.PureScript.Affjax (AjaxError, affjax, defaultRequest)
 import Servant.PureScript.Settings (SPSettings_(..), gDefaultToURLPiece)
 import Servant.PureScript.Util (encodeHeader, encodeListQuery, encodeQueryItem, encodeURLPiece, getResult)
-import ServerTypes (Shift, Volunteer)
+import ServerTypes (Shift, Volunteer, VolunteerDetails)
 
 newtype SPParams_ = SPParams_ { baseURL :: String
                               }
@@ -36,6 +36,70 @@ getApiVols = do
                  { method = httpMethod
                  , url = reqUrl
                  , headers = defaultRequest.headers <> reqHeaders
+                 }
+  affResp <- affjax affReq
+  getResult affReq decodeJson affResp
+
+putApiVols :: forall eff m.
+              MonadAsk (SPSettings_ SPParams_) m => MonadError AjaxError m => MonadAff ( ajax :: AJAX | eff) m
+              => VolunteerDetails -> m Volunteer
+putApiVols reqBody = do
+  spOpts_' <- ask
+  let spOpts_ = case spOpts_' of SPSettings_ o -> o
+  let spParams_ = case spOpts_.params of SPParams_ ps_ -> ps_
+  let baseURL = spParams_.baseURL
+  let httpMethod = "PUT"
+  let reqUrl = baseURL <> "api" <> "/" <> "vols"
+  let reqHeaders =
+        []
+  let affReq = defaultRequest
+                 { method = httpMethod
+                 , url = reqUrl
+                 , headers = defaultRequest.headers <> reqHeaders
+                 , content = toNullable <<< Just <<< stringify <<< encodeJson $ reqBody
+                 }
+  affResp <- affjax affReq
+  getResult affReq decodeJson affResp
+
+getApiVolsById :: forall eff m.
+                  MonadAsk (SPSettings_ SPParams_) m => MonadError AjaxError m => MonadAff ( ajax :: AJAX | eff) m
+                  => Int -> m Volunteer
+getApiVolsById id = do
+  spOpts_' <- ask
+  let spOpts_ = case spOpts_' of SPSettings_ o -> o
+  let spParams_ = case spOpts_.params of SPParams_ ps_ -> ps_
+  let baseURL = spParams_.baseURL
+  let httpMethod = "GET"
+  let reqUrl = baseURL <> "api" <> "/" <> "vols"
+        <> "/" <> encodeURLPiece spOpts_' id
+  let reqHeaders =
+        []
+  let affReq = defaultRequest
+                 { method = httpMethod
+                 , url = reqUrl
+                 , headers = defaultRequest.headers <> reqHeaders
+                 }
+  affResp <- affjax affReq
+  getResult affReq decodeJson affResp
+
+postApiVolsById :: forall eff m.
+                   MonadAsk (SPSettings_ SPParams_) m => MonadError AjaxError m => MonadAff ( ajax :: AJAX | eff) m
+                   => VolunteerDetails -> Int -> m Volunteer
+postApiVolsById reqBody id = do
+  spOpts_' <- ask
+  let spOpts_ = case spOpts_' of SPSettings_ o -> o
+  let spParams_ = case spOpts_.params of SPParams_ ps_ -> ps_
+  let baseURL = spParams_.baseURL
+  let httpMethod = "POST"
+  let reqUrl = baseURL <> "api" <> "/" <> "vols"
+        <> "/" <> encodeURLPiece spOpts_' id
+  let reqHeaders =
+        []
+  let affReq = defaultRequest
+                 { method = httpMethod
+                 , url = reqUrl
+                 , headers = defaultRequest.headers <> reqHeaders
+                 , content = toNullable <<< Just <<< stringify <<< encodeJson $ reqBody
                  }
   affResp <- affjax affReq
   getResult affReq decodeJson affResp
