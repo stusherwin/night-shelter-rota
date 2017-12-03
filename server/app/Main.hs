@@ -16,28 +16,24 @@ module Main where
   import System.IO ()
   import qualified Data.IntMap.Strict as IM (IntMap(..), fromList, elems, lookup, insert, size)
   import Data.IORef (IORef, newIORef, readIORef, atomicModifyIORef')
- 
+  import Data.Time.Clock
+  import Data.Time.Calendar
+    
   import Types
   import Api
 
+  currentDate :: IO (Integer,Int,Int) -- :: (year,month,day)
+  currentDate = getCurrentTime >>= return . toGregorian . utctDay
+  
   data State = State { vols :: IM.IntMap Volunteer
                      , shifts :: [Shift]
                      }
-  
   main :: IO ()
   main = do
-    ref <- newIORef initialState
+    today <- currentDate
+    ref <- newIORef $ initialState today
     run 8081 (app ref)
     where
-    fred = Volunteer 1 "Fred" Nothing Nothing ""
-    jim = Volunteer 2 "Jim" (Just PreferToBeAlone) (Just Male) "hi"
-    initialState = State { vols = IM.fromList [ (1, fred)
-                                              , (2, jim) 
-                                              ]
-                         , shifts = [ Shift (Date 2017 1 1) []
-                                    , Shift (Date 2017 1 2) [Overnight fred, Evening jim]
-                                    ]
-                         }
      
   app :: IORef State -> Application
   app ref = serve fullAPI (server ref)
@@ -93,3 +89,43 @@ module Main where
   shiftsServer ref = do
     state <- liftIO $ readIORef ref
     return $ shifts state
+
+  initialState :: (Integer, Int, Int) -> State
+  initialState (y, m, d) =
+     let fred  = Volunteer { vId = 1
+                           , vName = "Fred"
+                           , vOvernightPreference = Just PreferAnotherVolunteer
+                           , vOvernightGenderPreference = Nothing
+                           , vNotes = ""
+                           }
+         alice = Volunteer { vId = 2
+                           , vName = "Alice"
+                           , vOvernightPreference = Nothing
+                           , vOvernightGenderPreference = Just Female
+                           , vNotes = ""
+                           }
+         jim   = Volunteer { vId = 3
+                           , vName = "Jim"
+                           , vOvernightPreference = Just PreferToBeAlone
+                           , vOvernightGenderPreference = Just Male
+                           , vNotes = ""
+                           }
+         mary  = Volunteer { vId = 4
+                           , vName = "Mary"
+                           , vOvernightPreference = Nothing
+                           , vOvernightGenderPreference = Nothing
+                           , vNotes = "Only nice people"
+                           }
+
+    in State { vols = IM.fromList $ map (\v -> (vId v, v)) [ fred, alice, jim, mary ]
+             , shifts = [ Shift (Date (fromInteger y) m d) [ Overnight fred
+                                                           , Evening alice
+                                                           , Overnight jim
+                                                           , Evening mary
+                                                           ]
+                        , Shift (Date (fromInteger y) m (d + 1)) [ Overnight fred
+                                                                 , Overnight jim
+                                                                 , Evening mary
+                                                                 ]
+                        ]
+             }

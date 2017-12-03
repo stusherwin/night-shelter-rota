@@ -1,40 +1,54 @@
 module App.Main where 
      
+import Control.Monad.Except.Trans
+import Control.Monad.Reader.Trans
+import Data.Argonaut.Generic.Aeson
+import Data.Generic
 import Prelude
- 
-import Data.Array (toUnfoldable) 
+import Servant.PureScript.Settings
+import ServerAPI
+import Servant.PureScript.Affjax
+import Control.Monad.Aff
+import Control.Monad.Aff.Class (liftAff)
+import Control.Monad.Eff.Class (liftEff)
+import Network.HTTP.Affjax (AJAX, get)
+import Control.Monad.Eff.Exception (EXCEPTION)
+import DOM (DOM)
+
+import App.Common (updateWhere, sortWith, nextWeekday)
+import App.CurrentVolSelector (State, Action(..), spec, initialState, changeVols) as CVS
+import App.Data (fromDate)
+import App.EditVolButton (State, Action, spec, initialState) as EVB
+import App.NewVolButton (State, Action, spec, initialState) as NVB
+import App.ShiftList (State, Action, spec, initialState, changeCurrentVol) as SL
+import App.VolDetails (State, Action(..), Details, spec, initialState) as VD
 import Control.Monad.Eff (Eff)
 import Control.Monad.Eff.Console (log, CONSOLE)
-import Control.Monad.Eff.Now (nowDate)
+import Control.Monad.Eff.Now (nowDate, NOW)
 import Control.Monad.Eff.Unsafe (unsafePerformEff)
 import DOM.Node.Types (Element)
-import Data.List (List, snoc, last)
+import Data.Array (toUnfoldable)
 import Data.DateTime (Date, Weekday(..))
 import Data.DateTime.Locale (LocalValue(..))
 import Data.Either (Either(..))
 import Data.Foldable (fold)
 import Data.Lens (Lens', lens, Prism', prism, over, _Just)
+import Data.List (List, snoc, last)
 import Data.Maybe (Maybe(..), maybe)
 import React as R
+import React.DOM (s)
 import React.DOM as RD
 import React.DOM.Props as RP
 import ReactDOM as RDOM
-import Thermite as T 
-
-import App.Common (updateWhere, sortWith, nextWeekday)
-import App.VolDetails (State, Action(..), Details, spec, initialState) as VD
-import App.CurrentVolSelector (State, Action(..), spec, initialState, changeVols) as CVS
-import App.Data (fromDate)
 import ServerTypes (OvernightPreference(..), OvernightGenderPreference(..), Volunteer(..), VolunteerShift(..), Shift(..))
-import App.ShiftList (State, Action, spec, initialState, changeCurrentVol) as SL
-import App.NewVolButton (State, Action, spec, initialState) as NVB
-import App.EditVolButton (State, Action, spec, initialState) as EVB
+import Thermite as T
  
 data Action = ShiftListAction SL.Action
             | CurrentVolSelectorAction CVS.Action
             | VolDetailsAction VD.Action
             | NewVolButtonAction NVB.Action
-            | EditVolButtonAction EVB.Action 
+            | EditVolButtonAction EVB.Action
+            | ReportError AjaxError
  
 type State = { vols :: List Volunteer 
              , shiftList :: SL.State
@@ -194,72 +208,57 @@ cancelEditing s = s{ volDetails = Nothing
                    , editVolButton = map (EVB.initialState <<< (\(Volunteer v) -> v.vName)) s.currentVol
                    }
 
-initialState :: Date -> State
-initialState currentDate =
-  let fred  = Volunteer { vId: 1
-              , vName: "Fred"
-              , vOvernightPreference: Just PreferAnotherVolunteer
-              , vOvernightGenderPreference: Nothing
-              , vNotes: ""
-              }
-      alice = Volunteer { vId: 2
-              , vName: "Alice"
-              , vOvernightPreference: Nothing
-              , vOvernightGenderPreference: Just Female
-              , vNotes: ""
-              }
-      jim   = Volunteer { vId: 3
-              , vName: "Jim"
-              , vOvernightPreference: Just PreferToBeAlone
-              , vOvernightGenderPreference: Just Male
-              , vNotes: ""
-              }
-      mary  = Volunteer { vId: 4
-              , vName: "Mary"
-              , vOvernightPreference: Nothing
-              , vOvernightGenderPreference: Nothing
-              , vNotes: "Only nice people"
-              }
-      vols = toUnfoldable [ fred, alice, jim, mary ]
-      shifts = toUnfoldable [ Shift { date: fromDate $ currentDate
-                              , volunteers: [ Overnight fred
-                                            , Evening alice
-                                            , Overnight jim
-                                            , Evening mary
-                                            ]
-                              }
-                            , Shift { date: fromDate $ nextWeekday Sunday currentDate
-                              , volunteers: [ Overnight fred
-                                            , Overnight jim
-                                            , Evening mary
-                                            ]
-                              }
-                            ] 
-      currentVol = Nothing --Just fred
+initialState :: Date -> Array Volunteer -> Array Shift -> State
+initialState currentDate vols shifts =
+  let currentVol = Nothing
       config = { maxVolsPerShift: 2
                , urgentPeriodDays: 14
                , currentDate
                }
-  in  { vols
-      , shiftList: SL.initialState currentVol shifts config
+  in  { vols: toUnfoldable vols
+      , shiftList: SL.initialState currentVol (toUnfoldable shifts) config
       , currentVol: currentVol
-      , currentVolSelector: CVS.initialState vols currentVol
+      , currentVolSelector: CVS.initialState (toUnfoldable vols) currentVol
       , volDetails: Nothing
       , newVolButton: Just NVB.initialState
       , editVolButton: Nothing
       }
 
+type MySettings = SPSettings_ SPParams_
+
+settings :: MySettings
+settings = defaultSettings $ SPParams_ { baseURL: "http://localhost:8081/" }
+
+type APIEffect eff = ReaderT MySettings (ExceptT AjaxError (Aff ( ajax :: AJAX, err :: EXCEPTION, console :: CONSOLE, dom :: DOM, now :: NOW  | eff)))
+
+runEffect :: forall a. MySettings -> APIEffect () a -> Aff (ajax :: AJAX, err :: EXCEPTION, console :: CONSOLE, dom :: DOM, now :: NOW) (Either AjaxError a)
+runEffect settings m = runExceptT $ runReaderT m settings
+
 main :: Unit
 main = unsafePerformEff $ do 
   (LocalValue _ currentDate) <- nowDate
-  let component = T.createClass spec $ initialState currentDate
-  let appEl = R.createFactory component {}
-  
-  if isServerSide
-     then void (log (RDOM.renderToString appEl)) 
-     else void (getElementById "app" >>= RDOM.render appEl)
-
-  hot
+  log "stu"
+  flip runAff_ (runEffect settings getApiVols) $ \rVols -> do
+    case rVols of
+      Left e -> log $ show e
+      Right v ->
+        case v of
+          Left e -> log $ errorToString e
+          Right vols -> do
+            flip runAff_ (runEffect settings getApiShifts) $ \rShifts -> do
+              case rShifts of
+                Left e -> log $ show e
+                Right s ->
+                  case s of
+                    Left e -> log $ errorToString e
+                    Right shifts -> do
+                      let component = T.createClass spec $ initialState currentDate vols shifts
+                      let appEl = R.createFactory component {}
+                      
+                      if isServerSide
+                         then void (log (RDOM.renderToString appEl)) 
+                         else void (getElementById "app" >>= RDOM.render appEl)
+                      hot
 
 foreign import isServerSide :: Boolean 
 
