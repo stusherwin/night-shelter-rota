@@ -18,7 +18,7 @@ import DOM (DOM)
 
 import App.Common (updateWhere, sortWith, nextWeekday)
 import App.CurrentVolSelector (State, Action(..), spec, initialState, changeVols) as CVS
-import App.Data (fromDate)
+import App.Data (fromDate, Config)
 import App.EditVolButton (State, Action, spec, initialState) as EVB
 import App.NewVolButton (State, Action, spec, initialState) as NVB
 import App.ShiftList (State, Action, spec, initialState, changeCurrentVol) as SL
@@ -34,7 +34,7 @@ import Data.DateTime.Locale (LocalValue(..))
 import Data.Either (Either(..))
 import Data.Foldable (fold)
 import Data.Lens (Lens', lens, Prism', prism, over, _Just)
-import Data.List (List, snoc, last)
+import Data.List (List(..), snoc, last)
 import Data.Maybe (Maybe(..), maybe)
 import React as R
 import React.DOM (s)
@@ -58,6 +58,8 @@ type State = { vols :: List Volunteer
              , volDetails :: Maybe VD.State 
              , newVolButton :: Maybe NVB.State
              , editVolButton :: Maybe EVB.State
+             , loading :: Boolean
+             , config :: Config
              }
  
 _shiftList :: Lens' State SL.State
@@ -132,6 +134,8 @@ spec =
                          []
                ]
                <> render d p s c
+               <> if s.loading then [ RD.i [ RP.className "icon-spin animate-spin loading" ] [] ]
+                               else []
     ]
     
   handler :: T.Spec _ State _ Action
@@ -209,21 +213,30 @@ cancelEditing s = s{ volDetails = Nothing
                    , editVolButton = map (EVB.initialState <<< (\(Volunteer v) -> v.vName)) s.currentVol
                    }
 
-initialState :: Date -> Array Volunteer -> Array Shift -> State
-initialState currentDate vols shifts =
-  let currentVol = Nothing
-      config = { maxVolsPerShift: 2
+initialState :: Date -> State
+initialState currentDate =
+  let config = { maxVolsPerShift: 2
                , urgentPeriodDays: 14
                , currentDate
                }
-  in  { vols: toUnfoldable vols
-      , shiftList: SL.initialState currentVol (toUnfoldable shifts) config
-      , currentVol: currentVol
-      , currentVolSelector: CVS.initialState (toUnfoldable vols) currentVol
+  in  { vols: Nil
+      , shiftList: SL.initialState Nothing Nil config
+      , currentVol: Nothing
+      , currentVolSelector: CVS.initialState Nil Nothing
       , volDetails: Nothing
       , newVolButton: Just NVB.initialState
       , editVolButton: Nothing
+      , loading: true
+      , config
       }
+
+initialDataLoaded :: State -> Array Volunteer -> Array Shift -> State
+initialDataLoaded state vols shifts =
+  state { vols = toUnfoldable vols
+        , shiftList = SL.initialState state.currentVol (toUnfoldable shifts) state.config
+        , currentVolSelector = CVS.initialState (toUnfoldable vols) state.currentVol
+        , loading = false
+        }
 
 type MySettings = SPSettings_ SPParams_
 
@@ -246,9 +259,17 @@ apiRequest settings default m = do
 main :: Unit
 main = unsafePerformEff $ void $ launchAff $ do 
   (LocalValue _ currentDate) <- liftEff nowDate
-  vols <- apiRequest settings [] getApiVols
-  shifts <- apiRequest settings [] getApiShifts
-  let component = T.createClass spec $ initialState currentDate vols shifts
+  let { spec } = T.createReactSpec spec $ initialState currentDate
+  let component = R.createClass spec { componentDidMount = \ctx -> void $ launchAff $ do 
+                                          liftEff $ log "ComponentDidMount..."
+                                          delay (Milliseconds 5000.0)
+                                          state <- liftEff $ R.readState ctx
+                                          vols <- apiRequest settings [] getApiVols
+                                          shifts <- apiRequest settings [] getApiShifts
+                                          let state' = initialDataLoaded state vols shifts
+                                          liftEff $ R.writeState ctx state'
+                                     }
+
   let appEl = R.createFactory component {}
   
   if isServerSide

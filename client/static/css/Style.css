@@ -289,3 +289,11 @@ label .sharing-pref span {
 h2, h2:first-child {
   margin-top: 15px;
 }
+
+h2 i.icon-spin {
+  font-size: 15px;
+  margin-left: 10px;
+  position: relative;
+  top: -5px;
+  color: #777;
+}
