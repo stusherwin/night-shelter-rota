@@ -9,6 +9,7 @@ import Servant.PureScript.Settings
 import ServerAPI
 import Servant.PureScript.Affjax
 import Control.Monad.Aff
+import Control.Monad.Aff.Console
 import Control.Monad.Aff.Class (liftAff)
 import Control.Monad.Eff.Class (liftEff)
 import Network.HTTP.Affjax (AJAX, get)
@@ -229,36 +230,31 @@ type MySettings = SPSettings_ SPParams_
 settings :: MySettings
 settings = defaultSettings $ SPParams_ { baseURL: "http://localhost:8081/" }
 
-type APIEffect eff = ReaderT MySettings (ExceptT AjaxError (Aff ( ajax :: AJAX, err :: EXCEPTION, console :: CONSOLE, dom :: DOM, now :: NOW  | eff)))
+type APIEffect eff = ReaderT MySettings (ExceptT AjaxError (Aff (ajax :: AJAX, err :: EXCEPTION | eff)))
 
-runEffect :: forall a. MySettings -> APIEffect () a -> Aff (ajax :: AJAX, err :: EXCEPTION, console :: CONSOLE, dom :: DOM, now :: NOW) (Either AjaxError a)
-runEffect settings m = runExceptT $ runReaderT m settings
+apiRequest :: forall a eff eff2. Generic a => MySettings -> a -> APIEffect (console :: CONSOLE | eff) a -> Aff (ajax :: AJAX, err :: EXCEPTION, console :: CONSOLE | eff) a
+apiRequest settings default m = do
+  response <- runExceptT $ runReaderT m settings
+  case response of
+    Left err -> do
+      liftEff $ log $ errorToString err
+      pure default
+    Right r -> do
+      liftEff $ log $ gShow r
+      pure r
 
 main :: Unit
-main = unsafePerformEff $ do 
-  (LocalValue _ currentDate) <- nowDate
-  log "stu"
-  flip runAff_ (runEffect settings getApiVols) $ \rVols -> do
-    case rVols of
-      Left e -> log $ show e
-      Right v ->
-        case v of
-          Left e -> log $ errorToString e
-          Right vols -> do
-            flip runAff_ (runEffect settings getApiShifts) $ \rShifts -> do
-              case rShifts of
-                Left e -> log $ show e
-                Right s ->
-                  case s of
-                    Left e -> log $ errorToString e
-                    Right shifts -> do
-                      let component = T.createClass spec $ initialState currentDate vols shifts
-                      let appEl = R.createFactory component {}
-                      
-                      if isServerSide
-                         then void (log (RDOM.renderToString appEl)) 
-                         else void (getElementById "app" >>= RDOM.render appEl)
-                      hot
+main = unsafePerformEff $ void $ launchAff $ do 
+  (LocalValue _ currentDate) <- liftEff nowDate
+  vols <- apiRequest settings [] getApiVols
+  shifts <- apiRequest settings [] getApiShifts
+  let component = T.createClass spec $ initialState currentDate vols shifts
+  let appEl = R.createFactory component {}
+  
+  if isServerSide
+     then void $ liftEff $ (log (RDOM.renderToString appEl)) 
+     else void $ liftEff $ (getElementById "app" >>= RDOM.render appEl)
+  liftEff $ hot
 
 foreign import isServerSide :: Boolean 
 
