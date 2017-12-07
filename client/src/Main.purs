@@ -4,6 +4,7 @@ import Control.Monad.Except.Trans
 import Control.Monad.Reader.Trans
 import Data.Argonaut.Generic.Aeson
 import Data.Generic
+import Data.Tuple
 import Prelude
 import Servant.PureScript.Settings
 import ServerAPI
@@ -247,6 +248,7 @@ type APIEffect eff = ReaderT MySettings (ExceptT AjaxError (Aff (ajax :: AJAX, e
 
 apiRequest :: forall a eff eff2. Generic a => MySettings -> a -> APIEffect (console :: CONSOLE | eff) a -> Aff (ajax :: AJAX, err :: EXCEPTION, console :: CONSOLE | eff) a
 apiRequest settings default m = do
+  delay (Milliseconds 5000.0)
   response <- runExceptT $ runReaderT m settings
   case response of
     Left err -> do
@@ -262,10 +264,10 @@ main = unsafePerformEff $ void $ launchAff $ do
   let { spec } = T.createReactSpec spec $ initialState currentDate
   let component = R.createClass spec { componentDidMount = \ctx -> void $ launchAff $ do 
                                           liftEff $ log "ComponentDidMount..."
-                                          delay (Milliseconds 5000.0)
                                           state <- liftEff $ R.readState ctx
-                                          vols <- apiRequest settings [] getApiVols
-                                          shifts <- apiRequest settings [] getApiShifts
+                                          (Tuple vols shifts) <- sequential $ Tuple 
+                                            <$> (parallel $ apiRequest settings [] getApiVols)
+                                            <*> (parallel $ apiRequest settings [] getApiShifts)
                                           let state' = initialDataLoaded state vols shifts
                                           liftEff $ R.writeState ctx state'
                                      }
