@@ -77,7 +77,11 @@ module Main where
       v <- liftIO $ atomicModifyIORef' ref $ \state ->
         let vs = vols state
         in case IM.lookup id vs of
-             Just v -> let v' = v { vName = vdName details }
+             Just v -> let v' = v { vName = vdName details
+                                  , vNotes = vdNotes details
+                                  , vOvernightPreference = vdPref details
+                                  , vOvernightGenderPreference = vdGenderPref details
+                                  }
                        in (state { vols = IM.insert id v' vs }, Just v')
              _ -> (state, Nothing)
 

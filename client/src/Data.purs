@@ -1,4 +1,4 @@
-module App.Data (RuleResult(..), Config, addVolunteerShift, changeVolunteerShift, removeVolunteerShift, canAddVolunteer, hasVolWithId, validate, filterOut, canChangeVolunteerShiftType, updateVolunteer, toDate, hasDate, fromDate) where
+module App.Data (RuleResult(..), Config, addVolunteerShift, changeVolunteerShift, removeVolunteerShift, canAddVolunteer, hasVolWithId, validate, filterOut, canChangeVolunteerShiftType, updateVolunteer, toDate, hasDate, fromDate, hasVId, vId) where
 
 import Prelude
   
@@ -27,6 +27,12 @@ volThat f (Evening v)   = f v
 volId :: VolunteerShift -> Int
 volId (Overnight (Volunteer v)) = v.vId
 volId (Evening (Volunteer v)) = v.vId
+
+hasVId :: Int -> Volunteer -> Boolean
+hasVId id (Volunteer v) = v.vId == id
+
+vId :: Volunteer -> Int
+vId (Volunteer v) = v.vId
 
 addVolunteerShift :: Date -> VolunteerShift -> List Shift -> List Shift
 addVolunteerShift date vol shifts =

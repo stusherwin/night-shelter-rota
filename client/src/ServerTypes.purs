@@ -130,6 +130,9 @@ _Evening = prism' Evening f
 newtype VolunteerDetails =
     VolunteerDetails {
       vdName :: String
+    , vdNotes :: String
+    , vdPref :: Maybe OvernightPreference
+    , vdGenderPref :: Maybe OvernightGenderPreference
     }
 
 derive instance genericVolunteerDetails :: Generic VolunteerDetails
@@ -138,7 +141,7 @@ derive instance newtypeVolunteerDetails :: Newtype VolunteerDetails _
 
 
 --------------------------------------------------------------------------------
-_VolunteerDetails :: Iso' VolunteerDetails { vdName :: String}
+_VolunteerDetails :: Iso' VolunteerDetails { vdName :: String, vdNotes :: String, vdPref :: Maybe OvernightPreference, vdGenderPref :: Maybe OvernightGenderPreference}
 _VolunteerDetails = _Newtype
 
 --------------------------------------------------------------------------------

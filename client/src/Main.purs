@@ -8,7 +8,7 @@ import Data.Tuple
 import Prelude
 import Servant.PureScript.Settings
 import ServerAPI
-import Servant.PureScript.Affjax
+import Servant.PureScript.Affjax 
 import Control.Monad.Aff
 import Control.Monad.Aff.Console
 import Control.Monad.Aff.Class (liftAff)
@@ -17,13 +17,6 @@ import Network.HTTP.Affjax (AJAX, get)
 import Control.Monad.Eff.Exception (EXCEPTION)
 import DOM (DOM)
 
-import App.Common (updateWhere, sortWith, nextWeekday)
-import App.CurrentVolSelector (State, Action(..), spec, initialState, changeVols) as CVS
-import App.Data (fromDate, Config)
-import App.EditVolButton (State, Action, spec, initialState) as EVB
-import App.NewVolButton (State, Action, spec, initialState) as NVB
-import App.ShiftList (State, Action, spec, initialState, changeCurrentVol) as SL
-import App.VolDetails (State, Action(..), Details, spec, initialState) as VD
 import Control.Monad.Eff (Eff)
 import Control.Monad.Eff.Console (log, CONSOLE)
 import Control.Monad.Eff.Now (nowDate, NOW)
@@ -35,16 +28,24 @@ import Data.DateTime.Locale (LocalValue(..))
 import Data.Either (Either(..))
 import Data.Foldable (fold)
 import Data.Lens (Lens', lens, Prism', prism, over, _Just)
-import Data.List (List(..), snoc, last)
+import Data.List (List(..), snoc, last, fromFoldable)
 import Data.Maybe (Maybe(..), maybe)
 import React as R
 import React.DOM (s)
 import React.DOM as RD
 import React.DOM.Props as RP
 import ReactDOM as RDOM
-import ServerTypes (OvernightPreference(..), OvernightGenderPreference(..), Volunteer(..), VolunteerShift(..), Shift(..))
+import ServerTypes (OvernightPreference(..), OvernightGenderPreference(..), Volunteer(..), VolunteerShift(..), Shift(..), VolunteerDetails(..))
 import Thermite as T
- 
+
+import App.Common (updateWhere, sortWith, nextWeekday)
+import App.CurrentVolSelector (State, Action(..), spec, initialState, changeVols) as CVS
+import App.Data (fromDate, Config, hasVId, vId)
+import App.EditVolButton (State, Action, spec, initialState) as EVB
+import App.NewVolButton (State, Action, spec, initialState) as NVB
+import App.ShiftList (State, Action, spec, initialState, changeCurrentVol) as SL
+import App.VolDetails (State, Action(..), Details, spec, initialState, disable) as VD
+
 data Action = ShiftListAction SL.Action
             | CurrentVolSelectorAction CVS.Action
             | VolDetailsAction VD.Action
@@ -61,6 +62,7 @@ type State = { vols :: List Volunteer
              , editVolButton :: Maybe EVB.State
              , loading :: Boolean
              , config :: Config
+             , errorMessage :: Maybe String
              }
  
 _shiftList :: Lens' State SL.State
@@ -108,7 +110,7 @@ _EditVolButtonAction = prism EditVolButtonAction unwrap
   unwrap (EditVolButtonAction a) = Right a
   unwrap a = Left a 
   
-spec :: forall eff. T.Spec (console :: CONSOLE | eff) State _ Action
+spec :: T.Spec _ State _ Action
 spec =
   over T._render container
     $ fold [ T.focus _newVolButton _NewVolButtonAction
@@ -137,16 +139,20 @@ spec =
                <> render d p s c
                <> if s.loading then [ RD.i [ RP.className "icon-spin animate-spin loading" ] [] ]
                                else []
+               <> case s.errorMessage of
+                    Just msg -> [ RD.text msg ]
+                    _ -> []
     ]
     
   handler :: T.Spec _ State _ Action
   handler = T.simpleSpec performAction T.defaultRender
     where 
-    performAction :: forall e. T.PerformAction (console :: CONSOLE | e) State _ Action
+    performAction :: T.PerformAction _ State _ Action
     performAction (CurrentVolSelectorAction (CVS.ChangeCurrentVol v)) _ _ = void $ T.modifyState $ changeCurrentVol v
     performAction (NewVolButtonAction _) _ _ = void $ T.modifyState startEditingNewVol
     performAction (EditVolButtonAction _) _ _ = void $ T.modifyState startEditingCurrentVol
-    performAction (VolDetailsAction (VD.Save d)) _ _ = void $ T.modifyState $ addOrUpdateVol d
+    performAction (VolDetailsAction (VD.Save d)) _ s@{ currentVol: Just _ } = updateCurrentVol d s
+    performAction (VolDetailsAction (VD.Save d)) _ s = addNewVol d s
     performAction (VolDetailsAction VD.Cancel) _ _ = void $ T.modifyState cancelEditing
     performAction _ _ _ = pure unit
 
@@ -174,39 +180,50 @@ startEditingCurrentVol s@{ currentVol: Just _ } =
    , editVolButton = Nothing
    }
 startEditingCurrentVol s = s
- 
-addOrUpdateVol :: VD.Details -> State -> State
-addOrUpdateVol d s =
-  let { currentVol', vols' } = addOrUpdate s
-  in  s{ currentVol = currentVol'
-       , vols = vols'
-       , shiftList = SL.changeCurrentVol currentVol' s.shiftList
-       , currentVolSelector = CVS.changeVols vols' currentVol' s.currentVolSelector
-       , volDetails = Nothing
-       , newVolButton = Just NVB.initialState
-       , editVolButton = map (EVB.initialState <<< (\(Volunteer v) -> v.vName)) currentVol'
-       }
-  where
-  addOrUpdate { currentVol: Just cv@(Volunteer v), vols } =
-    let cv'  = Volunteer v{ vName = d.name
-                 , vOvernightPreference = d.pref
-                 , vOvernightGenderPreference = d.genderPref
-                 , vNotes = d.notes
-                 }
-    in { currentVol': Just cv'
-       , vols': updateWhere (\(Volunteer v') -> v'.vId == v.vId) cv' vols
-       }
-  addOrUpdate { vols } =
-    let maxId  = maybe 0 (\(Volunteer v) -> v.vId) $ last $ sortWith (\(Volunteer v) -> v.vId) vols
-        newVol = Volunteer { vId: maxId + 1
-                 , vName: d.name
-                 , vOvernightPreference: d.pref
-                 , vOvernightGenderPreference: d.genderPref
-                 , vNotes: d.notes
-                 }
-    in { currentVol': Just newVol
-       , vols': snoc s.vols newVol
-       }
+
+updateCurrentVol :: VD.Details -> State -> _
+updateCurrentVol d { currentVol: currentVol@Just (Volunteer v), vols } = do
+  _ <- T.modifyState \s -> s { loading = true
+                             , volDetails = VD.disable <$> s.volDetails
+                             }
+  resp <- lift $ apiReq $ flip postApiVolsById v.vId $ VolunteerDetails { vdName: d.name
+                                                                        , vdNotes: d.notes
+                                                                        , vdPref: d.pref
+                                                                        , vdGenderPref: d.genderPref
+                                                                        }
+  case resp of
+    Right vol -> void $ T.modifyState $ updateVols { currentVol: Just vol
+                                                   , vols: updateWhere (hasVId v.vId) vol vols
+                                                   }
+    _ -> pure unit
+updateCurrentVol _ _ = pure unit
+
+addNewVol :: VD.Details -> State -> _
+addNewVol d { vols } = do
+  _ <- T.modifyState \s -> s { loading = true
+                             , volDetails = VD.disable <$> s.volDetails
+                             }
+  resp <- lift $ apiReq $ putApiVols $ VolunteerDetails { vdName: d.name
+                                                        , vdNotes: d.notes
+                                                        , vdPref: d.pref
+                                                        , vdGenderPref: d.genderPref
+                                                        }
+  case resp of
+    Right vol -> void $ T.modifyState $ updateVols { currentVol: Just vol
+                                                   , vols: snoc vols vol
+                                                   }
+    _ -> pure unit
+
+updateVols :: { currentVol :: Maybe Volunteer, vols :: List Volunteer } -> State -> State
+updateVols { currentVol, vols } s = s { currentVol = currentVol
+                                      , vols = vols
+                                      , shiftList = SL.changeCurrentVol currentVol s.shiftList
+                                      , currentVolSelector = CVS.changeVols vols currentVol s.currentVolSelector
+                                      , volDetails = Nothing
+                                      , newVolButton = Just NVB.initialState
+                                      , editVolButton = map (EVB.initialState <<< (\(Volunteer v) -> v.vName)) currentVol
+                                      , loading = false
+                                      }
  
 cancelEditing :: State -> State
 cancelEditing s = s{ volDetails = Nothing
@@ -229,13 +246,20 @@ initialState currentDate =
       , editVolButton: Nothing
       , loading: true
       , config
+      , errorMessage: Nothing
       }
 
-initialDataLoaded :: State -> Array Volunteer -> Array Shift -> State
-initialDataLoaded state vols shifts =
+initialDataLoaded :: Array Volunteer -> Array Shift -> State -> State
+initialDataLoaded vols shifts state =
   state { vols = toUnfoldable vols
         , shiftList = SL.initialState state.currentVol (toUnfoldable shifts) state.config
         , currentVolSelector = CVS.initialState (toUnfoldable vols) state.currentVol
+        , loading = false
+        }
+
+initialDataLoadError :: String -> State -> State
+initialDataLoadError msg state =
+  state { errorMessage = Just msg
         , loading = false
         }
 
@@ -246,17 +270,17 @@ settings = defaultSettings $ SPParams_ { baseURL: "http://localhost:8081/" }
 
 type APIEffect eff = ReaderT MySettings (ExceptT AjaxError (Aff (ajax :: AJAX, err :: EXCEPTION | eff)))
 
-apiRequest :: forall a eff eff2. Generic a => MySettings -> a -> APIEffect (console :: CONSOLE | eff) a -> Aff (ajax :: AJAX, err :: EXCEPTION, console :: CONSOLE | eff) a
-apiRequest settings default m = do
+apiReq :: forall a. Generic a => APIEffect _ a -> Aff _ (Either String a)
+apiReq m = do
   delay (Milliseconds 5000.0)
   response <- runExceptT $ runReaderT m settings
   case response of
     Left err -> do
       liftEff $ log $ errorToString err
-      pure default
+      pure $ Left $ errorToString err
     Right r -> do
       liftEff $ log $ gShow r
-      pure r
+      pure $ Right r
 
 main :: Unit
 main = unsafePerformEff $ void $ launchAff $ do 
@@ -265,11 +289,15 @@ main = unsafePerformEff $ void $ launchAff $ do
   let component = R.createClass spec { componentDidMount = \ctx -> void $ launchAff $ do 
                                           liftEff $ log "ComponentDidMount..."
                                           state <- liftEff $ R.readState ctx
-                                          (Tuple vols shifts) <- sequential $ Tuple 
-                                            <$> (parallel $ apiRequest settings [] getApiVols)
-                                            <*> (parallel $ apiRequest settings [] getApiShifts)
-                                          let state' = initialDataLoaded state vols shifts
-                                          liftEff $ R.writeState ctx state'
+                                          (Tuple volsResp shiftsResp) <- sequential $ Tuple 
+                                            <$> (parallel $ apiReq getApiVols)
+                                            <*> (parallel $ apiReq getApiShifts)
+                                          case volsResp, shiftsResp of
+                                            Right vols, Right shifts -> do
+                                              let state' = initialDataLoaded vols shifts state
+                                              liftEff $ R.writeState ctx state'
+                                            Left e, _ -> err e ctx state
+                                            _, Left e -> err e ctx state
                                      }
 
   let appEl = R.createFactory component {}
@@ -278,6 +306,10 @@ main = unsafePerformEff $ void $ launchAff $ do
      then void $ liftEff $ (log (RDOM.renderToString appEl)) 
      else void $ liftEff $ (getElementById "app" >>= RDOM.render appEl)
   liftEff $ hot
+  where
+    err msg ctx state = do
+      let state' = initialDataLoadError msg state
+      liftEff $ R.writeState ctx state'
 
 foreign import isServerSide :: Boolean 
 

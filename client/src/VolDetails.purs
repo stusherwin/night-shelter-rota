@@ -1,5 +1,5 @@
-module App.VolDetails (State, Details, Action(..), spec, initialState) where
-
+module App.VolDetails (State, Details, Action(..), spec, initialState, disable, enable) where
+ 
 import Prelude
 
 import Data.Maybe (Maybe(..), maybe, isNothing)
@@ -10,7 +10,7 @@ import React.DOM.Props as RP
 import Thermite as T
  
 import App.Common (unsafeEventValue, className, onlyIf, unsafeChecked)
-import ServerTypes (OvernightPreference(..), OvernightGenderPreference(..), Volunteer (..))
+import ServerTypes (OvernightPreference(..), OvernightGenderPreference(..), Volunteer (..), VolunteerDetails (..))
 
 type Details = { name :: String 
                , notes :: String
@@ -22,6 +22,7 @@ type State = { details :: Details
              , title :: String
              , formValid :: Boolean
              , formSubmitted :: Boolean
+             , readOnly :: Boolean
              }
  
 data Action = SetName String
@@ -56,6 +57,7 @@ spec = T.simpleSpec performAction render
                                   , RP.autoFocus true
                                   , RP.value state.details.name
                                   , RP.onChange $ dispatch <<< SetName <<< unsafeEventValue
+                                  , RP.disabled state.readOnly
                                   ]
                                   []
                        ]
@@ -69,6 +71,7 @@ spec = T.simpleSpec performAction render
                                            , RP.onChange \e -> do
                                                let checked = unsafeChecked e
                                                when checked $ dispatch $ SetPref (Just PreferAnotherVolunteer)
+                                           , RP.disabled state.readOnly
                                            ]
                                            [ ]
                                 , RD.label [ RP.className "action-label"
@@ -85,6 +88,7 @@ spec = T.simpleSpec performAction render
                                            , RP.onChange \e -> do
                                                let checked = unsafeChecked e
                                                when checked $ dispatch $ SetPref (Just PreferToBeAlone)
+                                           , RP.disabled state.readOnly
                                            ]
                                            [ ]
                                 , RD.label [ RP.className "action-label"
@@ -101,6 +105,7 @@ spec = T.simpleSpec performAction render
                                            , RP.onChange \e -> do
                                                let checked = unsafeChecked e
                                                when checked $ dispatch $ SetPref Nothing
+                                           , RP.disabled state.readOnly
                                            ]
                                            [ ]
                                 , RD.label [ RP.className "action-label"
@@ -119,6 +124,7 @@ spec = T.simpleSpec performAction render
                                            , RP.onChange \e -> do
                                                let checked = unsafeChecked e
                                                when checked $ dispatch $ SetGenderPref (Just Female)
+                                           , RP.disabled state.readOnly
                                            ]
                                            [ ]
                                 , RD.label [ RP.className "action-label"
@@ -135,6 +141,7 @@ spec = T.simpleSpec performAction render
                                            , RP.onChange \e -> do
                                                let checked = unsafeChecked e
                                                when checked $ dispatch $ SetGenderPref (Just Male)
+                                           , RP.disabled state.readOnly
                                            ]
                                            [ ]
                                 , RD.label [ RP.className "action-label"
@@ -151,6 +158,7 @@ spec = T.simpleSpec performAction render
                                            , RP.onChange \e -> do
                                                let checked = unsafeChecked e
                                                when checked $ dispatch $ SetGenderPref Nothing
+                                           , RP.disabled state.readOnly
                                            ]
                                            [ ]
                                 , RD.label [ RP.className "action-label"
@@ -166,6 +174,7 @@ spec = T.simpleSpec performAction render
                        , RD.input [ RP._type "text"
                                   , RP.value state.details.notes
                                   , RP.onChange $ dispatch <<< SetNotes <<< unsafeEventValue
+                                  , RP.disabled state.readOnly
                                   ]
                                   []
                        ]
@@ -180,6 +189,7 @@ spec = T.simpleSpec performAction render
                           , RP.onClick \e -> do
                               _ <- preventDefault e
                               dispatch $ if state.formValid then Save state.details else SetSubmitted
+                          , RP.disabled state.readOnly
                           ]
                           [ RD.i [ RP.className "icon icon-ok" ] []
                           , RD.text "Save" ]
@@ -188,6 +198,7 @@ spec = T.simpleSpec performAction render
                           , RP.onClick \e -> do
                               _ <- preventDefault e
                               dispatch $ Cancel
+                          , RP.disabled state.readOnly
                           ]
                           [ RD.i [ RP.className "icon icon-cancel" ] []
                           , RD.text "Cancel" ]
@@ -238,7 +249,14 @@ initialState currentVol =
      , title: maybe "Add new volunteer" (\(Volunteer cv) -> cv.vName <> "'s details") currentVol
      , formValid: isValid details
      , formSubmitted: false
+     , readOnly: false
      }
+
+disable :: State -> State
+disable = _ { readOnly = true }
+
+enable :: State -> State
+enable = _ { readOnly = false }
 
 isValid :: Details -> Boolean
 isValid { name } | length name == 0 = false

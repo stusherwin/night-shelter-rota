@@ -87,7 +87,7 @@ spec =
       T.modifyState \state -> adjustPeriod shiftCount state
     performAction _ _ _ = pure unit
     
-    delay' = lift $ liftAff $ delay (Milliseconds 500.0)
+    delay' = lift $ delay (Milliseconds 500.0)
 
 initialState :: forall c. Maybe D.Volunteer -> List D.Shift -> D.Config -> State
 initialState currentVol shifts config = 
