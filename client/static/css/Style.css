@@ -304,28 +304,56 @@ h2 i.icon-spin {
   top: 0;
   left: 0;
   right: 0;
-  background: #fff;
-  padding: 7px 10px 10px 10px;
+  background: #ffe6a8; /* #e8c976; /* #EAAE00; /* #FBC038; /* #ccdfff;*/
+  padding: 7px 6px 10px 10px;
   z-index: 999;
   box-shadow: 5px 0px 10px 0px #000;
 }
 
 .header-status {
+  float: left;
   font-size: 20px;
-  float: right;
-  margin-top: 10px;
-  margin-left: 5px;
+  margin-top: 12px;
+  margin-left: 4px;
+  margin-right: 10px;
+  width: 29px;
+  height: 15px;
+}
+
+.header-status i {
+  float: left;
   color: #777;
+}
+
+.header-status i.icon-warning {
+  cursor: help;
+  /* color: #fff; /* #e54800; */
+}
+
+.header-status i.icon-ok {
+  color: #4d7547;
+}
+
+.header-status i.logo {
+  background-image: url(/img/logo.png);
+  margin-top: 3px;
+  width: 29px;
+  height: 15px;
 }
 
 .header .header-edit {
   float: right;
   margin-left: 5px;
-  margin-top: 2px;
+  margin-top: 3px;
 }
 
 .header .header-new {
   float: right;
   margin-left: 5px;
-  margin-top: 2px;
+  margin-top: 3px;
+  border: 1px solid #ccc;
+}
+
+.header select {
+  border: 1px solid #ccc;
 }

@@ -8,7 +8,7 @@ import Data.Tuple
 import Prelude
 import Servant.PureScript.Settings
 import ServerAPI
-import Servant.PureScript.Affjax 
+import Servant.PureScript.Affjax (AjaxError, errorToString)
 import Control.Monad.Aff
 import Control.Monad.Aff.Console
 import Control.Monad.Aff.Class (liftAff)
@@ -39,10 +39,10 @@ import ServerTypes (OvernightPreference(..), OvernightGenderPreference(..), Volu
 import Thermite as T
  
 import App.Common (updateWhere, sortWith, nextWeekday)
-import App.Header (State, Action(..), spec, initialState, updateVols, editCurrentVol, editNewVol, cancelEdit) as H
+import App.Header (State, Action(..), spec, initialState, volDetailsUpdated, editCancelled, reqStarted, reqSucceeded, reqFailed, initialDataLoaded) as H
 import App.Data (fromDate, Config, hasVId, vId)
 import App.ShiftList (State, Action, spec, initialState, changeCurrentVol) as SL
-import App.VolDetails (State, Action(..), Details, spec, initialState, disable) as VD
+import App.VolDetails (State, Action(..), Details, spec, initialState, disable, enable) as VD
 
 data Action = ShiftListAction SL.Action
             | HeaderAction H.Action
@@ -54,9 +54,7 @@ type State = { vols :: List Volunteer
              , currentVol :: Maybe Volunteer
              , header :: H.State
              , volDetails :: Maybe VD.State 
-             , loading :: Boolean
              , config :: Config
-             , errorMessage :: Maybe String
              }
  
 _shiftList :: Lens' State SL.State
@@ -121,20 +119,18 @@ changeCurrentVol currentVol' s = s{ currentVol = currentVol'
 editNewVol :: State -> State
 editNewVol s = s{ currentVol = Nothing
                 , shiftList = SL.changeCurrentVol Nothing s.shiftList
-                , header = H.editNewVol s.header
                 , volDetails = Just $ VD.initialState Nothing
                 }
 
 editCurrentVol :: State -> State
 editCurrentVol s@{ currentVol: Just _ } =
-  s{ header = H.editCurrentVol s.header
-   , volDetails = Just $ VD.initialState s.currentVol
-   }
+  s { volDetails = Just $ VD.initialState s.currentVol
+    }
 editCurrentVol s = s
 
 updateCurrentVol :: VD.Details -> State -> _
 updateCurrentVol d { currentVol: currentVol@Just (Volunteer v), vols } = do
-  _ <- T.modifyState \s -> s { loading = true
+  _ <- T.modifyState \s -> s { header = H.reqStarted s.header
                              , volDetails = VD.disable <$> s.volDetails
                              }
   resp <- lift $ apiReq $ flip postApiVolsById v.vId $ VolunteerDetails { vdName: d.name
@@ -146,12 +142,14 @@ updateCurrentVol d { currentVol: currentVol@Just (Volunteer v), vols } = do
     Right vol -> void $ T.modifyState $ updateVols { currentVol: Just vol
                                                    , vols: updateWhere (hasVId v.vId) vol vols
                                                    }
-    _ -> pure unit
+    Left e -> void $ T.modifyState \s -> s { header = H.reqFailed e s.header
+                                           , volDetails = VD.enable <$> s.volDetails
+                                           }
 updateCurrentVol _ _ = pure unit
 
 addNewVol :: VD.Details -> State -> _
 addNewVol d { vols } = do
-  _ <- T.modifyState \s -> s { loading = true
+  _ <- T.modifyState \s -> s { header = H.reqStarted s.header
                              , volDetails = VD.disable <$> s.volDetails
                              }
   resp <- lift $ apiReq $ putApiVols $ VolunteerDetails { vdName: d.name
@@ -163,20 +161,21 @@ addNewVol d { vols } = do
     Right vol -> void $ T.modifyState $ updateVols { currentVol: Just vol
                                                    , vols: snoc vols vol
                                                    }
-    _ -> pure unit
+    Left e -> void $ T.modifyState \s -> s { header = H.reqFailed e s.header
+                                           , volDetails = VD.enable <$> s.volDetails
+                                           }
 
 updateVols :: { currentVol :: Maybe Volunteer, vols :: List Volunteer } -> State -> State
 updateVols { currentVol, vols } s = s { currentVol = currentVol
                                       , vols = vols
                                       , shiftList = SL.changeCurrentVol currentVol s.shiftList
-                                      , header = H.updateVols vols currentVol s.header
+                                      , header = H.volDetailsUpdated vols currentVol s.header
                                       , volDetails = Nothing
-                                      , loading = false
                                       }
  
 cancelEdit :: State -> State
-cancelEdit s = s{ volDetails = Nothing
-                , header = H.cancelEdit s.header
+cancelEdit s = s{ header = H.editCancelled s.header
+                , volDetails = Nothing
                 }
 
 initialState :: Date -> State
@@ -188,25 +187,16 @@ initialState currentDate =
   in  { vols: Nil
       , shiftList: SL.initialState Nothing Nil config
       , currentVol: Nothing
-      , header: H.initialState Nil Nothing
+      , header: H.initialState
       , volDetails: Nothing
-      , loading: true
       , config
-      , errorMessage: Nothing
       }
 
 initialDataLoaded :: Array Volunteer -> Array Shift -> State -> State
 initialDataLoaded vols shifts state =
   state { vols = toUnfoldable vols
         , shiftList = SL.initialState state.currentVol (toUnfoldable shifts) state.config
-        , header = H.updateVols (toUnfoldable vols) Nothing state.header
-        , loading = false
-        }
-
-initialDataLoadError :: String -> State -> State
-initialDataLoadError msg state =
-  state { errorMessage = Just msg
-        , loading = false
+        , header = H.initialDataLoaded (toUnfoldable vols) state.header
         }
 
 type MySettings = SPSettings_ SPParams_
@@ -216,14 +206,14 @@ settings = defaultSettings $ SPParams_ { baseURL: "http://localhost:8081/" }
 
 type APIEffect eff = ReaderT MySettings (ExceptT AjaxError (Aff (ajax :: AJAX, err :: EXCEPTION | eff)))
 
-apiReq :: forall a. Generic a => APIEffect _ a -> Aff _ (Either String a)
+apiReq :: forall a. Generic a => APIEffect _ a -> Aff _ (Either AjaxError a)
 apiReq m = do
   delay (Milliseconds 5000.0)
   response <- runExceptT $ runReaderT m settings
   case response of
     Left err -> do
       liftEff $ log $ errorToString err
-      pure $ Left $ errorToString err
+      pure $ Left err
     Right r -> do
       liftEff $ log $ gShow r
       pure $ Right r
@@ -253,12 +243,12 @@ main = unsafePerformEff $ void $ launchAff $ do
      else void $ liftEff $ (getElementById "app" >>= RDOM.render appEl)
   liftEff $ hot
   where
-    err msg ctx state = do
-      let state' = initialDataLoadError msg state
+    err e ctx state = do
+      let state' = state { header = H.reqFailed e state.header }
       liftEff $ R.writeState ctx state'
 
 foreign import isServerSide :: Boolean 
 
 foreign import getElementById :: forall eff. String -> Eff eff Element
 
-foreign import hot :: forall eff. Eff eff Unit 
+foreign import hot :: forall eff. Eff eff Unit

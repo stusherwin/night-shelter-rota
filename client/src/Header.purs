@@ -1,13 +1,14 @@
-module App.Header (State, VolDetailsState(..), Action(..), spec, initialState, updateVols, editCurrentVol, editNewVol, cancelEdit) where
+module App.Header (State, VolDetailsState(..), Action(..), spec, initialState, volDetailsUpdated, editCancelled, reqStarted, reqSucceeded, reqFailed, initialDataLoaded) where
 
 import Prelude 
 
-import Data.List (List, (!!), find, toUnfoldable)
+import Data.List (List(..), (!!), find, toUnfoldable)
 import Data.Maybe (Maybe(..))
 import React (ReactElement, preventDefault) as R
 import React.DOM as RD
 import React.DOM.Props as RP
 import Thermite as T
+import Servant.PureScript.Affjax (AjaxError, errorToString)
 
 import App.Common (unsafeEventSelectedIndex, isJustWith, sortWith, classNames)
 import ServerTypes (Volunteer(..))
@@ -33,13 +34,13 @@ spec = T.simpleSpec performAction render
   render :: T.Render State _ Action
   render dispatch _ state _ =
     [ RD.div [ RP.className "header" ]
-           $ statusIcon
-          <> case state.volDetailsState of
+           $ case state.volDetailsState of
                NotEditing -> newVolButton
                _ -> []
           <> case state.currentVol, state.volDetailsState of
                Just (Volunteer { vName }), NotEditing -> editVolButton vName
                _, _ -> []
+          <> statusIcon
           <> [ RD.h2' $ [ RD.span [ RP.dangerouslySetInnerHTML { __html: "Night Shelter Rota for &nbsp;" } ]
                                   []
                         , RD.select [ RP.className "vol-select"
@@ -55,23 +56,22 @@ spec = T.simpleSpec performAction render
     ]
     where
       statusIcon :: Array R.ReactElement
-      statusIcon = [ RD.i ([ classNames [ "header-status"
-                                        , iconType
-                                        ]
-                           , RP.style { float: "right" }
-                           ] <> title)
-                          []
+      statusIcon = [ RD.div [ RP.className "header-status" ]
+                            [ RD.i ([ RP.className iconType
+                                    ] <> title)
+                                    []
+                            ]
                    ]
         where
           iconType = case state.loading, state.errorMessage of
                        true,  _       -> "icon-spin animate-spin"
-                       false, Nothing -> "icon-ok"
+                       false, Nothing -> "logo" --"icon-ok"
                        _, _           -> "icon-warning"
           title = case state.errorMessage of
                     Just msg -> [ RP.title msg ]
                     _        -> []
       editVolButton :: String -> Array R.ReactElement
-      editVolButton volName = [ RD.button [ RP.className "ui primary button header-edit"
+      editVolButton volName = [ RD.button [ RP.className "ui primary yellow button header-edit"
                                           , RP.onClick \e -> do
                                               _ <- R.preventDefault e
                                               dispatch EditCurrentVol
@@ -105,34 +105,54 @@ spec = T.simpleSpec performAction render
                                              [ RD.text v.vName ]
 
   performAction :: T.PerformAction _ State _ Action
-  performAction (ChangeCurrentVol v) _ _ = void $ T.modifyState \state -> state{ currentVol = v }
-  performAction EditCurrentVol _ _ = void $ T.modifyState \state -> state{ volDetailsState = EditingCurrentVol }
-  performAction EditNewVol _ _ = void $ T.modifyState \state -> state{ volDetailsState = EditingNewVol }
+  performAction (ChangeCurrentVol v) _ _ = void $ T.modifyState _ { currentVol = v
+                                                                  , volDetailsState = NotEditing
+                                                                  , errorMessage = Nothing
+                                                                  }
+  performAction EditCurrentVol       _ _ = void $ T.modifyState _ { volDetailsState = EditingCurrentVol
+                                                                  , errorMessage = Nothing
+                                                                  }
+  performAction EditNewVol           _ _ = void $ T.modifyState _ { currentVol = Nothing
+                                                                  , volDetailsState = EditingNewVol
+                                                                  , errorMessage = Nothing
+                                                                  }
 
-initialState :: List Volunteer -> Maybe Volunteer -> State
-initialState vols currentVol = { vols: sortWith (\(Volunteer v) -> v.vName) vols
-                               , currentVol: currentVol
-                               , loading: true
-                               , errorMessage: Nothing
-                               , volDetailsState: NotEditing
-                               }
-
-updateVols :: List Volunteer -> Maybe Volunteer -> State -> State
-updateVols vols currentVol = _ { vols = sortWith (\(Volunteer v) -> v.vName) vols
-                               , currentVol = currentVol
-                               , volDetailsState = NotEditing
-                               , loading = false
-                               }
-
-editNewVol :: State -> State
-editNewVol = _ { currentVol = Nothing
-               , volDetailsState = EditingNewVol
+initialState :: State
+initialState = { vols: Nil
+               , currentVol: Nothing
+               , volDetailsState: NotEditing
+               , loading: true
+               , errorMessage: Nothing
                }
 
-editCurrentVol :: State -> State
-editCurrentVol = _ { volDetailsState = EditingCurrentVol
-                   }
+initialDataLoaded :: List Volunteer -> State -> State
+initialDataLoaded vols = _ { vols = sortWith (\(Volunteer v) -> v.vName) vols
+                           , loading = false
+                           }
 
-cancelEdit :: State -> State
-cancelEdit = _ { volDetailsState = NotEditing
+volDetailsUpdated :: List Volunteer -> Maybe Volunteer -> State -> State
+volDetailsUpdated vols currentVol = _ { vols = sortWith (\(Volunteer v) -> v.vName) vols
+                                      , currentVol = currentVol
+                                      , volDetailsState = NotEditing
+                                      , loading = false
+                                      }
+
+editCancelled :: State -> State
+editCancelled = _ { volDetailsState = NotEditing
+                  , errorMessage = Nothing
+                  }
+
+reqStarted :: State -> State
+reqStarted = _ { loading = true
+               , errorMessage = Nothing
                }
+
+reqSucceeded :: State -> State
+reqSucceeded = _ { loading = false
+                 , errorMessage = Nothing
+                 }
+
+reqFailed :: AjaxError -> State -> State
+reqFailed err = _ { loading = false
+                  , errorMessage = Just $ errorToString err
+                  }
