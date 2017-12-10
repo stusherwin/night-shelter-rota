@@ -19,9 +19,10 @@ data VolDetailsState = NotEditing
 
 type State = { vols :: List Volunteer
              , currentVol :: Maybe Volunteer
-             , loading :: Boolean
+             , reqInProgress :: Boolean
              , errorMessage :: Maybe String
              , volDetailsState :: VolDetailsState
+             , initialDataLoaded :: Boolean
              } 
  
 data Action = ChangeCurrentVol (Maybe Volunteer)
@@ -32,6 +33,13 @@ spec :: T.Spec _ State _ Action
 spec = T.simpleSpec performAction render
   where 
   render :: T.Render State _ Action
+  render _ _ state@{ initialDataLoaded: loaded } _ | not loaded =
+    [ RD.div [ RP.className "header" ]
+           $ statusIcon state
+          <> [ RD.h2 [ RP.className "initial-data-loading" ]
+                     [ RD.text "Night Shelter Rota" ]
+             ]
+    ]
   render dispatch _ state _ =
     [ RD.div [ RP.className "header" ]
            $ case state.volDetailsState of
@@ -40,36 +48,21 @@ spec = T.simpleSpec performAction render
           <> case state.currentVol, state.volDetailsState of
                Just (Volunteer { vName }), NotEditing -> editVolButton vName
                _, _ -> []
-          <> statusIcon
-          <> [ RD.h2' $ [ RD.span [ RP.dangerouslySetInnerHTML { __html: "Night Shelter Rota for &nbsp;" } ]
-                                  []
-                        , RD.select [ RP.className "vol-select"
-                                    , RP.onChange $ dispatch <<< respond state <<< unsafeEventSelectedIndex
-                                    ]
-                                 (  [ RD.option [ RP.value "" ]
-                                                [ RD.text $ "All volunteers" ]
-                                    ]
-                                 <> map (option dispatch state.currentVol) (toUnfoldable state.vols)
-                                 )
-                        ]
+          <> statusIcon state
+          <> [ RD.h2' [ RD.text "Night Shelter Rota for "
+                      , RD.select [ RP.className "vol-select"
+                                  , RP.onChange $ dispatch <<< respond state <<< unsafeEventSelectedIndex
+                                  ]
+                               (  [ RD.option [ RP.value "" ]
+                                              [ RD.text $ "All volunteers" ]
+                                  ]
+                               <> map (option dispatch state.currentVol) (toUnfoldable state.vols)
+                               )
+                      ]
              ]
+               
     ]
     where
-      statusIcon :: Array R.ReactElement
-      statusIcon = [ RD.div [ RP.className "header-status" ]
-                            [ RD.i ([ RP.className iconType
-                                    ] <> title)
-                                    []
-                            ]
-                   ]
-        where
-          iconType = case state.loading, state.errorMessage of
-                       true,  _       -> "icon-spin animate-spin"
-                       false, Nothing -> "logo" --"icon-ok"
-                       _, _           -> "icon-warning"
-          title = case state.errorMessage of
-                    Just msg -> [ RP.title msg ]
-                    _        -> []
       editVolButton :: String -> Array R.ReactElement
       editVolButton volName = [ RD.button [ RP.className "ui primary yellow button header-edit"
                                           , RP.onClick \e -> do
@@ -90,6 +83,22 @@ spec = T.simpleSpec performAction render
                                  , RD.text "New volunteer"
                                  ]
                      ]
+
+  statusIcon :: State -> Array R.ReactElement
+  statusIcon state = [ RD.div [ RP.className "header-status" ]
+                              [ RD.i ([ RP.className iconType
+                                      ] <> title)
+                                      []
+                              ]
+                     ]
+    where
+      iconType = case state.reqInProgress, state.errorMessage of
+                   true,  _       -> "icon-spin animate-spin"
+                   false, Nothing -> "logo" --"icon-ok"
+                   _,     _       -> "icon-warning"
+      title = case state.errorMessage of
+                Just msg -> [ RP.title msg ]
+                _        -> []
 
   respond :: State -> Int -> Action
   respond state i | i > 0 = ChangeCurrentVol $ state.vols !! (i - 1)
@@ -121,20 +130,22 @@ initialState :: State
 initialState = { vols: Nil
                , currentVol: Nothing
                , volDetailsState: NotEditing
-               , loading: true
+               , reqInProgress: true
                , errorMessage: Nothing
+               , initialDataLoaded: false
                }
 
 initialDataLoaded :: List Volunteer -> State -> State
 initialDataLoaded vols = _ { vols = sortWith (\(Volunteer v) -> v.vName) vols
-                           , loading = false
+                           , reqInProgress = false
+                           , initialDataLoaded = true
                            }
 
 volDetailsUpdated :: List Volunteer -> Maybe Volunteer -> State -> State
 volDetailsUpdated vols currentVol = _ { vols = sortWith (\(Volunteer v) -> v.vName) vols
                                       , currentVol = currentVol
                                       , volDetailsState = NotEditing
-                                      , loading = false
+                                      , reqInProgress = false
                                       }
 
 editCancelled :: State -> State
@@ -143,16 +154,16 @@ editCancelled = _ { volDetailsState = NotEditing
                   }
 
 reqStarted :: State -> State
-reqStarted = _ { loading = true
+reqStarted = _ { reqInProgress = true
                , errorMessage = Nothing
                }
 
 reqSucceeded :: State -> State
-reqSucceeded = _ { loading = false
+reqSucceeded = _ { reqInProgress = false
                  , errorMessage = Nothing
                  }
 
 reqFailed :: AjaxError -> State -> State
-reqFailed err = _ { loading = false
+reqFailed err = _ { reqInProgress = false
                   , errorMessage = Just $ errorToString err
                   }

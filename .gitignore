@@ -8,3 +8,4 @@
 /.purs*
 /.psa*
 /.stack-work/
+/client/static/js/bundle.js

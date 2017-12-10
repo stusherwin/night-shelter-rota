@@ -287,18 +287,6 @@ label .sharing-pref span {
   cursor: pointer !important;
 }
 
-h2, h2:first-child {
-  margin: 0;
-}
-
-h2 i.icon-spin {
-  font-size: 15px;
-  margin-left: 10px;
-  position: relative;
-  top: -5px;
-  color: #777;
-}
-
 .header {
   position: fixed;
   top: 0;
@@ -308,6 +296,14 @@ h2 i.icon-spin {
   padding: 7px 6px 10px 10px;
   z-index: 999;
   box-shadow: 5px 0px 10px 0px #000;
+}
+
+.header h2 {
+  margin: 0;
+}
+
+.header h2.initial-data-loading {
+  margin-top: 6px;
 }
 
 .header-status {
