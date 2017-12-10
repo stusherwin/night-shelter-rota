@@ -9,7 +9,7 @@ import React.DOM as RD
 import React.DOM.Props as RP
 import Thermite as T
  
-import App.Common (unsafeEventValue, className, onlyIf, unsafeChecked)
+import App.Common (unsafeEventValue, classNames, onlyIf, unsafeChecked)
 import ServerTypes (OvernightPreference(..), OvernightGenderPreference(..), Volunteer (..), VolunteerDetails (..))
 
 type Details = { name :: String 
@@ -48,9 +48,9 @@ spec = T.simpleSpec performAction render
   where 
   render :: T.Render State _ Action
   render dispatch _ state _ =
-    [ RD.form [ className [ "ui form", onlyIf formError "error" ] ]
+    [ RD.form [ classNames [ "ui form", onlyIf formError "error" ] ]
               [ RD.h3' [ RD.text state.title ]
-              , RD.div [ className [ "required field ", onlyIf formError "error" ] ]
+              , RD.div [ classNames [ "required field ", onlyIf formError "error" ] ]
                        [ RD.label [ RP.htmlFor "volName" ]
                                   [ RD.text "Name" ]
                        , RD.input [ RP._type "text"
@@ -61,7 +61,7 @@ spec = T.simpleSpec performAction render
                                   ]
                                   []
                        ]
-              , RD.div [ className [ "field " ] ]
+              , RD.div [ classNames [ "field " ] ]
                        [ RD.label' [ RD.text "Would you prefer to work with another volunteer?" ]
                        , RD.div [ RP.className "ui radio checkbox" ]
                                 [ RD.input [ RP._type "radio"
@@ -114,7 +114,7 @@ spec = T.simpleSpec performAction render
                                            ]
                                 ]
                        ]
-              , RD.div [ className [ "field " ] ]
+              , RD.div [ classNames [ "field " ] ]
                        [ RD.label' [ RD.text "Who would you prefer to share the volunteers' room with?" ]
                        , RD.div [ RP.className "ui radio checkbox" ]
                                 [ RD.input [ RP._type "radio"
@@ -167,7 +167,7 @@ spec = T.simpleSpec performAction render
                                            ]
                                 ]
                        ]
-              , RD.div [ className [ "field " ] ]
+              , RD.div [ classNames [ "field " ] ]
                        [ RD.label [ RP.htmlFor "volNotes" ]
                                   [ RD.text "Any other preferences?"
                                   ]

@@ -16,7 +16,7 @@ import React.DOM as RD
 import React.DOM.Props as RP
 import Thermite as T
  
-import App.Common (onlyIf, className, toDayString, sortWith)
+import App.Common (onlyIf, classNames, toDayString, sortWith)
 import App.Data (RuleResult(..), Config, validate, toDate, hasDate, fromDate) as D
 import ServerTypes (Volunteer(..), Shift(..)) as D
 import App.CurrentVolShiftEdit (State, Action(..), spec, initialState) as CVSE
@@ -72,13 +72,13 @@ spec :: T.Spec _ State _ Action
 spec = 
   over T._render row
     $ fold [ over T._render (\render d p s c  ->
-               [ RD.td [ className [ "vol-markers shift-status collapsing" ] ]
+               [ RD.td [ classNames [ "vol-markers shift-status collapsing" ] ]
                        $ render d p s c
                ])
                $ T.focus _volMarkers _VolMarkerAction $ T.foreach \_ -> VM.spec
-           , T.simpleSpec T.defaultPerformAction \_ _ s _ -> [ RD.td [ className [ "shift-status" ] ] [] ]
+           , T.simpleSpec T.defaultPerformAction \_ _ s _ -> [ RD.td [ classNames [ "shift-status" ] ] [] ]
            , over T._render (\render d p s c ->
-               [ RD.td [ className [ "shift-selected shift-status collapsing right aligned" ] ] 
+               [ RD.td [ classNames [ "shift-selected shift-status collapsing right aligned" ] ] 
                        $ render d p s c
                ])
                $ T.focus _currentVolShiftEdit _CurrentVolShiftEditAction $ T.split _Just CVSE.spec
@@ -87,19 +87,19 @@ spec =
   where
   row :: T.Render State _ Action -> T.Render State _ Action
   row render d p s c =
-    [ RD.tr [ className $ [ onlyIf (isWeekend s.date) "weekend"
-                          , onlyIf s.loading "loading"
-                          , statusClass s.status
-                          , pastClass s.status
-                          ]
+    [ RD.tr [ classNames $ [ onlyIf (isWeekend s.date) "weekend"
+                           , onlyIf s.loading "loading"
+                           , statusClass s.status
+                           , pastClass s.status
+                           ]
             ]
-         (  [ RD.td  [ className [ "shift-status-icon shift-status collapsing" ] ]
+         (  [ RD.td  [ classNames [ "shift-status-icon shift-status collapsing" ] ]
                      (statusIcon s.status)
-            , RD.td  [ className [ "shift-day shift-status collapsing" ] ]
+            , RD.td  [ classNames [ "shift-day shift-status collapsing" ] ]
                      [ RD.text $ S.toUpper $ S.take 3 $ show $ weekday s.date ]
-            , RD.td  [ className [ "shift-date shift-status collapsing" ] ]
+            , RD.td  [ classNames [ "shift-date shift-status collapsing" ] ]
                      [ RD.text $ toDayString s.date ]
-            , RD.td  [ className [ "vol-count shift-status collapsing" ] ]
+            , RD.td  [ classNames [ "vol-count shift-status collapsing" ] ]
                      [ RD.text $ "" <> show s.noOfVols <> "/" <> show s.maxVols ]
             ]
          <> render d p s c

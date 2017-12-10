@@ -1,4 +1,4 @@
-module App.Common (unsafeEventValue, unsafeEventSelectedIndex, midnight, tomorrow, toDateString, updateWhere, modifyWhere, justIf, default, onlyIf, className, isJustWith, addDays, toMonthYearString, isFirstDayOfMonth, daysLeftInMonth, toDayString, sortWith, previousWeekday, nextWeekday, unsafeChecked, mkDate) where
+module App.Common (unsafeEventValue, unsafeEventSelectedIndex, midnight, tomorrow, toDateString, updateWhere, modifyWhere, justIf, default, onlyIf, classNames, isJustWith, addDays, toMonthYearString, isFirstDayOfMonth, daysLeftInMonth, toDayString, sortWith, previousWeekday, nextWeekday, unsafeChecked, mkDate) where
   
 import Prelude 
 
@@ -67,8 +67,8 @@ onlyIf :: Boolean -> String -> String
 onlyIf false _   = ""
 onlyIf true  val = val
 
-className :: Array String -> RP.Props
-className = RP.className <<< joinWith " " <<< (A.filter $ (_ > 0) <<< length)
+classNames :: Array String -> RP.Props
+classNames = RP.className <<< joinWith " " <<< (A.filter $ (_ > 0) <<< length)
 
 toMonthYearString :: Date -> String 
 toMonthYearString date = show (month date) <> " " <> (show $ fromEnum $ year date)

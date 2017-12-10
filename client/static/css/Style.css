@@ -4,6 +4,7 @@
 
 .container {
   margin: 10px;
+  margin-top: 70px;
 }
 
 .ui.table tr {
@@ -287,7 +288,7 @@ label .sharing-pref span {
 }
 
 h2, h2:first-child {
-  margin-top: 15px;
+  margin: 0;
 }
 
 h2 i.icon-spin {
@@ -296,4 +297,35 @@ h2 i.icon-spin {
   position: relative;
   top: -5px;
   color: #777;
+}
+
+.header {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  background: #fff;
+  padding: 7px 10px 10px 10px;
+  z-index: 999;
+  box-shadow: 5px 0px 10px 0px #000;
+}
+
+.header-status {
+  font-size: 20px;
+  float: right;
+  margin-top: 10px;
+  margin-left: 5px;
+  color: #777;
+}
+
+.header .header-edit {
+  float: right;
+  margin-left: 5px;
+  margin-top: 2px;
+}
+
+.header .header-new {
+  float: right;
+  margin-left: 5px;
+  margin-top: 2px;
 }

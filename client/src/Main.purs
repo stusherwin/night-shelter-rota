@@ -37,29 +37,23 @@ import React.DOM.Props as RP
 import ReactDOM as RDOM
 import ServerTypes (OvernightPreference(..), OvernightGenderPreference(..), Volunteer(..), VolunteerShift(..), Shift(..), VolunteerDetails(..))
 import Thermite as T
-
+ 
 import App.Common (updateWhere, sortWith, nextWeekday)
-import App.CurrentVolSelector (State, Action(..), spec, initialState, changeVols) as CVS
+import App.Header (State, Action(..), spec, initialState, updateVols, editCurrentVol, editNewVol, cancelEdit) as H
 import App.Data (fromDate, Config, hasVId, vId)
-import App.EditVolButton (State, Action, spec, initialState) as EVB
-import App.NewVolButton (State, Action, spec, initialState) as NVB
 import App.ShiftList (State, Action, spec, initialState, changeCurrentVol) as SL
 import App.VolDetails (State, Action(..), Details, spec, initialState, disable) as VD
 
 data Action = ShiftListAction SL.Action
-            | CurrentVolSelectorAction CVS.Action
+            | HeaderAction H.Action
             | VolDetailsAction VD.Action
-            | NewVolButtonAction NVB.Action
-            | EditVolButtonAction EVB.Action
             | ReportError AjaxError
- 
+
 type State = { vols :: List Volunteer 
              , shiftList :: SL.State
              , currentVol :: Maybe Volunteer
-             , currentVolSelector :: CVS.State
+             , header :: H.State
              , volDetails :: Maybe VD.State 
-             , newVolButton :: Maybe NVB.State
-             , editVolButton :: Maybe EVB.State
              , loading :: Boolean
              , config :: Config
              , errorMessage :: Maybe String
@@ -74,13 +68,13 @@ _ShiftListAction = prism ShiftListAction unwrap
   unwrap (ShiftListAction a) = Right a
   unwrap a = Left a
 
-_currentVolSelector :: Lens' State CVS.State
-_currentVolSelector = lens _.currentVolSelector _{currentVolSelector = _}
+_header :: Lens' State H.State
+_header = lens _.header _{header = _}
 
-_CurrentVolSelectorAction :: Prism' Action CVS.Action
-_CurrentVolSelectorAction = prism CurrentVolSelectorAction unwrap
+_HeaderAction :: Prism' Action H.Action
+_HeaderAction = prism HeaderAction unwrap
   where 
-  unwrap (CurrentVolSelectorAction a) = Right a
+  unwrap (HeaderAction a) = Right a
   unwrap a = Left a 
  
 _volDetails :: Lens' State (Maybe VD.State)
@@ -92,94 +86,51 @@ _VolDetailsAction = prism VolDetailsAction unwrap
   unwrap (VolDetailsAction a) = Right a
   unwrap a = Left a 
  
-_newVolButton :: Lens' State (Maybe NVB.State)
-_newVolButton = lens _.newVolButton _{newVolButton = _}
-
-_NewVolButtonAction :: Prism' Action NVB.Action
-_NewVolButtonAction = prism NewVolButtonAction unwrap
-  where 
-  unwrap (NewVolButtonAction a) = Right a
-  unwrap a = Left a 
-
-_editVolButton :: Lens' State (Maybe EVB.State)
-_editVolButton = lens _.editVolButton _{editVolButton = _}
-
-_EditVolButtonAction :: Prism' Action EVB.Action
-_EditVolButtonAction = prism EditVolButtonAction unwrap
-  where 
-  unwrap (EditVolButtonAction a) = Right a
-  unwrap a = Left a 
-  
 spec :: T.Spec _ State _ Action
-spec =
-  over T._render container
-    $ fold [ T.focus _newVolButton _NewVolButtonAction
-               $ T.split _Just NVB.spec
-           , T.focus _editVolButton _EditVolButtonAction
-               $ T.split _Just EVB.spec
-           , over T._render header
-               $ T.focus _currentVolSelector _CurrentVolSelectorAction CVS.spec 
-           , T.focus _volDetails _VolDetailsAction
-               $ T.split _Just VD.spec
-           , T.focus _shiftList _ShiftListAction SL.spec
-           , handler
-           ] 
+spec = T.focus _header _HeaderAction H.spec 
+    <> (over T._render container $ fold [ T.focus _volDetails _VolDetailsAction
+                                            $ T.split _Just VD.spec
+                                        , T.focus _shiftList _ShiftListAction SL.spec
+                                        , handler
+                                        ])
   where 
   container :: T.Render State _ Action -> T.Render State _ Action
   container render d p s c =
     [ RD.div [ RP.className "container" ]
              $ render d p s c
     ]
-
-  header :: T.Render State _ Action -> T.Render State _ Action
-  header render d p s c =
-    [ RD.h2' $ [ RD.span [ RP.dangerouslySetInnerHTML { __html: "Night Shelter Rota for &nbsp;" } ]
-                         []
-               ]
-               <> render d p s c
-               <> if s.loading then [ RD.i [ RP.className "icon-spin animate-spin loading" ] [] ]
-                               else []
-               <> case s.errorMessage of
-                    Just msg -> [ RD.text msg ]
-                    _ -> []
-    ]
     
   handler :: T.Spec _ State _ Action
   handler = T.simpleSpec performAction T.defaultRender
     where 
     performAction :: T.PerformAction _ State _ Action
-    performAction (CurrentVolSelectorAction (CVS.ChangeCurrentVol v)) _ _ = void $ T.modifyState $ changeCurrentVol v
-    performAction (NewVolButtonAction _) _ _ = void $ T.modifyState startEditingNewVol
-    performAction (EditVolButtonAction _) _ _ = void $ T.modifyState startEditingCurrentVol
+    performAction (HeaderAction (H.ChangeCurrentVol v)) _ _ = void $ T.modifyState $ changeCurrentVol v
+    performAction (HeaderAction H.EditNewVol) _ _ = void $ T.modifyState editNewVol
+    performAction (HeaderAction H.EditCurrentVol) _ _ = void $ T.modifyState editCurrentVol
     performAction (VolDetailsAction (VD.Save d)) _ s@{ currentVol: Just _ } = updateCurrentVol d s
     performAction (VolDetailsAction (VD.Save d)) _ s = addNewVol d s
-    performAction (VolDetailsAction VD.Cancel) _ _ = void $ T.modifyState cancelEditing
+    performAction (VolDetailsAction VD.Cancel) _ _ = void $ T.modifyState cancelEdit
     performAction _ _ _ = pure unit
 
 changeCurrentVol :: Maybe Volunteer -> State -> State
 changeCurrentVol currentVol' s = s{ currentVol = currentVol'
                                   , shiftList = SL.changeCurrentVol currentVol' s.shiftList
                                   , volDetails = Nothing
-                                  , newVolButton = Just NVB.initialState
-                                  , editVolButton = map (EVB.initialState <<< (\(Volunteer v) -> v.vName)) currentVol'
                                   }
 
-startEditingNewVol :: State -> State
-startEditingNewVol s = s{ currentVol = Nothing
-                        , shiftList = SL.changeCurrentVol Nothing s.shiftList
-                        , currentVolSelector = CVS.changeVols s.vols Nothing s.currentVolSelector
-                        , volDetails = Just $ VD.initialState Nothing
-                        , newVolButton = Nothing
-                        , editVolButton = Nothing
-                        }
+editNewVol :: State -> State
+editNewVol s = s{ currentVol = Nothing
+                , shiftList = SL.changeCurrentVol Nothing s.shiftList
+                , header = H.editNewVol s.header
+                , volDetails = Just $ VD.initialState Nothing
+                }
 
-startEditingCurrentVol :: State -> State
-startEditingCurrentVol s@{ currentVol: Just _ } =
-  s{ volDetails = Just $ VD.initialState s.currentVol
-   , newVolButton = Nothing
-   , editVolButton = Nothing
+editCurrentVol :: State -> State
+editCurrentVol s@{ currentVol: Just _ } =
+  s{ header = H.editCurrentVol s.header
+   , volDetails = Just $ VD.initialState s.currentVol
    }
-startEditingCurrentVol s = s
+editCurrentVol s = s
 
 updateCurrentVol :: VD.Details -> State -> _
 updateCurrentVol d { currentVol: currentVol@Just (Volunteer v), vols } = do
@@ -218,18 +169,15 @@ updateVols :: { currentVol :: Maybe Volunteer, vols :: List Volunteer } -> State
 updateVols { currentVol, vols } s = s { currentVol = currentVol
                                       , vols = vols
                                       , shiftList = SL.changeCurrentVol currentVol s.shiftList
-                                      , currentVolSelector = CVS.changeVols vols currentVol s.currentVolSelector
+                                      , header = H.updateVols vols currentVol s.header
                                       , volDetails = Nothing
-                                      , newVolButton = Just NVB.initialState
-                                      , editVolButton = map (EVB.initialState <<< (\(Volunteer v) -> v.vName)) currentVol
                                       , loading = false
                                       }
  
-cancelEditing :: State -> State
-cancelEditing s = s{ volDetails = Nothing
-                   , newVolButton = Just NVB.initialState
-                   , editVolButton = map (EVB.initialState <<< (\(Volunteer v) -> v.vName)) s.currentVol
-                   }
+cancelEdit :: State -> State
+cancelEdit s = s{ volDetails = Nothing
+                , header = H.cancelEdit s.header
+                }
 
 initialState :: Date -> State
 initialState currentDate =
@@ -240,10 +188,8 @@ initialState currentDate =
   in  { vols: Nil
       , shiftList: SL.initialState Nothing Nil config
       , currentVol: Nothing
-      , currentVolSelector: CVS.initialState Nil Nothing
+      , header: H.initialState Nil Nothing
       , volDetails: Nothing
-      , newVolButton: Just NVB.initialState
-      , editVolButton: Nothing
       , loading: true
       , config
       , errorMessage: Nothing
@@ -253,7 +199,7 @@ initialDataLoaded :: Array Volunteer -> Array Shift -> State -> State
 initialDataLoaded vols shifts state =
   state { vols = toUnfoldable vols
         , shiftList = SL.initialState state.currentVol (toUnfoldable shifts) state.config
-        , currentVolSelector = CVS.initialState (toUnfoldable vols) state.currentVol
+        , header = H.updateVols (toUnfoldable vols) Nothing state.header
         , loading = false
         }
 
