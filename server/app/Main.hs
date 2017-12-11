@@ -6,21 +6,17 @@
 
 module Main where
   
-  import Control.Monad.Trans.Except ()
   import Control.Monad.IO.Class (liftIO)
-  import Data.Aeson ()
-  import GHC.Generics ()
-  import Network.Wai ()
   import Network.Wai.Handler.Warp (run)
-  import Servant
-  import System.IO ()
   import qualified Data.IntMap.Strict as IM (IntMap(..), fromList, elems, lookup, insert, size)
   import Data.IORef (IORef, newIORef, readIORef, atomicModifyIORef')
-  import Data.Time.Clock
-  import Data.Time.Calendar
-    
-  import Types
+  import Data.Time.Clock (getCurrentTime, utctDay)
+  import Data.Time.Calendar (toGregorian)
+  import Servant
+
+  import Types 
   import Api
+  import Database
 
   currentDate :: IO (Integer,Int,Int) -- :: (year,month,day)
   currentDate = getCurrentTime >>= return . toGregorian . utctDay
@@ -28,12 +24,12 @@ module Main where
   data State = State { vols :: IM.IntMap Volunteer
                      , shifts :: [Shift]
                      }
+  
   main :: IO ()
   main = do
     today <- currentDate
     ref <- newIORef $ initialState today
     run 8081 (app ref)
-    where
      
   app :: IORef State -> Application
   app ref = serve fullAPI (server ref)
@@ -54,8 +50,8 @@ module Main where
     where
     getAll :: Handler [Volunteer]
     getAll = do
-      state <- liftIO $ readIORef ref
-      return $ IM.elems $ vols state
+      vols <- liftIO getVolunteers
+      return vols
 
     add :: VolunteerDetails -> Handler Volunteer
     add details = do
@@ -67,8 +63,8 @@ module Main where
 
     getOne :: Int -> Handler Volunteer
     getOne id = do
-      state <- liftIO $ readIORef ref
-      case IM.lookup id $ vols state of
+      vol <- liftIO $ getVolunteer id
+      case vol of
         Just v -> return v
         _ -> throwError err404
 
