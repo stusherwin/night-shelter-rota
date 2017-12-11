@@ -40,9 +40,12 @@ import Thermite as T
  
 import App.Common (updateWhere, sortWith, nextWeekday)
 import App.Header (State, Action(..), spec, initialState, volDetailsUpdated, editCancelled, reqStarted, reqSucceeded, reqFailed, initialDataLoaded) as H
-import App.Data (fromDate, Config, hasVId, vId)
-import App.ShiftList (State, Action, spec, initialState, changeCurrentVol) as SL
+import App.Data (fromDate, Config, hasVId, vId, addVolunteerShift, changeVolunteerShift, removeVolunteerShift, updateVolunteer)
+import App.ShiftList (State, Action(..), spec, initialState, changeCurrentVol, shiftUpdated) as SL
 import App.VolDetails (State, Action(..), Details, spec, initialState, disable, enable) as VD
+import App.ShiftRow (Action(..), initialState) as SR
+import App.Row (Action(..), HeaderRowAction(..), State(..), spec) as R
+import App.CurrentVolShiftEdit (Action(..), ShiftType(..)) as CVSE
 
 data Action = ShiftListAction SL.Action
             | HeaderAction H.Action
@@ -50,14 +53,15 @@ data Action = ShiftListAction SL.Action
             | ReportError AjaxError
 
 type State = { vols :: List Volunteer 
-             , shiftList :: SL.State
+             , shifts :: List Shift
+             , shiftList :: Maybe SL.State
              , currentVol :: Maybe Volunteer
              , header :: H.State
              , volDetails :: Maybe VD.State 
              , config :: Config
              }
  
-_shiftList :: Lens' State SL.State
+_shiftList :: Lens' State (Maybe SL.State)
 _shiftList = lens _.shiftList _{shiftList = _}
 
 _ShiftListAction :: Prism' Action SL.Action
@@ -88,7 +92,8 @@ spec :: T.Spec _ State _ Action
 spec = T.focus _header _HeaderAction H.spec 
     <> (over T._render container $ fold [ T.focus _volDetails _VolDetailsAction
                                             $ T.split _Just VD.spec
-                                        , T.focus _shiftList _ShiftListAction SL.spec
+                                        , T.focus _shiftList _ShiftListAction
+                                            $ T.split _Just SL.spec
                                         , handler
                                         ])
   where 
@@ -108,28 +113,46 @@ spec = T.focus _header _HeaderAction H.spec
     performAction (VolDetailsAction (VD.Save d)) _ s@{ currentVol: Just _ } = updateCurrentVol d s
     performAction (VolDetailsAction (VD.Save d)) _ s = addNewVol d s
     performAction (VolDetailsAction VD.Cancel) _ _ = void $ T.modifyState cancelEdit
+    performAction (ShiftListAction (SL.RowAction _ (R.ShiftRowAction (SR.CurrentVolShiftEditAction (CVSE.AddCurrentVol shiftDate CVSE.Overnight))))) _ { currentVol: Just cv } = void do
+      delay'
+      T.modifyState $ modifyShifts shiftDate $ addVolunteerShift shiftDate (Overnight cv)
+    performAction (ShiftListAction (SL.RowAction _ (R.ShiftRowAction (SR.CurrentVolShiftEditAction (CVSE.AddCurrentVol shiftDate CVSE.Evening))))) _ { currentVol: Just cv } = void do
+      delay'
+      T.modifyState $ modifyShifts shiftDate $ addVolunteerShift shiftDate (Evening cv)
+    performAction (ShiftListAction (SL.RowAction _ (R.ShiftRowAction (SR.CurrentVolShiftEditAction (CVSE.ChangeCurrentVolShiftType shiftDate))))) _ { currentVol: Just (Volunteer cv) } = void do
+      delay'
+      T.modifyState $ modifyShifts shiftDate $ changeVolunteerShift shiftDate cv.vId
+    performAction (ShiftListAction (SL.RowAction _ (R.ShiftRowAction (SR.CurrentVolShiftEditAction (CVSE.RemoveCurrentVol shiftDate))))) _ { currentVol: Just cv } = void do
+      delay'
+      T.modifyState $ modifyShifts shiftDate $ removeVolunteerShift shiftDate cv
     performAction _ _ _ = pure unit
+    delay' = lift $ delay (Milliseconds 500.0)
 
 changeCurrentVol :: Maybe Volunteer -> State -> State
-changeCurrentVol currentVol' s = s{ currentVol = currentVol'
-                                  , shiftList = SL.changeCurrentVol currentVol' s.shiftList
-                                  , volDetails = Nothing
-                                  }
+changeCurrentVol currentVol' s@{ shiftList: Nothing } = s { currentVol = currentVol'
+                                                          , shiftList = Just $ SL.initialState currentVol' s.shifts s.config
+                                                          , volDetails = Nothing
+                                                          }
+changeCurrentVol currentVol' s = s { currentVol = currentVol'
+                                   , shiftList = SL.changeCurrentVol currentVol' <$> s.shiftList
+                                   , volDetails = Nothing
+                                   }
 
 editNewVol :: State -> State
 editNewVol s = s{ currentVol = Nothing
-                , shiftList = SL.changeCurrentVol Nothing s.shiftList
+                , shiftList = Nothing
                 , volDetails = Just $ VD.initialState Nothing
                 }
 
 editCurrentVol :: State -> State
 editCurrentVol s@{ currentVol: Just _ } =
   s { volDetails = Just $ VD.initialState s.currentVol
+    , shiftList = Nothing
     }
 editCurrentVol s = s
 
 updateCurrentVol :: VD.Details -> State -> _
-updateCurrentVol d { currentVol: currentVol@Just (Volunteer v), vols } = do
+updateCurrentVol d { currentVol: currentVol@Just (Volunteer v), vols, shifts } = do
   _ <- T.modifyState \s -> s { header = H.reqStarted s.header
                              , volDetails = VD.disable <$> s.volDetails
                              }
@@ -139,16 +162,18 @@ updateCurrentVol d { currentVol: currentVol@Just (Volunteer v), vols } = do
                                                                         , vdGenderPref: d.genderPref
                                                                         }
   case resp of
-    Right vol -> void $ T.modifyState $ updateVols { currentVol: Just vol
-                                                   , vols: updateWhere (hasVId v.vId) vol vols
-                                                   }
+    Right vol -> let shifts' = updateVolunteer vol shifts
+                 in void $ T.modifyState $ updateVols { currentVol: Just vol
+                                                      , vols: updateWhere (hasVId v.vId) vol vols
+                                                      , shifts: shifts'
+                                                      }
     Left e -> void $ T.modifyState \s -> s { header = H.reqFailed e s.header
                                            , volDetails = VD.enable <$> s.volDetails
                                            }
 updateCurrentVol _ _ = pure unit
 
 addNewVol :: VD.Details -> State -> _
-addNewVol d { vols } = do
+addNewVol d { vols, shifts } = do
   _ <- T.modifyState \s -> s { header = H.reqStarted s.header
                              , volDetails = VD.disable <$> s.volDetails
                              }
@@ -160,22 +185,25 @@ addNewVol d { vols } = do
   case resp of
     Right vol -> void $ T.modifyState $ updateVols { currentVol: Just vol
                                                    , vols: snoc vols vol
+                                                   , shifts
                                                    }
     Left e -> void $ T.modifyState \s -> s { header = H.reqFailed e s.header
                                            , volDetails = VD.enable <$> s.volDetails
                                            }
 
-updateVols :: { currentVol :: Maybe Volunteer, vols :: List Volunteer } -> State -> State
-updateVols { currentVol, vols } s = s { currentVol = currentVol
-                                      , vols = vols
-                                      , shiftList = SL.changeCurrentVol currentVol s.shiftList
-                                      , header = H.volDetailsUpdated vols currentVol s.header
-                                      , volDetails = Nothing
-                                      }
+updateVols :: { currentVol :: Maybe Volunteer, vols :: List Volunteer, shifts :: List Shift } -> State -> State
+updateVols { currentVol, vols, shifts } s = s { currentVol = currentVol
+                                              , vols = vols
+                                              , shifts = shifts
+                                              , shiftList = Just $ SL.initialState currentVol shifts s.config
+                                              , header = H.volDetailsUpdated vols currentVol s.header
+                                              , volDetails = Nothing
+                                              }
  
 cancelEdit :: State -> State
 cancelEdit s = s{ header = H.editCancelled s.header
                 , volDetails = Nothing
+                , shiftList = Just $ SL.initialState s.currentVol s.shifts s.config
                 }
 
 initialState :: Date -> State
@@ -185,7 +213,8 @@ initialState currentDate =
                , currentDate
                }
   in  { vols: Nil
-      , shiftList: SL.initialState Nothing Nil config
+      , shifts: Nil
+      , shiftList: Nothing
       , currentVol: Nothing
       , header: H.initialState
       , volDetails: Nothing
@@ -193,11 +222,21 @@ initialState currentDate =
       }
 
 initialDataLoaded :: Array Volunteer -> Array Shift -> State -> State
-initialDataLoaded vols shifts state =
-  state { vols = toUnfoldable vols
-        , shiftList = SL.initialState state.currentVol (toUnfoldable shifts) state.config
-        , header = H.initialDataLoaded (toUnfoldable vols) state.header
-        }
+initialDataLoaded vols shifts s =
+  let volList = toUnfoldable vols
+      shiftList = toUnfoldable shifts
+  in s { vols = volList
+       , shifts = shiftList
+       , shiftList = Just $ SL.initialState s.currentVol shiftList s.config
+       , header = H.initialDataLoaded volList s.header
+       }
+
+modifyShifts :: Date -> (List Shift -> List Shift) -> State -> State
+modifyShifts date modify s =
+  let shifts' = modify s.shifts
+  in s { shifts = shifts'
+       , shiftList = SL.shiftUpdated shifts' date <$> s.shiftList
+       }
 
 type MySettings = SPSettings_ SPParams_
 

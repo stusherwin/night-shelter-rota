@@ -293,7 +293,7 @@ label .sharing-pref span {
   left: 0;
   right: 0;
   background: #ffe6a8; /* #e8c976; /* #EAAE00; /* #FBC038; /* #ccdfff;*/
-  padding: 7px 6px 10px 10px;
+  padding: 10px 6px 10px 10px;
   z-index: 999;
   box-shadow: 5px 0px 10px 0px #000;
 }
@@ -303,13 +303,13 @@ label .sharing-pref span {
 }
 
 .header h2.initial-data-loading {
-  margin-top: 6px;
+  margin-top: 3px;
 }
 
 .header-status {
   float: left;
   font-size: 20px;
-  margin-top: 12px;
+  margin-top: 9px;
   margin-left: 4px;
   margin-right: 10px;
   width: 29px;
@@ -318,11 +318,12 @@ label .sharing-pref span {
 
 .header-status i {
   float: left;
-  color: #777;
+  /* color: #777; */
 }
 
 .header-status i.icon-warning {
   cursor: help;
+  margin-top: 1px;
   /* color: #fff; /* #e54800; */
 }
 
@@ -340,16 +341,16 @@ label .sharing-pref span {
 .header .header-edit {
   float: right;
   margin-left: 5px;
-  margin-top: 3px;
 }
 
 .header .header-new {
   float: right;
   margin-left: 5px;
-  margin-top: 3px;
   border: 1px solid #ccc;
 }
 
 .header select {
   border: 1px solid #ccc;
+  margin-top: 2px;
+  margin-bottom: 3px;
 }

@@ -1,4 +1,4 @@
-module App.ShiftList (Action(..), State, RosterState, spec, initialState, changeCurrentVol) where
+module App.ShiftList (Action(..), State, RosterState, spec, initialState, changeCurrentVol, shiftUpdated) where
    
 import Prelude 
 
@@ -69,26 +69,12 @@ spec =
     render dispatch _ state _ = []
 
     performAction :: T.PerformAction _ State _ Action
-    performAction (RowAction _ (R.ShiftRowAction (SR.CurrentVolShiftEditAction (CVSE.AddCurrentVol shiftDate CVSE.Overnight)))) _ { roster: { currentVol: Just cv } } = void do
-      delay'
-      T.modifyState \state -> modifyShifts state shiftDate $ D.addVolunteerShift shiftDate (D.Overnight cv)
-    performAction (RowAction _ (R.ShiftRowAction (SR.CurrentVolShiftEditAction (CVSE.AddCurrentVol shiftDate CVSE.Evening)))) _ { roster: { currentVol: Just cv } } = void do
-      delay'
-      T.modifyState \state -> modifyShifts state shiftDate $ D.addVolunteerShift shiftDate (D.Evening cv)
-    performAction (RowAction _ (R.ShiftRowAction (SR.CurrentVolShiftEditAction (CVSE.ChangeCurrentVolShiftType shiftDate)))) _ { roster: { currentVol: Just (D.Volunteer cv) } } = void do
-      delay'
-      T.modifyState \state -> modifyShifts state shiftDate $ D.changeVolunteerShift shiftDate cv.vId
-    performAction (RowAction _ (R.ShiftRowAction (SR.CurrentVolShiftEditAction (CVSE.RemoveCurrentVol shiftDate)))) _ { roster: { currentVol: Just cv } } = void do
-      delay'
-      T.modifyState \state -> modifyShifts state shiftDate $ D.removeVolunteerShift shiftDate cv
     performAction (RowAction _ (R.HeaderRowAction R.PrevPeriod)) _ _ = void do
       T.modifyState \state -> adjustPeriod (-shiftCount) state
     performAction (RowAction _ (R.HeaderRowAction R.NextPeriod)) _ _ = void do
       T.modifyState \state -> adjustPeriod shiftCount state
     performAction _ _ _ = pure unit
     
-    delay' = lift $ delay (Milliseconds 500.0)
-
 initialState :: forall c. Maybe D.Volunteer -> List D.Shift -> D.Config -> State
 initialState currentVol shifts config = 
   let startDate = previousWeekday Monday config.currentDate 
@@ -131,9 +117,7 @@ preserveLoading = zipWith row
  
 changeCurrentVol :: Maybe D.Volunteer -> State -> State
 changeCurrentVol currentVol state =
-  let shifts' = maybe state.roster.shifts (\vol -> D.updateVolunteer vol state.roster.shifts) currentVol
-      roster' = state.roster { currentVol = currentVol
-                             , shifts = shifts'
+  let roster' = state.roster { currentVol = currentVol
                              , loading = false
                              }
   in state { roster = roster'
@@ -150,10 +134,9 @@ adjustPeriod adj state =
            , rows = rows roster' state.config
            }
 
-modifyShifts :: State -> Date -> (List D.Shift -> List D.Shift) -> State
-modifyShifts state date modify =
-  let shifts = modify state.roster.shifts
-      roster' = state.roster { shifts = shifts }
+shiftUpdated :: List D.Shift -> Date -> State -> State
+shiftUpdated shifts date state =
+  let roster' = state.roster { shifts = shifts }
 
       isShiftOnDate :: R.State -> Boolean
       isShiftOnDate (R.ShiftRow s) = s.date == date
