@@ -1,11 +1,19 @@
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE StandaloneDeriving #-}
+{-# LANGUAGE LambdaCase #-}
 
-module Database (getVolunteers, getVolunteer) where
+module Database (getAllVolunteers, getVolunteer, addVolunteer) where
   import Control.Monad.IO.Class (liftIO)
   import Database.PostgreSQL.Simple
+  import Database.PostgreSQL.Simple.ToField
   import Data.ByteString (ByteString)
+  import Data.Text as T
+  import Data.Text.Encoding (encodeUtf8)
   import Types
   import System.IO ()
+
+  instance ToField Char where
+    toField c = Escape $ encodeUtf8 $ T.pack [c]
   
   connectionString :: ByteString
   connectionString = "postgres://shelter_rota_user:password@localhost:5432/shelter_rota"
@@ -15,9 +23,9 @@ module Database (getVolunteers, getVolunteer) where
 
   (&) :: a -> (a -> b) -> b
   (&) = flip ($)
-
-  getVolunteers :: IO [Volunteer]
-  getVolunteers = do
+  
+  getAllVolunteers :: IO [Volunteer]
+  getAllVolunteers = do
     conn <- connectPostgreSQL connectionString
     row <- query_ conn "select id, name, overnight_pref, overnight_gender_pref, notes from volunteer"
     let result = row <&> \(id, name, op, ogp, notes) ->
@@ -55,3 +63,17 @@ module Database (getVolunteers, getVolunteer) where
                                                   (notes :: String)
     close conn
     return result
+
+  addVolunteer :: VolunteerDetails -> IO Int
+  addVolunteer details = do
+    conn <- connectPostgreSQL connectionString
+    [Only id] <- query conn "insert into volunteer (name, overnight_pref, overnight_gender_pref, notes) values (?, ?, ?, ?) returning id"
+                            ( vdName details
+                            , vdPref details <&> \case PreferToBeAlone -> '1'
+                                                       PreferAnotherVolunteer -> '2' 
+                            , vdGenderPref details <&> \case Male -> 'M'
+                                                             Female -> 'F'
+                            , vdNotes details
+                            )
+    close conn
+    return id

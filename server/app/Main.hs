@@ -2,7 +2,6 @@
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE TypeOperators #-}
-{-# LANGUAGE LambdaCase #-}
 
 module Main where
   
@@ -50,16 +49,13 @@ module Main where
     where
     getAll :: Handler [Volunteer]
     getAll = do
-      vols <- liftIO getVolunteers
+      vols <- liftIO getAllVolunteers
       return vols
 
     add :: VolunteerDetails -> Handler Volunteer
     add details = do
-      liftIO $ atomicModifyIORef' ref $ \state ->
-        let  vs = vols state
-             newId = IM.size vs + 1
-             newVol = newVolunteer newId details
-        in (state { vols = IM.insert newId newVol vs }, newVol)
+      newId <- liftIO $ addVolunteer details
+      return $ newVolunteer newId details
 
     getOne :: Int -> Handler Volunteer
     getOne id = do
