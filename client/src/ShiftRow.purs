@@ -9,7 +9,7 @@ import Data.Lens (Lens', lens, Prism', prism, over, _Just)
 import Data.Array (length) as A
 import Data.List (List(..), find, head, foldl, length, fromFoldable)
 import Data.Maybe (Maybe(..), maybe)
-import Data.String (take, toUpper) as S
+import Data.String (take, toUpper, toLower) as S
 import Data.Tuple (Tuple(..), uncurry)
 import React (ReactElement)
 import React.DOM as RD
@@ -149,7 +149,7 @@ initialState roster config date =
      , status: status config shift
      , loading: false
      , currentVolShiftEdit: map (CVSE.initialState config shift) roster.currentVol
-     , volMarkers: sortWith _.name $ map VM.initialState $ fromFoldable sh.volunteers
+     , volMarkers: sortWith (S.toLower <<< _.name) $ map VM.initialState $ fromFoldable sh.volunteers
      }
   where
   status :: D.Config -> D.Shift -> ShiftStatus

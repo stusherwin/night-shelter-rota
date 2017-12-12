@@ -114,19 +114,14 @@ spec = T.focus _header _HeaderAction H.spec
     performAction (VolDetailsAction (VD.Save d)) _ s = addNewVol d s
     performAction (VolDetailsAction VD.Cancel) _ _ = void $ T.modifyState cancelEdit
     performAction (ShiftListAction (SL.RowAction _ (R.ShiftRowAction (SR.CurrentVolShiftEditAction (CVSE.AddCurrentVol shiftDate CVSE.Overnight))))) _ { currentVol: Just cv } = void do
-      delay'
       T.modifyState $ modifyShifts shiftDate $ addVolunteerShift shiftDate (Overnight cv)
     performAction (ShiftListAction (SL.RowAction _ (R.ShiftRowAction (SR.CurrentVolShiftEditAction (CVSE.AddCurrentVol shiftDate CVSE.Evening))))) _ { currentVol: Just cv } = void do
-      delay'
       T.modifyState $ modifyShifts shiftDate $ addVolunteerShift shiftDate (Evening cv)
     performAction (ShiftListAction (SL.RowAction _ (R.ShiftRowAction (SR.CurrentVolShiftEditAction (CVSE.ChangeCurrentVolShiftType shiftDate))))) _ { currentVol: Just (Volunteer cv) } = void do
-      delay'
       T.modifyState $ modifyShifts shiftDate $ changeVolunteerShift shiftDate cv.vId
     performAction (ShiftListAction (SL.RowAction _ (R.ShiftRowAction (SR.CurrentVolShiftEditAction (CVSE.RemoveCurrentVol shiftDate))))) _ { currentVol: Just cv } = void do
-      delay'
       T.modifyState $ modifyShifts shiftDate $ removeVolunteerShift shiftDate cv
     performAction _ _ _ = pure unit
-    delay' = lift $ delay (Milliseconds 500.0)
 
 changeCurrentVol :: Maybe Volunteer -> State -> State
 changeCurrentVol currentVol' s@{ shiftList: Nothing } = s { currentVol = currentVol'
@@ -247,7 +242,6 @@ type APIEffect eff = ReaderT MySettings (ExceptT AjaxError (Aff (ajax :: AJAX, e
 
 apiReq :: forall a. Generic a => APIEffect _ a -> Aff _ (Either AjaxError a)
 apiReq m = do
-  delay (Milliseconds 5000.0)
   response <- runExceptT $ runReaderT m settings
   case response of
     Left err -> do

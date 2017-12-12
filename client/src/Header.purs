@@ -4,6 +4,7 @@ import Prelude
 
 import Data.List (List(..), (!!), find, toUnfoldable)
 import Data.Maybe (Maybe(..))
+import Data.String (toLower)
 import React (ReactElement, preventDefault) as R
 import React.DOM as RD
 import React.DOM.Props as RP
@@ -136,13 +137,13 @@ initialState = { vols: Nil
                }
 
 initialDataLoaded :: List Volunteer -> State -> State
-initialDataLoaded vols = _ { vols = sortWith (\(Volunteer v) -> v.vName) vols
+initialDataLoaded vols = _ { vols = sortWith (\(Volunteer v) -> toLower v.vName) vols
                            , reqInProgress = false
                            , initialDataLoaded = true
                            }
 
 volDetailsUpdated :: List Volunteer -> Maybe Volunteer -> State -> State
-volDetailsUpdated vols currentVol = _ { vols = sortWith (\(Volunteer v) -> v.vName) vols
+volDetailsUpdated vols currentVol = _ { vols = sortWith (\(Volunteer v) -> toLower v.vName) vols
                                       , currentVol = currentVol
                                       , volDetailsState = NotEditing
                                       , reqInProgress = false
