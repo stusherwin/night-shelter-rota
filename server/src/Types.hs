@@ -25,22 +25,6 @@ module Types where
                              } deriving (Eq, Show, Generic)
   instance ToJSON Volunteer
 
-  data VolunteerShift = Overnight Volunteer
-                      | Evening Volunteer
-                      deriving (Eq, Show, Generic)
-  instance ToJSON VolunteerShift
-
-  data Date = Date { year :: Int
-                   , month :: Int
-                   , day :: Int
-                   } deriving (Eq, Show, Generic)
-  instance ToJSON Date
-
-  data Shift = Shift { date :: Date
-                     , volunteers :: [VolunteerShift]
-                     } deriving (Eq, Show, Generic)
-  instance ToJSON Shift
-
   data VolunteerDetails = VolunteerDetails { vdName :: String
                                            , vdNotes :: String
                                            , vdPref :: Maybe OvernightPreference
@@ -49,6 +33,22 @@ module Types where
                             
   instance ToJSON VolunteerDetails
   instance FromJSON VolunteerDetails
-  
+
+  data ShiftType = Overnight
+                 | Evening
+                 deriving (Eq, Show, Generic)
+  instance ToJSON ShiftType
+
+  data ShiftDate = ShiftDate { year :: Int
+                             , month :: Int
+                             , day :: Int
+                             } deriving (Eq, Show, Generic)
+  instance ToJSON ShiftDate
+
+  data Shift = Shift { sDate :: ShiftDate
+                     , sVolunteerId :: [VolunteerShift]
+                     } deriving (Eq, Show, Generic)
+  instance ToJSON Shift
+
   newVolunteer :: Int -> VolunteerDetails -> Volunteer
   newVolunteer id details = Volunteer id (vdName details) (vdPref details) (vdGenderPref details) (vdNotes details)

@@ -349,6 +349,10 @@ label .sharing-pref span {
   box-shadow: 0px 0px 0px 1px #ccc;
 }
 
+.header .header-new:hover {
+  box-shadow: 0px 0px 0px 1px #ccc;
+}  
+
 .header select {
   border: 1px solid #ccc;
   margin-top: 2px;
