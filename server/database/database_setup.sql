@@ -5,7 +5,7 @@ declare v3Id integer;
 declare v4Id integer;
 begin
 
-drop table if exists shift cascade;
+drop table if exists volunteer_shift cascade;
 drop table if exists volunteer cascade;
 
 create table volunteer
@@ -36,21 +36,21 @@ values ('Mary', null, null, 'Only nice people')
 returning id
 into v4Id;
 
-create table shift
+create table volunteer_shift
 ( volunteerId  integer not null references volunteer(id)
 , shiftDate    date    not null
 , shiftType    char(1) not null
 , primary key (volunteerId, shiftDate)
 );
 
-insert into shift (shiftDate, volunteerId, shiftType) values ('2017-12-12', v1Id, 'O');
-insert into shift (shiftDate, volunteerId, shiftType) values ('2017-12-12', v2Id, 'E');
-insert into shift (shiftDate, volunteerId, shiftType) values ('2017-12-12', v3Id, 'O');
-insert into shift (shiftDate, volunteerId, shiftType) values ('2017-12-12', v4Id, 'E');
+insert into volunteer_shift (shiftDate, volunteerId, shiftType) values ('2017-12-12', v1Id, 'O');
+insert into volunteer_shift (shiftDate, volunteerId, shiftType) values ('2017-12-12', v2Id, 'E');
+insert into volunteer_shift (shiftDate, volunteerId, shiftType) values ('2017-12-12', v3Id, 'O');
+insert into volunteer_shift (shiftDate, volunteerId, shiftType) values ('2017-12-12', v4Id, 'E');
 
-insert into shift (shiftDate, volunteerId, shiftType) values ('2017-12-13', v1Id, 'O');
-insert into shift (shiftDate, volunteerId, shiftType) values ('2017-12-13', v3Id, 'O');
-insert into shift (shiftDate, volunteerId, shiftType) values ('2017-12-13', v4Id, 'E');
+insert into volunteer_shift (shiftDate, volunteerId, shiftType) values ('2017-12-13', v1Id, 'O');
+insert into volunteer_shift (shiftDate, volunteerId, shiftType) values ('2017-12-13', v3Id, 'O');
+insert into volunteer_shift (shiftDate, volunteerId, shiftType) values ('2017-12-13', v4Id, 'E');
 
 grant all on all tables in schema public to shelter_rota_user;
 grant all on all sequences in schema public to shelter_rota_user;

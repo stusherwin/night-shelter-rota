@@ -2,20 +2,22 @@
 {-# LANGUAGE StandaloneDeriving #-}
 {-# LANGUAGE LambdaCase #-}
 
-module Database (getAllVolunteers, getVolunteer, addVolunteer, updateVolunteer) where
+module Database (getAllVolunteers, getVolunteer, addVolunteer, updateVolunteer, getAllShifts) where
   import Control.Monad (mzero)
   import Control.Monad.IO.Class (liftIO)
   import Database.PostgreSQL.Simple
   import Database.PostgreSQL.Simple.ToField
   import Database.PostgreSQL.Simple.FromField
   import Database.PostgreSQL.Simple.FromRow
+  import Database.PostgreSQL.Simple.Time
   import Data.ByteString (ByteString)
-  import Data.Maybe (listToMaybe)
-  import Data.Text as T
+  import Data.Maybe (listToMaybe, fromJust)
+  import Data.Map.Lazy (fromListWith, assocs)
+  import qualified Data.Text as T
   import Data.Text.Encoding (encodeUtf8)
   import Types
-  import System.IO ()
-
+  import qualified Data.IntMap.Strict as IM (IntMap(..), fromList, elems, lookup, insert, size)
+  
   toDatabaseChar :: Char -> Action
   toDatabaseChar c = Escape $ encodeUtf8 $ T.pack [c]
 
@@ -45,6 +47,21 @@ module Database (getAllVolunteers, getVolunteer, addVolunteer, updateVolunteer) 
 
   instance FromRow Volunteer where
     fromRow = Volunteer <$> field <*> field <*> field <*> field <*> field
+
+  instance FromField ShiftDate where
+    fromField f date = do
+      sqlDate <- fromField f date
+      case sqlDate of
+        Just (Finite day) -> return $ toShiftDate day
+        _ -> mzero
+        
+  instance FromField ShiftType where
+    fromField f char = do
+      c <- fromField f char
+      case c of
+        Just 'O' -> return Overnight
+        Just 'E' -> return Evening
+        _ -> mzero
     
   connectionString :: ByteString
   connectionString = "postgres://shelter_rota_user:password@localhost:5432/shelter_rota"
@@ -93,3 +110,18 @@ module Database (getAllVolunteers, getVolunteer, addVolunteer, updateVolunteer) 
                          )
     close conn
     return $ listToMaybe result
+
+  getAllShifts :: IO [Shift]
+  getAllShifts = do
+    conn <- connectPostgreSQL connectionString
+    -- TODO: convert to single db query?
+    rVols <- query_ conn "select id, name, overnight_pref, overnight_gender_pref, notes from volunteer"
+    rVolShifts <- query_ conn "select shiftDate, volunteerId, shiftType from volunteer_shift"
+    close conn
+    let vols = IM.fromList $ map (\v -> (vId v, v)) (rVols :: [Volunteer])
+    -- TODO: handle vol not existing?
+    let volShifts = rVolShifts <&> \(d, id, st) -> (d, [VolunteerShift (fromJust $ IM.lookup id vols) st])
+    let shifts = fromListWith (++) volShifts
+    let result = (assocs shifts) <&> \(d, vols) -> Shift d vols
+    return result
+  

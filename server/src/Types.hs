@@ -4,6 +4,7 @@
 module Types where
   import Data.Aeson
   import GHC.Generics
+  import Data.Time.Calendar
   
   data OvernightPreference = PreferToBeAlone
                            | PreferAnotherVolunteer 
@@ -42,13 +43,22 @@ module Types where
   data ShiftDate = ShiftDate { year :: Int
                              , month :: Int
                              , day :: Int
-                             } deriving (Eq, Show, Generic)
+                             } deriving (Eq, Ord, Show, Generic)
   instance ToJSON ShiftDate
 
+  data VolunteerShift = VolunteerShift { vsVolunteer :: Volunteer
+                                       , vsShiftType :: ShiftType
+                                       } deriving (Eq, Show, Generic)
+  instance ToJSON VolunteerShift
+
   data Shift = Shift { sDate :: ShiftDate
-                     , sVolunteerId :: [VolunteerShift]
+                     , sVolunteers :: [VolunteerShift]
                      } deriving (Eq, Show, Generic)
   instance ToJSON Shift
 
   newVolunteer :: Int -> VolunteerDetails -> Volunteer
   newVolunteer id details = Volunteer id (vdName details) (vdPref details) (vdGenderPref details) (vdNotes details)
+
+  toShiftDate :: Day -> ShiftDate
+  toShiftDate day = let (y, m, d) = toGregorian day
+                    in ShiftDate (fromInteger y) m d

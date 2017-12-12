@@ -1,4 +1,4 @@
-module App.VolMarker (State, ShiftType(..), SharingPref(..), spec, initialState) where
+module App.VolMarker (State, SharingPref(..), spec, initialState) where
 
 import Prelude
 
@@ -10,11 +10,7 @@ import React.DOM.Props as RP
 import Thermite as T
 
 import App.Common (justIf)
-import ServerTypes (OvernightPreference(..), OvernightGenderPreference(..), Volunteer(..), VolunteerShift(..)) as D
-
-data ShiftType = Overnight
-               | Evening
-derive instance shiftTypeEq :: Eq ShiftType
+import ServerTypes (OvernightPreference(..), OvernightGenderPreference(..), Volunteer(..), VolunteerShift(..), ShiftType(..)) as D
 
 data SharingPref = Male
                  | Female
@@ -23,7 +19,7 @@ data SharingPref = Male
                  | Notes String
 
 type State = { name :: String
-             , shiftType :: ShiftType
+             , shiftType :: D.ShiftType
              , sharingPrefs :: Array SharingPref
              }
 
@@ -62,19 +58,15 @@ spec = T.simpleSpec T.defaultPerformAction render
                                        ] 
                                        []
 
-renderIcon :: ShiftType -> ReactElement
-renderIcon Evening   = RD.i [ RP.className "vol-icon icon-no-bed" ] []
-renderIcon Overnight = RD.i [ RP.className "vol-icon icon-bed" ]    []
+renderIcon :: D.ShiftType -> ReactElement
+renderIcon D.Evening   = RD.i [ RP.className "vol-icon icon-no-bed" ] []
+renderIcon D.Overnight = RD.i [ RP.className "vol-icon icon-bed" ]    []
 
 initialState :: D.VolunteerShift -> State
-initialState (D.Overnight (D.Volunteer v)) = { name: v.vName
-                               , shiftType: Overnight
+initialState (D.VolunteerShift { vsVolunteer: (D.Volunteer v), vsShiftType }) = { name: v.vName
+                               , shiftType: vsShiftType
                                , sharingPrefs: sharingPrefs v
                                } 
-initialState (D.Evening (D.Volunteer v))   = { name: v.vName
-                               , shiftType: Evening
-                               , sharingPrefs: sharingPrefs v
-                               }
 
 sharingPrefs :: _ -> Array SharingPref
 sharingPrefs vol = catMaybes [ map overnight vol.vOvernightPreference

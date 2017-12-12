@@ -20,8 +20,7 @@ module Main where
   currentDate :: IO (Integer,Int,Int) -- :: (year,month,day)
   currentDate = getCurrentTime >>= return . toGregorian . utctDay
   
-  data State = State { vols :: IM.IntMap Volunteer
-                     , shifts :: [Shift]
+  data State = State { shifts :: [Shift]
                      }
   
   main :: IO ()
@@ -73,8 +72,8 @@ module Main where
  
   shiftsServer :: IORef State -> Handler [Shift]
   shiftsServer ref = do
-    state <- liftIO $ readIORef ref
-    return $ shifts state
+    shifts <- liftIO getAllShifts
+    return $ shifts
 
   initialState :: (Integer, Int, Int) -> State
   initialState (y, m, d) =
@@ -103,15 +102,15 @@ module Main where
                            , vNotes = "Only nice people"
                            }
 
-    in State { vols = IM.fromList $ map (\v -> (vId v, v)) [ fred, alice, jim, mary ]
-             , shifts = [ Shift (Date (fromInteger y) m d) [ Overnight fred
-                                                           , Evening alice
-                                                           , Overnight jim
-                                                           , Evening mary
-                                                           ]
-                        , Shift (Date (fromInteger y) m (d + 1)) [ Overnight fred
-                                                                 , Overnight jim
-                                                                 , Evening mary
-                                                                 ]
+    in State { shifts = [ Shift (ShiftDate (fromInteger y) m d) [ VolunteerShift fred  Overnight
+                                                                , VolunteerShift alice Evening
+                                                                , VolunteerShift jim   Overnight
+                                                                , VolunteerShift mary  Evening
+                                                                ]
+
+                        , Shift (ShiftDate (fromInteger y) m (d + 3)) [ VolunteerShift fred Overnight
+                                                                      , VolunteerShift jim  Overnight
+                                                                      , VolunteerShift mary Evening
+                                                                      ]
                         ]
              } 

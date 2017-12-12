@@ -35,7 +35,7 @@ import React.DOM (s)
 import React.DOM as RD
 import React.DOM.Props as RP
 import ReactDOM as RDOM
-import ServerTypes (OvernightPreference(..), OvernightGenderPreference(..), Volunteer(..), VolunteerShift(..), Shift(..), VolunteerDetails(..))
+import ServerTypes (OvernightPreference(..), OvernightGenderPreference(..), Volunteer(..), VolunteerShift(..), Shift(..), VolunteerDetails(..), ShiftType(..))
 import Thermite as T
  
 import App.Common (updateWhere, sortWith, nextWeekday)
@@ -45,7 +45,7 @@ import App.ShiftList (State, Action(..), spec, initialState, changeCurrentVol, s
 import App.VolDetails (State, Action(..), Details, spec, initialState, disable, enable) as VD
 import App.ShiftRow (Action(..), initialState) as SR
 import App.Row (Action(..), HeaderRowAction(..), State(..), spec) as R
-import App.CurrentVolShiftEdit (Action(..), ShiftType(..)) as CVSE
+import App.CurrentVolShiftEdit (Action(..)) as CVSE
 
 data Action = ShiftListAction SL.Action
             | HeaderAction H.Action
@@ -113,10 +113,8 @@ spec = T.focus _header _HeaderAction H.spec
     performAction (VolDetailsAction (VD.Save d)) _ s@{ currentVol: Just _ } = updateCurrentVol d s
     performAction (VolDetailsAction (VD.Save d)) _ s = addNewVol d s
     performAction (VolDetailsAction VD.Cancel) _ _ = void $ T.modifyState cancelEdit
-    performAction (ShiftListAction (SL.RowAction _ (R.ShiftRowAction (SR.CurrentVolShiftEditAction (CVSE.AddCurrentVol shiftDate CVSE.Overnight))))) _ { currentVol: Just cv } = void do
-      T.modifyState $ modifyShifts shiftDate $ addVolunteerShift shiftDate (Overnight cv)
-    performAction (ShiftListAction (SL.RowAction _ (R.ShiftRowAction (SR.CurrentVolShiftEditAction (CVSE.AddCurrentVol shiftDate CVSE.Evening))))) _ { currentVol: Just cv } = void do
-      T.modifyState $ modifyShifts shiftDate $ addVolunteerShift shiftDate (Evening cv)
+    performAction (ShiftListAction (SL.RowAction _ (R.ShiftRowAction (SR.CurrentVolShiftEditAction (CVSE.AddCurrentVol shiftDate shiftType))))) _ { currentVol: Just cv } = void do
+      T.modifyState $ modifyShifts shiftDate $ addVolunteerShift shiftDate (VolunteerShift { vsVolunteer: cv, vsShiftType: shiftType })
     performAction (ShiftListAction (SL.RowAction _ (R.ShiftRowAction (SR.CurrentVolShiftEditAction (CVSE.ChangeCurrentVolShiftType shiftDate))))) _ { currentVol: Just (Volunteer cv) } = void do
       T.modifyState $ modifyShifts shiftDate $ changeVolunteerShift shiftDate cv.vId
     performAction (ShiftListAction (SL.RowAction _ (R.ShiftRowAction (SR.CurrentVolShiftEditAction (CVSE.RemoveCurrentVol shiftDate))))) _ { currentVol: Just cv } = void do

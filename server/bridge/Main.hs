@@ -47,11 +47,12 @@ module Main where
   
   myTypes :: [SumType 'Haskell]
   myTypes = [ mkSumType (Proxy :: Proxy Volunteer)
+            , mkSumType (Proxy :: Proxy VolunteerShift)
             , mkSumType (Proxy :: Proxy Shift)
             , mkSumType (Proxy :: Proxy OvernightPreference)
             , mkSumType (Proxy :: Proxy OvernightGenderPreference)
-            , mkSumType (Proxy :: Proxy Date)
-            , mkSumType (Proxy :: Proxy VolunteerShift)
+            , mkSumType (Proxy :: Proxy ShiftDate)
+            , mkSumType (Proxy :: Proxy ShiftType)
             , mkSumType (Proxy :: Proxy VolunteerDetails)
             ]
 

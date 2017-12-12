@@ -31,10 +31,26 @@ _Volunteer :: Iso' Volunteer { vId :: Int, vName :: String, vOvernightPreference
 _Volunteer = _Newtype
 
 --------------------------------------------------------------------------------
+newtype VolunteerShift =
+    VolunteerShift {
+      vsVolunteer :: Volunteer
+    , vsShiftType :: ShiftType
+    }
+
+derive instance genericVolunteerShift :: Generic VolunteerShift
+
+derive instance newtypeVolunteerShift :: Newtype VolunteerShift _
+
+
+--------------------------------------------------------------------------------
+_VolunteerShift :: Iso' VolunteerShift { vsVolunteer :: Volunteer, vsShiftType :: ShiftType}
+_VolunteerShift = _Newtype
+
+--------------------------------------------------------------------------------
 newtype Shift =
     Shift {
-      date :: Date
-    , volunteers :: Array VolunteerShift
+      sDate :: ShiftDate
+    , sVolunteers :: Array VolunteerShift
     }
 
 derive instance genericShift :: Generic Shift
@@ -43,7 +59,7 @@ derive instance newtypeShift :: Newtype Shift _
 
 
 --------------------------------------------------------------------------------
-_Shift :: Iso' Shift { date :: Date, volunteers :: Array VolunteerShift}
+_Shift :: Iso' Shift { sDate :: ShiftDate, sVolunteers :: Array VolunteerShift}
 _Shift = _Newtype
 
 --------------------------------------------------------------------------------
@@ -89,41 +105,41 @@ _Female = prism' (\_ -> Female) f
     f _ = Nothing
 
 --------------------------------------------------------------------------------
-newtype Date =
-    Date {
+newtype ShiftDate =
+    ShiftDate {
       year :: Int
     , month :: Int
     , day :: Int
     }
 
-derive instance genericDate :: Generic Date
+derive instance genericShiftDate :: Generic ShiftDate
 
-derive instance newtypeDate :: Newtype Date _
-
-
---------------------------------------------------------------------------------
-_Date :: Iso' Date { year :: Int, month :: Int, day :: Int}
-_Date = _Newtype
-
---------------------------------------------------------------------------------
-data VolunteerShift =
-    Overnight Volunteer
-  | Evening Volunteer
-
-derive instance genericVolunteerShift :: Generic VolunteerShift
+derive instance newtypeShiftDate :: Newtype ShiftDate _
 
 
 --------------------------------------------------------------------------------
-_Overnight :: Prism' VolunteerShift Volunteer
-_Overnight = prism' Overnight f
+_ShiftDate :: Iso' ShiftDate { year :: Int, month :: Int, day :: Int}
+_ShiftDate = _Newtype
+
+--------------------------------------------------------------------------------
+data ShiftType =
+    Overnight
+  | Evening
+
+derive instance genericShiftType :: Generic ShiftType
+
+
+--------------------------------------------------------------------------------
+_Overnight :: Prism' ShiftType Unit
+_Overnight = prism' (\_ -> Overnight) f
   where
-    f (Overnight a) = Just $ a
+    f Overnight = Just unit
     f _ = Nothing
 
-_Evening :: Prism' VolunteerShift Volunteer
-_Evening = prism' Evening f
+_Evening :: Prism' ShiftType Unit
+_Evening = prism' (\_ -> Evening) f
   where
-    f (Evening a) = Just $ a
+    f Evening = Just unit
     f _ = Nothing
 
 --------------------------------------------------------------------------------

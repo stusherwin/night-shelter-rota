@@ -141,19 +141,19 @@ spec =
 
 initialState :: forall d. RosterData d -> D.Config -> Date -> State
 initialState roster config date = 
-  let shift@(D.Shift sh) = maybe (D.Shift {date: D.fromDate date, volunteers: []}) id
+  let shift@(D.Shift sh) = maybe (D.Shift {sDate: D.fromDate date, sVolunteers: []}) id
                 $ find (D.hasDate date) roster.shifts
   in { date 
-     , noOfVols: A.length sh.volunteers
+     , noOfVols: A.length sh.sVolunteers
      , maxVols: config.maxVolsPerShift
      , status: status config shift
      , loading: false
      , currentVolShiftEdit: map (CVSE.initialState config shift) roster.currentVol
-     , volMarkers: sortWith (S.toLower <<< _.name) $ map VM.initialState $ fromFoldable sh.volunteers
+     , volMarkers: sortWith (S.toLower <<< _.name) $ map VM.initialState $ fromFoldable sh.sVolunteers
      }
   where
   status :: D.Config -> D.Shift -> ShiftStatus
-  status config (D.Shift s) | (D.toDate s.date) < config.currentDate = Past
+  status config (D.Shift s) | (D.toDate s.sDate) < config.currentDate = Past
   status config (D.Shift s) =
     let errors = D.validate config (D.Shift s)
         firstErrorStatus = case head errors of
