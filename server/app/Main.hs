@@ -66,18 +66,8 @@ module Main where
 
     update :: Int -> VolunteerDetails -> Handler Volunteer
     update id details = do
-      v <- liftIO $ atomicModifyIORef' ref $ \state ->
-        let vs = vols state
-        in case IM.lookup id vs of
-             Just v -> let v' = v { vName = vdName details
-                                  , vNotes = vdNotes details
-                                  , vOvernightPreference = vdPref details
-                                  , vOvernightGenderPreference = vdGenderPref details
-                                  }
-                       in (state { vols = IM.insert id v' vs }, Just v')
-             _ -> (state, Nothing)
-
-      case v of
+      vol <- liftIO $ updateVolunteer id details
+      case vol of
         Just v -> return v
         _ -> throwError err404
  
