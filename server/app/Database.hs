@@ -136,7 +136,7 @@ module Database (getAllVolunteers, getVolunteer, addVolunteer, updateVolunteer, 
   getAllShifts :: ByteString -> IO [Shift]
   getAllShifts connectionString = do
     conn <- connectPostgreSQL connectionString
-    -- TODO: convert to single db query?
+    -- TODO: convert to single db query
     rVols <- query_ conn
       " select id, name, overnight_pref, overnight_gender_pref, notes\
       \ from volunteer v\
@@ -156,7 +156,7 @@ module Database (getAllVolunteers, getVolunteer, addVolunteer, updateVolunteer, 
   getVolunteerShifts :: ByteString -> ShiftDate -> IO [VolunteerShift]
   getVolunteerShifts connectionString shiftDate = do
     conn <- connectPostgreSQL connectionString
-    -- TODO: convert to single db query?
+    -- TODO: convert to single db query
     rVols <- query conn
       " select id, name, overnight_pref, overnight_gender_pref, notes\
       \ from volunteer v\
@@ -178,16 +178,31 @@ module Database (getAllVolunteers, getVolunteer, addVolunteer, updateVolunteer, 
   addVolunteerShift :: ByteString -> ShiftDate -> Int -> ShiftType -> IO [VolunteerShift]
   addVolunteerShift connectionString shiftDate volId shiftType = do
     conn <- connectPostgreSQL connectionString
-    -- TODO: convert to single db query?
-    _ <- execute conn
-      " insert into volunteer_shift\
-      \   (shiftDate, volunteerId, shiftType)\
-      \ values\
-      \   (?, ?, ?)"
-      ( shiftDate
+    -- TODO: convert to single db query
+    -- Add should be idempotent, shouldn't throw an error if already exists
+    -- So attempt to update first and then add if it isn't there (inefficient!)
+    count <- execute conn
+      " update volunteer_shift\
+      \ set shiftType = ?\
+      \ where shiftDate = ? and volunteerId = ?"
+      ( shiftType
+      , shiftDate
       , volId
-      , shiftType
       )
+    
+    _ <- if count == 0 then
+      execute conn
+        " insert into volunteer_shift\
+        \   (shiftDate, volunteerId, shiftType)\
+        \ values\
+        \   (?, ?, ?)"
+        ( shiftDate
+        , volId
+        , shiftType
+        )
+    else
+      return 0
+  
     rVols <- query conn
       " select id, name, overnight_pref, overnight_gender_pref, notes\
       \ from volunteer v\
@@ -209,7 +224,7 @@ module Database (getAllVolunteers, getVolunteer, addVolunteer, updateVolunteer, 
   removeVolunteerShift :: ByteString -> ShiftDate -> Int -> IO (Maybe [VolunteerShift])
   removeVolunteerShift connectionString shiftDate volId = do
     conn <- connectPostgreSQL connectionString
-    -- TODO: convert to single db query?
+    -- TODO: convert to single db query
     count <- execute conn
       " delete from volunteer_shift\
       \ where shiftDate = ? and volunteerId = ?"
@@ -240,7 +255,7 @@ module Database (getAllVolunteers, getVolunteer, addVolunteer, updateVolunteer, 
   updateVolunteerShift :: ByteString -> ShiftDate -> Int -> ShiftType -> IO (Maybe [VolunteerShift])
   updateVolunteerShift connectionString shiftDate volId shiftType = do
     conn <- connectPostgreSQL connectionString
-    -- TODO: convert to single db query?
+    -- TODO: convert to single db query
     count <- execute conn
       " update volunteer_shift\
       \ set shiftType = ?\

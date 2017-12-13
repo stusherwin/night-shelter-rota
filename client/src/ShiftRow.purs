@@ -112,7 +112,7 @@ spec =
     performAction :: T.PerformAction _ State _ Action
     performAction (CurrentVolShiftEditAction (CVSE.AddCurrentVol _ _))           _ _ = void $ T.modifyState \state -> state { loading = true }
     performAction (CurrentVolShiftEditAction (CVSE.RemoveCurrentVol _))          _ _ = void $ T.modifyState \state -> state { loading = true }
-    performAction (CurrentVolShiftEditAction (CVSE.ChangeCurrentVolShiftType _)) _ _ = void $ T.modifyState \state -> state { loading = true }
+    performAction (CurrentVolShiftEditAction (CVSE.ChangeCurrentVolShiftType _ _)) _ _ = void $ T.modifyState \state -> state { loading = true }
     performAction _ _ _ = pure unit
 
   isWeekend :: Date -> Boolean

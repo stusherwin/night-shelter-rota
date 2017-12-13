@@ -1,9 +1,9 @@
-module App.Data (RuleResult(..), Config, addVolunteerShift, changeVolunteerShift, removeVolunteerShift, canAddVolunteer, hasVolWithId, validate, filterOut, canChangeVolunteerShiftType, updateVolunteer, toDate, hasDate, fromDate, hasVId, vId) where
+module App.Data (RuleResult(..), Config, canAddVolunteer, hasVolWithId, validate, filterOut, canChangeVolunteerShiftType, updateVolunteer, toDate, hasDate, fromDate, hasVId, vId, updateShift) where
 
 import Prelude
   
 import Data.Array ((:))
-import Data.Array (toUnfoldable, length, filter, nubBy, any, findIndex, deleteAt, modifyAt, snoc) as A
+import Data.Array (toUnfoldable, fromFoldable, length, filter, nubBy, any, findIndex, deleteAt, modifyAt, snoc) as A
 import App.Common (justIf, sortWith, mkDate)
 import Data.List (List, findIndex, find, modifyAt, snoc, deleteAt, length, all, nubBy, filter, catMaybes, any, singleton)
 import Data.Date (diff, year, month, day)
@@ -30,20 +30,11 @@ hasVId id (Volunteer v) = v.vId == id
 vId :: Volunteer -> Int
 vId (Volunteer v) = v.vId
 
-addVolunteerShift :: Date -> VolunteerShift -> List Shift -> List Shift
-addVolunteerShift date vol shifts =
+updateShift :: Date -> List VolunteerShift -> List Shift -> List Shift
+updateShift date volShifts shifts =
   case findIndex (hasDate date) shifts of
-    Just i -> fromMaybe shifts $ modifyAt i (\(Shift s) -> Shift s{ sVolunteers = (flip A.snoc) vol s.sVolunteers }) shifts
-    _      -> snoc shifts $ Shift { sDate: fromDate date, sVolunteers: [vol] }
-
-changeVolunteerShift :: Date -> Int -> List Shift -> List Shift
-changeVolunteerShift date volId shifts =
-  case findIndex (hasDate date) shifts of
-    Just i -> fromMaybe shifts $ modifyAt i (\(Shift s) ->
-                case A.findIndex (hasVolWithId volId) s.sVolunteers of
-                  Just j -> Shift s{ sVolunteers = fromMaybe s.sVolunteers $ A.modifyAt j otherShiftType s.sVolunteers }
-                  _      -> Shift s) shifts
-    _      -> shifts
+    Just i -> fromMaybe shifts $ modifyAt i (\(Shift s) -> Shift s{ sVolunteers = A.fromFoldable volShifts }) shifts
+    _      -> snoc shifts $ Shift { sDate: fromDate date, sVolunteers: A.fromFoldable volShifts }
 
 otherShiftType :: VolunteerShift -> VolunteerShift
 otherShiftType (VolunteerShift v@{ vsShiftType: Overnight }) = VolunteerShift v { vsShiftType = Evening }

@@ -38,7 +38,7 @@ type ShiftTypeRadioState = { date :: Date
 
 data Action = AddCurrentVol Date D.ShiftType
             | RemoveCurrentVol Date
-            | ChangeCurrentVolShiftType Date
+            | ChangeCurrentVolShiftType Date D.ShiftType
 
 spec :: T.Spec _ State _ Action
 spec = shiftTypeSpec
@@ -93,7 +93,7 @@ handler = T.simpleSpec performAction T.defaultRender
   performAction :: T.PerformAction _ State _ Action
   performAction (AddCurrentVol _ _)           _ _ = void $ T.modifyState \state -> state { loading = true }
   performAction (RemoveCurrentVol _)          _ _ = void $ T.modifyState \state -> state { loading = true }
-  performAction (ChangeCurrentVolShiftType _) _ _ = void $ T.modifyState \state -> state { loading = true }
+  performAction (ChangeCurrentVolShiftType _ _) _ _ = void $ T.modifyState \state -> state { loading = true }
 
 renderShiftTypeRadio :: _ -> ShiftTypeRadioState -> Array ReactElement
 renderShiftTypeRadio dispatch s = 
@@ -101,7 +101,7 @@ renderShiftTypeRadio dispatch s =
              , RP._id $ "shift-type-" <> toDateString s.date <> "-" <> code s.shiftType
              , RP.name $ "shift-type-" <> toDateString s.date
              , RP.checked $ s.currentShiftType `sameAs` s.shiftType
-             , RP.onChange \_ -> dispatch $ ChangeCurrentVolShiftType s.date
+             , RP.onChange \_ -> dispatch $ ChangeCurrentVolShiftType s.date s.shiftType
              ]
              [ ]
   , RD.label [ RP.className "action-label"

@@ -17,7 +17,7 @@ import React.DOM.Props as RP
 import Thermite as T
 
 import App.Common (tomorrow, modifyWhere, toMonthYearString, isFirstDayOfMonth, addDays, previousWeekday)
-import App.Data (Config, addVolunteerShift, changeVolunteerShift, removeVolunteerShift, updateVolunteer) as D
+import App.Data (Config, updateVolunteer) as D
 import ServerTypes (Shift, Volunteer(..), VolunteerShift(..)) as D
 import App.ShiftRow (Action(..), initialState) as SR
 import App.Row (Action(..), HeaderRowAction(..), State(..), spec) as R
