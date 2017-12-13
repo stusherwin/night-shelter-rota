@@ -93,12 +93,12 @@ spec =
                            , pastClass s.status
                            ]
             ]
-         (  [ RD.td  [ classNames [ "shift-status-icon shift-status collapsing" ] ]
-                     (statusIcon s.status)
-            , RD.td  [ classNames [ "shift-day shift-status collapsing" ] ]
+         (  [ RD.td  [ classNames [ "shift-day shift-status collapsing" ] ]
                      [ RD.text $ S.toUpper $ S.take 3 $ show $ weekday s.date ]
             , RD.td  [ classNames [ "shift-date shift-status collapsing" ] ]
                      [ RD.text $ toDayString s.date ]
+            , RD.td  [ classNames [ "shift-status-icon shift-status collapsing" ] ]
+                     (statusIcon s.status)
             , RD.td  [ classNames [ "vol-count shift-status collapsing" ] ]
                      [ RD.text $ "" <> show s.noOfVols <> "/" <> show s.maxVols ]
             ]

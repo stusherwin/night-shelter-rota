@@ -53,9 +53,9 @@
 }
 
 .ui.table td.shift-status-icon {
-  min-width: 10px;
-  padding-left: 5px;
-  padding-right: 5px;
+  min-width: 20px;
+  padding-left: 0px;
+  padding-right: 10px;
 }
 
 .ui.table td.shift-status-icon i {
