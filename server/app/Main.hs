@@ -2,6 +2,7 @@
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE TypeOperators #-}
+{-# LANGUAGE OverloadedStrings #-}
 
 module Main where
   
@@ -12,105 +13,88 @@ module Main where
   import Data.Time.Clock (getCurrentTime, utctDay)
   import Data.Time.Calendar (toGregorian)
   import Servant
-
+  import Data.ByteString (ByteString)
+  
   import Types 
   import Api
   import Database
 
-  currentDate :: IO (Integer,Int,Int) -- :: (year,month,day)
-  currentDate = getCurrentTime >>= return . toGregorian . utctDay
-  
-  data State = State { shifts :: [Shift]
-                     }
+  connectionString :: ByteString
+  connectionString = "postgres://shelter_rota_user:password@localhost:5432/shelter_rota"
   
   main :: IO ()
   main = do
-    today <- currentDate
-    ref <- newIORef $ initialState today
-    run 8081 (app ref)
+    run 8081 (app connectionString)
      
-  app :: IORef State -> Application
-  app ref = serve fullAPI (server ref)
+  app :: ByteString -> Application
+  app conn = serve fullAPI (server conn)
                             
-  server :: IORef State -> Server FullAPI
-  server ref = appServer ref
-          :<|> serveDirectoryFileServer "client/static"
+  server :: ByteString -> Server FullAPI
+  server conn = appServer conn
+           :<|> serveDirectoryFileServer "client/static"
 
-  appServer :: IORef State -> Server AppAPI
-  appServer ref = volsServer ref
-             :<|> shiftsServer ref
+  appServer :: ByteString -> Server AppAPI
+  appServer conn = volsServer conn
+              :<|> shiftsServer conn
  
-  volsServer :: IORef State -> Server VolsAPI
-  volsServer ref = getAll
-              :<|> add
-              :<|> getOne
-              :<|> update
+  volsServer :: ByteString -> Server VolsAPI
+  volsServer conn = getAll
+               :<|> add
+               :<|> getOne
+               :<|> update
     where
     getAll :: Handler [Volunteer]
-    getAll = do
-      vols <- liftIO getAllVolunteers
-      return vols
+    getAll =
+      liftIO $ getAllVolunteers conn
 
     add :: VolunteerDetails -> Handler Volunteer
     add details = do
-      newId <- liftIO $ addVolunteer details
+      newId <- liftIO $ addVolunteer conn details
       return $ newVolunteer newId details
 
     getOne :: Int -> Handler Volunteer
     getOne id = do
-      vol <- liftIO $ getVolunteer id
-      case vol of
+      result <- liftIO $ getVolunteer conn id
+      case result of
         Just v -> return v
         _ -> throwError err404
 
     update :: Int -> VolunteerDetails -> Handler Volunteer
     update id details = do
-      vol <- liftIO $ updateVolunteer id details
-      case vol of
+      result <- liftIO $ updateVolunteer conn id details
+      case result of
         Just v -> return v
         _ -> throwError err404
  
-  shiftsServer :: IORef State -> Handler [Shift]
-  shiftsServer ref = do
-    shifts <- liftIO getAllShifts
-    return $ shifts
+  shiftsServer :: ByteString -> Server ShiftsAPI
+  shiftsServer conn = getAll
+                 :<|> getOne
+                 :<|> add
+                 :<|> remove
+                 :<|> update
+    where
+    getAll :: Handler [Shift]
+    getAll = 
+      liftIO $ getAllShifts conn
+  
+    getOne :: Int -> Int -> Int -> Handler [VolunteerShift]
+    getOne y m d =
+      liftIO $ getVolunteerShifts conn $ ShiftDate y m d
 
-  initialState :: (Integer, Int, Int) -> State
-  initialState (y, m, d) =
-     let fred  = Volunteer { vId = 1
-                           , vName = "Fred"
-                           , vOvernightPreference = Just PreferAnotherVolunteer
-                           , vOvernightGenderPreference = Nothing
-                           , vNotes = ""
-                           }
-         alice = Volunteer { vId = 2
-                           , vName = "Alice"
-                           , vOvernightPreference = Nothing
-                           , vOvernightGenderPreference = Just Female
-                           , vNotes = ""
-                           }
-         jim   = Volunteer { vId = 3
-                           , vName = "Jim"
-                           , vOvernightPreference = Just PreferToBeAlone
-                           , vOvernightGenderPreference = Just Male
-                           , vNotes = ""
-                           }
-         mary  = Volunteer { vId = 4
-                           , vName = "Mary"
-                           , vOvernightPreference = Nothing
-                           , vOvernightGenderPreference = Nothing
-                           , vNotes = "Only nice people"
-                           }
+    add ::  Int -> Int -> Int -> Int -> ShiftType -> Handler [VolunteerShift]
+    add y m d volId shiftType =
+      liftIO $ addVolunteerShift conn (ShiftDate y m d) volId shiftType
 
-    in State { shifts = [ Shift (ShiftDate (fromInteger y) m d) [ VolunteerShift fred  Overnight
-                                                                , VolunteerShift alice Evening
-                                                                , VolunteerShift jim   Overnight
-                                                                , VolunteerShift mary  Evening
-                                                                ]
+    remove :: Int -> Int -> Int -> Int -> Handler [VolunteerShift]
+    remove y m d volId = do
+      result <- liftIO $ removeVolunteerShift conn (ShiftDate y m d) volId
+      case result of
+        Just vs -> return vs
+        _ -> throwError err404
 
-                        , Shift (ShiftDate (fromInteger y) m (d + 3)) [ VolunteerShift fred Overnight
-                                                                      , VolunteerShift jim  Overnight
-                                                                      , VolunteerShift mary Evening
-                                                                      ]
-                        ]
-             } 
+    update :: Int -> Int -> Int -> Int -> ShiftType -> Handler [VolunteerShift]
+    update y m d volId shiftType = do
+      result <- liftIO $ updateVolunteerShift conn (ShiftDate y m d) volId shiftType
+      case result of
+        Just vs -> return vs
+        _ -> throwError err404

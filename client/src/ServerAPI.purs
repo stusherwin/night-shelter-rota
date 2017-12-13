@@ -15,7 +15,7 @@ import Prim (Array, Int, String)
 import Servant.PureScript.Affjax (AjaxError, affjax, defaultRequest)
 import Servant.PureScript.Settings (SPSettings_(..), gDefaultToURLPiece)
 import Servant.PureScript.Util (encodeHeader, encodeListQuery, encodeQueryItem, encodeURLPiece, getResult)
-import ServerTypes (Shift, Volunteer, VolunteerDetails)
+import ServerTypes (Shift, ShiftType, Volunteer, VolunteerDetails, VolunteerShift)
 
 newtype SPParams_ = SPParams_ { baseURL :: String
                               }
@@ -120,6 +120,107 @@ getApiShifts = do
                  { method = httpMethod
                  , url = reqUrl
                  , headers = defaultRequest.headers <> reqHeaders
+                 }
+  affResp <- affjax affReq
+  getResult affReq decodeJson affResp
+
+getApiShiftsByYearByMonthByDay :: forall eff m.
+                                  MonadAsk (SPSettings_ SPParams_) m => MonadError AjaxError m => MonadAff ( ajax :: AJAX | eff) m
+                                  => Int -> Int -> Int
+                                  -> m (Array VolunteerShift)
+getApiShiftsByYearByMonthByDay year month day = do
+  spOpts_' <- ask
+  let spOpts_ = case spOpts_' of SPSettings_ o -> o
+  let spParams_ = case spOpts_.params of SPParams_ ps_ -> ps_
+  let baseURL = spParams_.baseURL
+  let httpMethod = "GET"
+  let reqUrl = baseURL <> "api" <> "/" <> "shifts"
+        <> "/" <> encodeURLPiece spOpts_' year
+        <> "/" <> encodeURLPiece spOpts_' month
+        <> "/" <> encodeURLPiece spOpts_' day
+  let reqHeaders =
+        []
+  let affReq = defaultRequest
+                 { method = httpMethod
+                 , url = reqUrl
+                 , headers = defaultRequest.headers <> reqHeaders
+                 }
+  affResp <- affjax affReq
+  getResult affReq decodeJson affResp
+
+putApiShiftsByYearByMonthByDayByVolId :: forall eff m.
+                                         MonadAsk (SPSettings_ SPParams_) m => MonadError AjaxError m => MonadAff ( ajax :: AJAX | eff) m
+                                         => ShiftType -> Int -> Int -> Int
+                                         -> Int -> m (Array VolunteerShift)
+putApiShiftsByYearByMonthByDayByVolId reqBody year month day volId = do
+  spOpts_' <- ask
+  let spOpts_ = case spOpts_' of SPSettings_ o -> o
+  let spParams_ = case spOpts_.params of SPParams_ ps_ -> ps_
+  let baseURL = spParams_.baseURL
+  let httpMethod = "PUT"
+  let reqUrl = baseURL <> "api" <> "/" <> "shifts"
+        <> "/" <> encodeURLPiece spOpts_' year
+        <> "/" <> encodeURLPiece spOpts_' month
+        <> "/" <> encodeURLPiece spOpts_' day
+        <> "/" <> encodeURLPiece spOpts_' volId
+  let reqHeaders =
+        []
+  let affReq = defaultRequest
+                 { method = httpMethod
+                 , url = reqUrl
+                 , headers = defaultRequest.headers <> reqHeaders
+                 , content = toNullable <<< Just <<< stringify <<< encodeJson $ reqBody
+                 }
+  affResp <- affjax affReq
+  getResult affReq decodeJson affResp
+
+deleteApiShiftsByYearByMonthByDayByVolId :: forall eff m.
+                                            MonadAsk (SPSettings_ SPParams_) m => MonadError AjaxError m => MonadAff ( ajax :: AJAX | eff) m
+                                            => Int -> Int -> Int -> Int
+                                            -> m (Array VolunteerShift)
+deleteApiShiftsByYearByMonthByDayByVolId year month day volId = do
+  spOpts_' <- ask
+  let spOpts_ = case spOpts_' of SPSettings_ o -> o
+  let spParams_ = case spOpts_.params of SPParams_ ps_ -> ps_
+  let baseURL = spParams_.baseURL
+  let httpMethod = "DELETE"
+  let reqUrl = baseURL <> "api" <> "/" <> "shifts"
+        <> "/" <> encodeURLPiece spOpts_' year
+        <> "/" <> encodeURLPiece spOpts_' month
+        <> "/" <> encodeURLPiece spOpts_' day
+        <> "/" <> encodeURLPiece spOpts_' volId
+  let reqHeaders =
+        []
+  let affReq = defaultRequest
+                 { method = httpMethod
+                 , url = reqUrl
+                 , headers = defaultRequest.headers <> reqHeaders
+                 }
+  affResp <- affjax affReq
+  getResult affReq decodeJson affResp
+
+postApiShiftsByYearByMonthByDayByVolId :: forall eff m.
+                                          MonadAsk (SPSettings_ SPParams_) m => MonadError AjaxError m => MonadAff ( ajax :: AJAX | eff) m
+                                          => ShiftType -> Int -> Int -> Int
+                                          -> Int -> m (Array VolunteerShift)
+postApiShiftsByYearByMonthByDayByVolId reqBody year month day volId = do
+  spOpts_' <- ask
+  let spOpts_ = case spOpts_' of SPSettings_ o -> o
+  let spParams_ = case spOpts_.params of SPParams_ ps_ -> ps_
+  let baseURL = spParams_.baseURL
+  let httpMethod = "POST"
+  let reqUrl = baseURL <> "api" <> "/" <> "shifts"
+        <> "/" <> encodeURLPiece spOpts_' year
+        <> "/" <> encodeURLPiece spOpts_' month
+        <> "/" <> encodeURLPiece spOpts_' day
+        <> "/" <> encodeURLPiece spOpts_' volId
+  let reqHeaders =
+        []
+  let affReq = defaultRequest
+                 { method = httpMethod
+                 , url = reqUrl
+                 , headers = defaultRequest.headers <> reqHeaders
+                 , content = toNullable <<< Just <<< stringify <<< encodeJson $ reqBody
                  }
   affResp <- affjax affReq
   getResult affReq decodeJson affResp

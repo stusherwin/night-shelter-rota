@@ -20,8 +20,12 @@ module Api where
     :<|> Capture "id" Int :> ReqBody '[JSON] VolunteerDetails :> Post '[JSON] Volunteer
 
   type ShiftsAPI =
-    Get '[JSON] [Shift]
-
+         Get '[JSON] [Shift]
+    :<|> Capture "year" Int :> Capture "month" Int :> Capture "day" Int :> Get '[JSON] [VolunteerShift]
+    :<|> Capture "year" Int :> Capture "month" Int :> Capture "day" Int :> Capture "volId" Int :> ReqBody '[JSON] ShiftType :> Put '[JSON] [VolunteerShift]
+    :<|> Capture "year" Int :> Capture "month" Int :> Capture "day" Int :> Capture "volId" Int :> Delete '[JSON] [VolunteerShift]
+    :<|> Capture "year" Int :> Capture "month" Int :> Capture "day" Int :> Capture "volId" Int :> ReqBody '[JSON] ShiftType :> Post '[JSON] [VolunteerShift]
+    
   type FullAPI =
     AppAPI :<|> Raw
   

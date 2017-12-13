@@ -39,7 +39,8 @@ module Types where
                  | Evening
                  deriving (Eq, Show, Generic)
   instance ToJSON ShiftType
-
+  instance FromJSON ShiftType
+  
   data ShiftDate = ShiftDate { year :: Int
                              , month :: Int
                              , day :: Int
@@ -62,3 +63,6 @@ module Types where
   toShiftDate :: Day -> ShiftDate
   toShiftDate day = let (y, m, d) = toGregorian day
                     in ShiftDate (fromInteger y) m d
+
+  fromShiftDate :: ShiftDate -> Day
+  fromShiftDate sd = fromGregorian (toInteger $ year sd) (month sd) (day sd)
