@@ -17,8 +17,8 @@ import React.DOM.Props as RP
 import Thermite as T
 
 import App.Common (tomorrow, modifyWhere, toMonthYearString, isFirstDayOfMonth, addDays, previousWeekday)
-import App.Data (Config, updateVolunteer) as D
-import ServerTypes (Shift, Volunteer(..), VolunteerShift(..)) as D
+import App.Data (Config, updateVolunteer)
+import App.Types (Shift, Volunteer, VolunteerShift)
 import App.ShiftRow (Action(..), initialState) as SR
 import App.Row (Action(..), HeaderRowAction(..), State(..), spec) as R
 import App.CurrentVolShiftEdit (Action(..)) as CVSE
@@ -29,15 +29,15 @@ shiftCount = 28
 data Action = AddShift
             | RowAction Int R.Action
 
-type RosterState = { currentVol :: Maybe D.Volunteer
-                   , shifts :: List D.Shift
+type RosterState = { currentVol :: Maybe Volunteer
+                   , shifts :: List Shift
                    , startDate :: Date
                    , endDate :: Date
                    , loading :: Boolean
                    }
 
 type State = { roster :: RosterState
-             , config :: D.Config
+             , config :: Config
              , rows :: List R.State
              }
 
@@ -75,7 +75,7 @@ spec =
       T.modifyState \state -> adjustPeriod shiftCount state
     performAction _ _ _ = pure unit
     
-initialState :: forall c. Maybe D.Volunteer -> List D.Shift -> D.Config -> State
+initialState :: forall c. Maybe Volunteer -> List Shift -> Config -> State
 initialState currentVol shifts config = 
   let startDate = previousWeekday Monday config.currentDate 
       endDate = addDays (shiftCount - 1) startDate
@@ -90,7 +90,7 @@ initialState currentVol shifts config =
      , rows: rows roster config
      }
  
-rows :: RosterState -> D.Config -> List R.State
+rows :: RosterState -> Config -> List R.State
 rows roster config = rows' roster.startDate
   where   
   rows' :: Date -> List R.State
@@ -115,7 +115,7 @@ preserveLoading = zipWith row
   row (R.ShiftRow old) (R.ShiftRow new) = R.ShiftRow new { loading = old.loading }
   row _ new = new
  
-changeCurrentVol :: Maybe D.Volunteer -> State -> State
+changeCurrentVol :: Maybe Volunteer -> State -> State
 changeCurrentVol currentVol state =
   let roster' = state.roster { currentVol = currentVol
                              , loading = false
@@ -134,7 +134,7 @@ adjustPeriod adj state =
            , rows = rows roster' state.config
            }
 
-shiftUpdated :: List D.Shift -> Date -> State -> State
+shiftUpdated :: List Shift -> Date -> State -> State
 shiftUpdated shifts date state =
   let roster' = state.roster { shifts = shifts }
 

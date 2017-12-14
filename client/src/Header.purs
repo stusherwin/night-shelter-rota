@@ -12,7 +12,7 @@ import Thermite as T
 import Servant.PureScript.Affjax (AjaxError, errorToString)
 
 import App.Common (unsafeEventSelectedIndex, isJustWith, sortWith, classNames)
-import ServerTypes (Volunteer(..))
+import App.Types (Volunteer)
 
 data VolDetailsState = NotEditing
                      | EditingNewVol
@@ -47,7 +47,7 @@ spec = T.simpleSpec performAction render
                NotEditing -> newVolButton
                _ -> []
           <> case state.currentVol, state.volDetailsState of
-               Just (Volunteer { vName }), NotEditing -> editVolButton vName
+               Just v, NotEditing -> editVolButton v.name
                _, _ -> []
           <> statusIcon state
           <> [ RD.h2' [ RD.text "Night Shelter Rota for "
@@ -106,13 +106,13 @@ spec = T.simpleSpec performAction render
   respond _ _ = ChangeCurrentVol Nothing
 
   findVol :: List Volunteer -> Maybe Int -> Maybe Volunteer
-  findVol vols = (=<<) \id -> find (\(Volunteer v) -> v.vId == id) vols
+  findVol vols = (=<<) \id -> find (\v -> v.id == id) vols
 
   option :: _ -> Maybe Volunteer -> Volunteer -> R.ReactElement
-  option dispatch currentVolId (Volunteer v) = RD.option [ RP.selected $ isJustWith (\(Volunteer cv) -> cv.vId == v.vId) currentVolId
-                                             , RP.value $ show v.vId
+  option dispatch currentVolId v = RD.option [ RP.selected $ isJustWith (\cv -> cv.id == v.id) currentVolId
+                                             , RP.value $ show v.id
                                              ]
-                                             [ RD.text v.vName ]
+                                             [ RD.text v.name ]
 
   performAction :: T.PerformAction _ State _ Action
   performAction (ChangeCurrentVol v) _ _ = void $ T.modifyState _ { currentVol = v
@@ -137,13 +137,13 @@ initialState = { vols: Nil
                }
 
 initialDataLoaded :: List Volunteer -> State -> State
-initialDataLoaded vols = _ { vols = sortWith (\(Volunteer v) -> toLower v.vName) vols
+initialDataLoaded vols = _ { vols = sortWith (toLower <<< _.name) vols
                            , reqInProgress = false
                            , initialDataLoaded = true
                            }
 
 volDetailsUpdated :: List Volunteer -> Maybe Volunteer -> State -> State
-volDetailsUpdated vols currentVol = _ { vols = sortWith (\(Volunteer v) -> toLower v.vName) vols
+volDetailsUpdated vols currentVol = _ { vols = sortWith (toLower <<< _.name) vols
                                       , currentVol = currentVol
                                       , volDetailsState = NotEditing
                                       , reqInProgress = false

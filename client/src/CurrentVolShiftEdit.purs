@@ -11,34 +11,26 @@ import React.DOM.Props as RP
 import Thermite as T
 
 import App.Common (toDateString)
-import ServerTypes (Volunteer(..), VolunteerShift(..), Shift(..), ShiftType(..)) as D
-import App.Data (Config, canChangeVolunteerShiftType, hasVolWithId, canAddVolunteer, toDate) as D
-
--- data ShiftType = Overnight
---                | Evening
--- derive instance shiftTypeEq :: Eq ShiftType
--- instance shiftTypeShow :: Show ShiftType
---   where
---   show Overnight = "Overnight"
---   show Evening = "Evening"
+import App.Types (Volunteer, VolunteerShift, Shift, ShiftType(..))
+import App.Data (Config, canChangeVolunteerShiftType, canAddVolunteer)
 
 type State = { name :: String
              , date :: Date
              , loading :: Boolean
-             , shiftType :: Maybe D.ShiftType
+             , shiftType :: Maybe ShiftType
              , canAddOvernight :: Boolean
              , canAddEvening :: Boolean
              , canChangeShiftType :: Boolean
              }
 
 type ShiftTypeRadioState = { date :: Date
-                           , shiftType :: D.ShiftType
-                           , currentShiftType :: D.ShiftType
+                           , shiftType :: ShiftType
+                           , currentShiftType :: ShiftType
                            }
 
-data Action = AddCurrentVol Date D.ShiftType
+data Action = AddCurrentVol Date ShiftType
             | RemoveCurrentVol Date
-            | ChangeCurrentVolShiftType Date D.ShiftType
+            | ChangeCurrentVolShiftType Date ShiftType
 
 spec :: T.Spec _ State _ Action
 spec = shiftTypeSpec
@@ -51,8 +43,8 @@ shiftTypeSpec = T.simpleSpec T.defaultPerformAction render
   render :: T.Render State _ Action
   render dispatch _ s@{ shiftType: Just st } _ | s.canChangeShiftType =
     [ RD.span [ RP.className "shift-type" ]
-              ( renderShiftTypeRadio dispatch { shiftType: D.Overnight, date: s.date, currentShiftType: st }
-             <> renderShiftTypeRadio dispatch { shiftType: D.Evening,   date: s.date, currentShiftType: st }
+              ( renderShiftTypeRadio dispatch { shiftType: Overnight, date: s.date, currentShiftType: st }
+             <> renderShiftTypeRadio dispatch { shiftType: Evening,   date: s.date, currentShiftType: st }
               )
     ]
   render _ _ _ _ = []
@@ -66,7 +58,7 @@ selectedSpec = T.simpleSpec T.defaultPerformAction render
               [ RD.input [ RP._type "checkbox"
                          , RP.disabled $ s.loading || (not s.canAddOvernight && not s.canAddEvening)
                          , RP.checked false
-                         , RP.onChange \_ -> dispatch $ AddCurrentVol s.date $ if s.canAddOvernight then D.Overnight else D.Evening
+                         , RP.onChange \_ -> dispatch $ AddCurrentVol s.date $ if s.canAddOvernight then Overnight else Evening
                          ]
                          []
               , RD.label' []
@@ -100,7 +92,7 @@ renderShiftTypeRadio dispatch s =
   [ RD.input [ RP._type "radio"
              , RP._id $ "shift-type-" <> toDateString s.date <> "-" <> code s.shiftType
              , RP.name $ "shift-type-" <> toDateString s.date
-             , RP.checked $ s.currentShiftType `sameAs` s.shiftType
+             , RP.checked $ s.currentShiftType == s.shiftType
              , RP.onChange \_ -> dispatch $ ChangeCurrentVolShiftType s.date s.shiftType
              ]
              [ ]
@@ -111,36 +103,30 @@ renderShiftTypeRadio dispatch s =
              ]
   ]
   where
-  description :: D.ShiftType -> String
-  description D.Evening   = "Evening only"
-  description D.Overnight = "Overnight"
+  description :: ShiftType -> String
+  description Evening   = "Evening only"
+  description Overnight = "Overnight"
 
-  code :: D.ShiftType -> String
-  code D.Evening   = "evening"
-  code D.Overnight = "overnight"
+  code :: ShiftType -> String
+  code Evening   = "evening"
+  code Overnight = "overnight"
 
-  other :: D.ShiftType -> D.ShiftType
-  other D.Evening   = D.Overnight
-  other D.Overnight = D.Evening
+  other :: ShiftType -> ShiftType
+  other Evening   = Overnight
+  other Overnight = Evening
 
-  sameAs :: D.ShiftType -> D.ShiftType -> Boolean
-  sameAs D.Evening   D.Evening   = true
-  sameAs D.Overnight D.Overnight = true
-  sameAs _ _ = false
+  renderIcon :: ShiftType -> ReactElement
+  renderIcon Evening   = RD.i [ RP.className "vol-icon icon-no-bed" ] []
+  renderIcon Overnight = RD.i [ RP.className "vol-icon icon-bed" ]    []
 
-  renderIcon :: D.ShiftType -> ReactElement
-  renderIcon D.Evening   = RD.i [ RP.className "vol-icon icon-no-bed" ] []
-  renderIcon D.Overnight = RD.i [ RP.className "vol-icon icon-bed" ]    []
-
-initialState :: D.Config -> D.Shift -> D.Volunteer -> State
-initialState config (D.Shift shift) (D.Volunteer cv) = { name: cv.vName
-                               , date: D.toDate shift.sDate
+initialState :: Config -> Shift -> Volunteer -> State
+initialState config shift cv = { name: cv.name
+                               , date: shift.date
                                , loading: false
                                , shiftType: shiftType
-                               , canAddOvernight: D.canAddVolunteer config (D.VolunteerShift { vsShiftType: D.Overnight, vsVolunteer: (D.Volunteer cv)}) (D.Shift shift)
-                               , canAddEvening: D.canAddVolunteer config (D.VolunteerShift { vsShiftType: D.Evening, vsVolunteer: (D.Volunteer cv)}) (D.Shift shift)
-                               , canChangeShiftType: D.canChangeVolunteerShiftType config (D.Volunteer cv) (D.Shift shift)
+                               , canAddOvernight: canAddVolunteer config { shiftType: Overnight, volunteer: cv} shift
+                               , canAddEvening: canAddVolunteer config { shiftType: Evening, volunteer: cv} shift
+                               , canChangeShiftType: canChangeVolunteerShiftType config cv shift
                                }
   where
-  shiftType = find (D.hasVolWithId cv.vId) shift.sVolunteers >>= case _ of
-    (D.VolunteerShift { vsShiftType }) -> Just vsShiftType
+  shiftType = find (\v -> v.volunteer.id == cv.id) shift.volunteers <#> _.shiftType

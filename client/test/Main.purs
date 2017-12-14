@@ -125,4 +125,4 @@ main = runTest do
       
       Assert.equal [ Just ["Fred", "Jim"], Just ["Bob", "Jim"] ]
         $ map (map getVolNames <<< findShiftRow newState)
-        [ mkDate 1 1 2017, mkDate 2 1 2017 ] 
+        [ mkDate 1 1 2017, mkDate 2 1 2017 ]

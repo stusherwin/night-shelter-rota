@@ -1,4 +1,4 @@
-module App.ShiftRow (State, ShiftType(..), Action(..), ShiftStatus(..), RosterData, spec, initialState) where
+module App.ShiftRow (State, Action(..), ShiftStatus(..), RosterData, spec, initialState) where
  
 import Prelude
  
@@ -6,8 +6,7 @@ import Data.DateTime (Date, Weekday(..), weekday)
 import Data.Either (Either(..))
 import Data.Foldable (fold)
 import Data.Lens (Lens', lens, Prism', prism, over, _Just)
-import Data.Array (length) as A
-import Data.List (List(..), find, head, foldl, length, fromFoldable)
+import Data.List (List(..), find, head, foldl, length)
 import Data.Maybe (Maybe(..), maybe)
 import Data.String (take, toUpper, toLower) as S
 import Data.Tuple (Tuple(..), uncurry)
@@ -17,14 +16,11 @@ import React.DOM.Props as RP
 import Thermite as T
  
 import App.Common (onlyIf, classNames, toDayString, sortWith)
-import App.Data (RuleResult(..), Config, validate, toDate, hasDate, fromDate) as D
-import ServerTypes (Volunteer(..), Shift(..)) as D
+import App.Data (Config, validate)
+import App.Data (RuleResult(..)) as D
+import App.Types (Volunteer, Shift, ShiftType(..))
 import App.CurrentVolShiftEdit (State, Action(..), spec, initialState) as CVSE
 import App.VolMarker (State, spec, initialState) as VM
-
-data ShiftType = Overnight
-               | Evening 
-derive instance shiftTypeEq :: Eq ShiftType
 
 data ShiftStatus = Good
                  | Warning String
@@ -42,8 +38,8 @@ type State = { date :: Date
              , loading :: Boolean
              }
 
-type RosterData d = { currentVol :: Maybe D.Volunteer
-                    , shifts :: List D.Shift
+type RosterData d = { currentVol :: Maybe Volunteer
+                    , shifts :: List Shift
                     | d
                     }
  
@@ -139,23 +135,23 @@ spec =
   statusIcon (Info i)    = [ RD.i [ RP.className "icon-info", RP.title i ] [] ]
   statusIcon _ = []
 
-initialState :: forall d. RosterData d -> D.Config -> Date -> State
+initialState :: forall d. RosterData d -> Config -> Date -> State
 initialState roster config date = 
-  let shift@(D.Shift sh) = maybe (D.Shift {sDate: D.fromDate date, sVolunteers: []}) id
-                $ find (D.hasDate date) roster.shifts
+  let shift = maybe { date: date, volunteers: Nil } id
+              $ find (\s -> s.date == date) roster.shifts
   in { date 
-     , noOfVols: A.length sh.sVolunteers
+     , noOfVols: length shift.volunteers
      , maxVols: config.maxVolsPerShift
      , status: status config shift
      , loading: false
      , currentVolShiftEdit: map (CVSE.initialState config shift) roster.currentVol
-     , volMarkers: sortWith (S.toLower <<< _.name) $ map VM.initialState $ fromFoldable sh.sVolunteers
+     , volMarkers: sortWith (S.toLower <<< _.name) $ map VM.initialState shift.volunteers
      }
   where
-  status :: D.Config -> D.Shift -> ShiftStatus
-  status config (D.Shift s) | (D.toDate s.sDate) < config.currentDate = Past
-  status config (D.Shift s) =
-    let errors = D.validate config (D.Shift s)
+  status :: Config -> Shift -> ShiftStatus
+  status config s | s.date < config.currentDate = Past
+  status config s =
+    let errors = validate config s
         firstErrorStatus = case head errors of
           Just (D.Error e)   -> Error
           Just (D.Warning w) -> Warning

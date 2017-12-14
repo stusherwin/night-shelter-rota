@@ -22,9 +22,9 @@ import Control.Monad.Eff.Console (log, CONSOLE)
 import Control.Monad.Eff.Now (nowDate, NOW)
 import Control.Monad.Eff.Unsafe (unsafePerformEff)
 import DOM.Node.Types (Element)
-import Data.Array (toUnfoldable)
 import Data.DateTime (Date, Weekday(..))
 import Data.DateTime.Locale (LocalValue(..))
+import Data.Date (year, month, day)
 import Data.Either (Either(..))
 import Data.Foldable (fold)
 import Data.Lens (Lens', lens, Prism', prism, over, _Just)
@@ -35,17 +35,19 @@ import React.DOM (s)
 import React.DOM as RD
 import React.DOM.Props as RP
 import ReactDOM as RDOM
-import ServerTypes (OvernightPreference(..), OvernightGenderPreference(..), Volunteer(..), VolunteerShift(..), Shift(..), VolunteerDetails(..), ShiftType(..), ShiftDate(..))
 import Thermite as T
  
 import App.Common (updateWhere, sortWith, nextWeekday)
 import App.Header (State, Action(..), spec, initialState, volDetailsUpdated, editCancelled, reqStarted, reqSucceeded, reqFailed, initialDataLoaded) as H
-import App.Data (fromDate, toDate, Config, hasVId, vId, updateVolunteer, updateShift)
+import App.Data (Config, updateVolunteer, updateShift)
 import App.ShiftList (State, Action(..), spec, initialState, changeCurrentVol, shiftUpdated) as SL
-import App.VolDetails (State, Action(..), Details, spec, initialState, disable, enable) as VD
+import App.VolDetails (State, Action(..), spec, initialState, disable, enable) as VD
 import App.ShiftRow (Action(..), initialState) as SR
 import App.Row (Action(..), HeaderRowAction(..), State(..), spec) as R
 import App.CurrentVolShiftEdit (Action(..)) as CVSE
+import App.Types (OvernightPreference(..), OvernightGenderPreference(..), Volunteer, VolunteerShift, Shift, VolunteerDetails, ShiftType(..))
+import App.ServerTypeConversion
+import ServerTypes (OvernightPreference(..), OvernightGenderPreference(..), Volunteer(..), VolunteerShift(..), Shift(..), VolunteerDetails(..), ShiftType(..), ShiftDate(..)) as API
 
 data Action = ShiftListAction SL.Action
             | HeaderAction H.Action
@@ -158,45 +160,39 @@ cancelEdit = do
                               , shiftList = Just $ SL.initialState s.currentVol s.shifts s.config
                               }
 
-addOrUpdateCurrentVol :: VD.Details -> State -> _
+addOrUpdateCurrentVol :: VolunteerDetails -> State -> _
 addOrUpdateCurrentVol d s = case s.currentVol of
-  Just (Volunteer { vId }) -> updateCurrentVol d vId s
+  Just v -> updateCurrentVol d v.id s
   _ -> addNewVol d s
   where
-    updateCurrentVol :: VD.Details -> Int -> State -> _
+    updateCurrentVol :: VolunteerDetails -> Int -> State -> _
     updateCurrentVol d vId { vols, shifts } = do
       _ <- T.modifyState \s -> s { header = H.reqStarted s.header
                                  , volDetails = VD.disable <$> s.volDetails
                                  }
-      resp <- lift $ apiReq $ flip postApiVolsById vId $ VolunteerDetails { vdName: d.name
-                                                                          , vdNotes: d.notes
-                                                                          , vdPref: d.pref
-                                                                          , vdGenderPref: d.genderPref
-                                                                          }
+      resp <- lift $ apiReq $ flip postApiVolsById vId $ toAPIVolDetails d
       case resp of
-        Right vol -> let shifts' = updateVolunteer vol shifts
-                     in void $ T.modifyState $ updateVols { currentVol: Just vol
-                                                          , vols: updateWhere (hasVId vId) vol vols
-                                                          , shifts: shifts'
-                                                          }
+        Right apiVol -> let vol = fromAPIVol apiVol
+                            shifts' = updateVolunteer vol shifts
+                        in void $ T.modifyState $ updateVols { currentVol: Just vol
+                                                             , vols: updateWhere (\v -> v.id == vId) vol vols
+                                                             , shifts: shifts'
+                                                             }
         Left e -> void $ T.modifyState \s -> s { header = H.reqFailed e s.header
                                                , volDetails = VD.enable <$> s.volDetails
                                                }
-    addNewVol :: VD.Details -> State -> _
+    addNewVol :: VolunteerDetails -> State -> _
     addNewVol d { vols, shifts } = do
       _ <- T.modifyState \s -> s { header = H.reqStarted s.header
                                  , volDetails = VD.disable <$> s.volDetails
                                  }
-      resp <- lift $ apiReq $ putApiVols $ VolunteerDetails { vdName: d.name
-                                                            , vdNotes: d.notes
-                                                            , vdPref: d.pref
-                                                            , vdGenderPref: d.genderPref
-                                                            }
+      resp <- lift $ apiReq $ putApiVols $ toAPIVolDetails d
       case resp of
-        Right vol -> void $ T.modifyState $ updateVols { currentVol: Just vol
-                                                       , vols: snoc vols vol
-                                                       , shifts
-                                                       }
+        Right apiVol -> let vol = fromAPIVol apiVol
+                        in  void $ T.modifyState $ updateVols { currentVol: Just vol
+                                                              , vols: snoc vols vol
+                                                              , shifts
+                                                              }
         Left e -> void $ T.modifyState \s -> s { header = H.reqFailed e s.header
                                                , volDetails = VD.enable <$> s.volDetails
                                                }
@@ -211,42 +207,45 @@ addOrUpdateCurrentVol d s = case s.currentVol of
                                                   }
 
 addVolunteerShift :: Date -> ShiftType -> State -> _
-addVolunteerShift date shiftType { currentVol: Just (Volunteer {vId}) } = do
+addVolunteerShift date shiftType { currentVol: Just v } = do
   _ <- T.modifyState \s -> s { header = H.reqStarted s.header
                              , volDetails = VD.disable <$> s.volDetails
                              }
-  let (ShiftDate { year, month, day }) = fromDate date
-  resp <- lift $ apiReq $ putApiShiftsByYearByMonthByDayByVolId shiftType year month day vId
+  let (API.ShiftDate { year, month, day}) = toAPIShiftDate date
+  resp <- lift $ apiReq $ putApiShiftsByYearByMonthByDayByVolId (toAPIShiftType shiftType) year month day v.id
   case resp of
-    Right volShifts -> void $ T.modifyState $ modifyShifts date $ updateShift date (fromFoldable volShifts)
+    Right apiVolShifts -> let volShifts = fromAPIVolShifts apiVolShifts
+                          in  void $ T.modifyState $ modifyShifts date $ updateShift date volShifts
     Left e -> void $ T.modifyState \s -> s { header = H.reqFailed e s.header
                                            , volDetails = VD.enable <$> s.volDetails
                                            }
 addVolunteerShift _ _ _ = pure unit
 
 updateVolunteerShift :: Date -> ShiftType -> State -> _
-updateVolunteerShift date shiftType { currentVol: Just (Volunteer {vId}) } = do
+updateVolunteerShift date shiftType { currentVol: Just v } = do
   _ <- T.modifyState \s -> s { header = H.reqStarted s.header
                              , volDetails = VD.disable <$> s.volDetails
                              }
-  let (ShiftDate { year, month, day }) = fromDate date
-  resp <- lift $ apiReq $ postApiShiftsByYearByMonthByDayByVolId shiftType year month day vId
+  let (API.ShiftDate { year, month, day}) = toAPIShiftDate date
+  resp <- lift $ apiReq $ postApiShiftsByYearByMonthByDayByVolId (toAPIShiftType shiftType) year month day v.id
   case resp of
-    Right volShifts -> void $ T.modifyState $ modifyShifts date $ updateShift date (fromFoldable volShifts)
+    Right apiVolShifts -> let volShifts = fromAPIVolShifts apiVolShifts
+                          in  void $ T.modifyState $ modifyShifts date $ updateShift date volShifts
     Left e -> void $ T.modifyState \s -> s { header = H.reqFailed e s.header
                                            , volDetails = VD.enable <$> s.volDetails
                                            }
 updateVolunteerShift _ _ _ = pure unit
 
 removeVolunteerShift :: Date -> State -> _
-removeVolunteerShift date { currentVol: Just (Volunteer {vId}) } = do
+removeVolunteerShift date { currentVol: Just v } = do
   _ <- T.modifyState \s -> s { header = H.reqStarted s.header
                              , volDetails = VD.disable <$> s.volDetails
                              }
-  let (ShiftDate { year, month, day }) = fromDate date
-  resp <- lift $ apiReq $ deleteApiShiftsByYearByMonthByDayByVolId year month day vId
+  let (API.ShiftDate { year, month, day}) = toAPIShiftDate date
+  resp <- lift $ apiReq $ deleteApiShiftsByYearByMonthByDayByVolId year month day v.id
   case resp of
-    Right volShifts -> void $ T.modifyState $ modifyShifts date $ updateShift date (fromFoldable volShifts)
+    Right apiVolShifts -> let volShifts = fromAPIVolShifts apiVolShifts
+                          in  void $ T.modifyState $ modifyShifts date $ updateShift date volShifts
     Left e -> void $ T.modifyState \s -> s { header = H.reqFailed e s.header
                                            , volDetails = VD.enable <$> s.volDetails
                                            }
@@ -267,15 +266,13 @@ initialState currentDate =
       , config
       }
 
-initialDataLoaded :: Array Volunteer -> Array Shift -> State -> State
+initialDataLoaded :: List Volunteer -> List Shift -> State -> State
 initialDataLoaded vols shifts s =
-  let volList = toUnfoldable vols
-      shiftList = toUnfoldable shifts
-  in s { vols = volList
-       , shifts = shiftList
-       , shiftList = Just $ SL.initialState s.currentVol shiftList s.config
-       , header = H.initialDataLoaded volList s.header
-       }
+  s { vols = vols
+    , shifts = shifts
+    , shiftList = Just $ SL.initialState s.currentVol shifts s.config
+    , header = H.initialDataLoaded vols s.header
+    }
 
 modifyShifts :: Date -> (List Shift -> List Shift) -> State -> State
 modifyShifts date modify s =
@@ -314,7 +311,9 @@ main = unsafePerformEff $ void $ launchAff $ do
                                             <$> (parallel $ apiReq getApiVols)
                                             <*> (parallel $ apiReq getApiShifts)
                                           case volsResp, shiftsResp of
-                                            Right vols, Right shifts -> do
+                                            Right apiVols, Right apiShifts -> do
+                                              let vols = fromAPIVols apiVols
+                                              let shifts = fromAPIShifts apiShifts
                                               let state' = initialDataLoaded vols shifts state
                                               liftEff $ R.writeState ctx state'
                                             Left e, _ -> err e ctx state
@@ -336,4 +335,4 @@ foreign import isServerSide :: Boolean
 
 foreign import getElementById :: forall eff. String -> Eff eff Element
 
-foreign import hot :: forall eff. Eff eff Unit 
+foreign import hot :: forall eff. Eff eff Unit

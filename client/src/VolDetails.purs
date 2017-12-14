@@ -1,4 +1,4 @@
-module App.VolDetails (State, Details, Action(..), spec, initialState, disable, enable) where
+module App.VolDetails (State, Action(..), spec, initialState, disable, enable) where
  
 import Prelude
 
@@ -10,15 +10,9 @@ import React.DOM.Props as RP
 import Thermite as T
  
 import App.Common (unsafeEventValue, classNames, onlyIf, unsafeChecked)
-import ServerTypes (OvernightPreference(..), OvernightGenderPreference(..), Volunteer (..), VolunteerDetails (..))
+import App.Types (OvernightPreference(..), OvernightGenderPreference(..), Volunteer, VolunteerDetails)
 
-type Details = { name :: String 
-               , notes :: String
-               , pref :: Maybe OvernightPreference
-               , genderPref :: Maybe OvernightGenderPreference
-               }
-
-type State = { details :: Details
+type State = { details :: VolunteerDetails
              , title :: String
              , formValid :: Boolean
              , formSubmitted :: Boolean
@@ -30,15 +24,15 @@ data Action = SetName String
             | SetPref (Maybe OvernightPreference)
             | SetGenderPref (Maybe OvernightGenderPreference)
             | SetSubmitted
-            | Save Details
+            | Save VolunteerDetails
             | Cancel
 
-hasPref :: OvernightPreference -> Details -> Boolean
+hasPref :: OvernightPreference -> VolunteerDetails -> Boolean
 hasPref PreferToBeAlone { pref: Just PreferToBeAlone } = true
 hasPref PreferAnotherVolunteer { pref: Just PreferAnotherVolunteer } = true
 hasPref _ _ = false
 
-hasGenderPref :: OvernightGenderPreference -> Details -> Boolean
+hasGenderPref :: OvernightGenderPreference -> VolunteerDetails -> Boolean
 hasGenderPref Male { genderPref: Just Male } = true
 hasGenderPref Female { genderPref: Just Female } = true
 hasGenderPref _ _ = false
@@ -239,14 +233,14 @@ initialState currentVol =
                        , pref: Nothing
                        , genderPref: Nothing
                        }
-      currentVolDetails (Volunteer cv) = { name: cv.vName
-                             , notes: cv.vNotes
-                             , pref: cv.vOvernightPreference
-                             , genderPref: cv.vOvernightGenderPreference
+      currentVolDetails cv = { name: cv.name
+                             , notes: cv.notes
+                             , pref: cv.overnightPreference
+                             , genderPref: cv.overnightGenderPreference
                              }
       details = maybe defaultDetails currentVolDetails currentVol
   in { details
-     , title: maybe "Add new volunteer" (\(Volunteer cv) -> cv.vName <> "'s details") currentVol
+     , title: maybe "Add new volunteer" (\cv -> cv.name <> "'s details") currentVol
      , formValid: isValid details
      , formSubmitted: false
      , readOnly: false
@@ -258,7 +252,7 @@ disable = _ { readOnly = true }
 enable :: State -> State
 enable = _ { readOnly = false }
 
-isValid :: Details -> Boolean
+isValid :: VolunteerDetails -> Boolean
 isValid { name } | length name == 0 = false
 isValid _ = true
 
