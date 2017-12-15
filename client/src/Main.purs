@@ -44,7 +44,6 @@ import App.ShiftList (State, Action(..), spec, initialState, changeCurrentVol, s
 import App.VolDetails (State, Action(..), spec, initialState, disable, enable) as VD
 import App.ShiftRow (Action(..), initialState) as SR
 import App.Row (Action(..), HeaderRowAction(..), State(..), spec) as R
-import App.CurrentVolShiftEdit (Action(..)) as CVSE
 import App.Types (OvernightPreference(..), OvernightGenderPreference(..), Volunteer, VolunteerShift, Shift, VolunteerDetails, ShiftType(..))
 import App.ServerTypeConversion
 import ServerTypes (OvernightPreference(..), OvernightGenderPreference(..), Volunteer(..), VolunteerShift(..), Shift(..), VolunteerDetails(..), ShiftType(..), ShiftDate(..)) as API
@@ -119,11 +118,11 @@ spec = T.focus _header _HeaderAction H.spec
       cancelEdit
     performAction (VolDetailsAction (VD.Save d)) _ s =
       addOrUpdateCurrentVol d s
-    performAction (ShiftListAction (SL.RowAction _ (R.ShiftRowAction (SR.CurrentVolShiftEditAction (CVSE.AddCurrentVol shiftDate shiftType))))) _ s =
+    performAction (ShiftListAction (SL.RowAction _ (R.ShiftRowAction (SR.AddCurrentVol shiftDate shiftType)))) _ s =
       addVolunteerShift shiftDate shiftType s
-    performAction (ShiftListAction (SL.RowAction _ (R.ShiftRowAction (SR.CurrentVolShiftEditAction (CVSE.ChangeCurrentVolShiftType shiftDate shiftType))))) _ s =
+    performAction (ShiftListAction (SL.RowAction _ (R.ShiftRowAction (SR.ChangeCurrentVolShiftType shiftDate shiftType)))) _ s =
       updateVolunteerShift shiftDate shiftType s
-    performAction (ShiftListAction (SL.RowAction _ (R.ShiftRowAction (SR.CurrentVolShiftEditAction (CVSE.RemoveCurrentVol shiftDate))))) _ s =
+    performAction (ShiftListAction (SL.RowAction _ (R.ShiftRowAction (SR.RemoveCurrentVol shiftDate)))) _ s =
       removeVolunteerShift shiftDate s
     performAction _ _ _ = pure unit
 

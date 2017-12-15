@@ -21,7 +21,6 @@ import App.Data (Config, updateVolunteer)
 import App.Types (Shift, Volunteer, VolunteerShift)
 import App.ShiftRow (Action(..), initialState) as SR
 import App.Row (Action(..), HeaderRowAction(..), State(..), spec) as R
-import App.CurrentVolShiftEdit (Action(..)) as CVSE
 
 shiftCount :: Int
 shiftCount = 28
