@@ -1,4 +1,4 @@
-module App.ShiftList (Action(..), State, RosterState, spec, initialState, changeCurrentVol, shiftUpdated) where
+module App.ShiftList (spec, initialState, changeCurrentVol, shiftUpdated, module ShiftListState) where
    
 import Prelude 
 
@@ -11,7 +11,7 @@ import Data.Lens (Lens', lens, Prism', prism, over)
 import Data.List (List(..), zipWith)
 import Data.Maybe (Maybe(..), maybe)
 import Data.Time.Duration (Milliseconds(..))
-import Data.Tuple (Tuple(..), uncurry)
+import Data.Tuple (Tuple(..), uncurry, snd)
 import React.DOM as RD 
 import React.DOM.Props as RP
 import Thermite as T
@@ -19,36 +19,22 @@ import Thermite as T
 import App.Common (tomorrow, modifyWhere, toMonthYearString, isFirstDayOfMonth, addDays, previousWeekday)
 import App.Data (Config, updateVolunteer)
 import App.Types (Shift, Volunteer, VolunteerShift)
-import App.ShiftRow (Action(..), initialState) as SR
-import App.Row (Action(..), HeaderRowAction(..), State(..), spec) as R
-
+import App.ShiftRow (initialState) as SR
+import App.Row (spec) as R
+import ShiftListState
+ 
 shiftCount :: Int
 shiftCount = 28
 
-data Action = AddShift
-            | RowAction Int R.Action
-
-type RosterState = { currentVol :: Maybe Volunteer
-                   , shifts :: List Shift
-                   , startDate :: Date
-                   , endDate :: Date
-                   , loading :: Boolean
-                   }
-
-type State = { roster :: RosterState
-             , config :: Config
-             , rows :: List R.State
-             }
-
-_rows :: Lens' State (List R.State)
+_rows :: Lens' State (List RowState)
 _rows = lens _.rows _{rows = _}
 
-_RowAction :: Prism' Action (Tuple Int R.Action)
+_RowAction :: Prism' Action (Tuple Int RowAction)
 _RowAction = prism (uncurry RowAction) unwrap
   where
   unwrap (RowAction i a) = Right (Tuple i a)
-  unwrap ta = Left ta
-
+  unwrap a = Left a
+ 
 spec :: forall props eff. T.Spec eff State props Action
 spec = 
   ( table $ T.focus _rows _RowAction $ T.foreach \_ -> R.spec )
@@ -68,9 +54,9 @@ spec =
     render dispatch _ state _ = []
 
     performAction :: T.PerformAction _ State _ Action
-    performAction (RowAction _ (R.HeaderRowAction R.PrevPeriod)) _ _ = void do
+    performAction (RowAction _ PrevPeriod) _ _ = void do
       T.modifyState \state -> adjustPeriod (-shiftCount) state
-    performAction (RowAction _ (R.HeaderRowAction R.NextPeriod)) _ _ = void do
+    performAction (RowAction _ NextPeriod) _ _ = void do
       T.modifyState \state -> adjustPeriod shiftCount state
     performAction _ _ _ = pure unit
     
@@ -89,29 +75,29 @@ initialState currentVol shifts config =
      , rows: rows roster config
      }
  
-rows :: RosterState -> Config -> List R.State
+rows :: RosterState -> Config -> List RowState
 rows roster config = rows' roster.startDate
   where   
-  rows' :: Date -> List R.State
+  rows' :: Date -> List RowState
   rows' date | date > roster.endDate = 
-      Cons (R.EndRow { text: "" })
+      Cons (EndRow { text: "" })
     $ Nil
   rows' date | date == roster.startDate =
-      Cons (R.StartRow { text: toMonthYearString date})
-    $ Cons (R.ShiftRow $ SR.initialState roster config date)
+      Cons (StartRow { text: toMonthYearString date})
+    $ Cons (ShiftRow $ SR.initialState roster config date)
     $ rows' $ tomorrow date
   rows' date | isFirstDayOfMonth date =
-      Cons (R.MonthHeaderRow { text: toMonthYearString date })
-    $ Cons (R.ShiftRow $ SR.initialState roster config date)
+      Cons (MonthHeaderRow { text: toMonthYearString date })
+    $ Cons (ShiftRow $ SR.initialState roster config date)
     $ rows' $ tomorrow date
   rows' date =
-      Cons (R.ShiftRow $ SR.initialState roster config date)
+      Cons (ShiftRow $ SR.initialState roster config date)
     $ rows' $ tomorrow date
 
-preserveLoading :: List R.State -> List R.State -> List R.State
+preserveLoading :: List RowState -> List RowState -> List RowState
 preserveLoading = zipWith row
   where
-  row (R.ShiftRow old) (R.ShiftRow new) = R.ShiftRow new { loading = old.loading }
+  row (ShiftRow old) (ShiftRow new) = ShiftRow new { loading = old.loading }
   row _ new = new
  
 changeCurrentVol :: Maybe Volunteer -> State -> State
@@ -137,12 +123,12 @@ shiftUpdated :: List Shift -> Date -> State -> State
 shiftUpdated shifts date state =
   let roster' = state.roster { shifts = shifts }
 
-      isShiftOnDate :: R.State -> Boolean
-      isShiftOnDate (R.ShiftRow s) = s.date == date
+      isShiftOnDate :: RowState -> Boolean
+      isShiftOnDate (ShiftRow s) = s.date == date
       isShiftOnDate _ = false
 
-      cancelLoading :: R.State -> R.State
-      cancelLoading (R.ShiftRow s) = R.ShiftRow s{ loading = false }
+      cancelLoading :: RowState -> RowState
+      cancelLoading (ShiftRow s) = ShiftRow s{ loading = false }
       cancelLoading r = r 
   in state { roster = roster'
            , rows = modifyWhere isShiftOnDate cancelLoading $ preserveLoading state.rows $ rows roster' state.config

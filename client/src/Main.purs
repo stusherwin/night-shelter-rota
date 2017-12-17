@@ -40,10 +40,8 @@ import Thermite as T
 import App.Common (updateWhere, sortWith, nextWeekday)
 import App.Header (State, Action(..), spec, initialState, volDetailsUpdated, editCancelled, reqStarted, reqSucceeded, reqFailed, initialDataLoaded) as H
 import App.Data (Config, updateVolunteer, updateShift)
-import App.ShiftList (State, Action(..), spec, initialState, changeCurrentVol, shiftUpdated) as SL
+import App.ShiftList (State, Action(..), RowAction(..), spec, initialState, changeCurrentVol, shiftUpdated) as SL
 import App.VolDetails (State, Action(..), spec, initialState, disable, enable) as VD
-import App.ShiftRow (Action(..), initialState) as SR
-import App.Row (Action(..), HeaderRowAction(..), State(..), spec) as R
 import App.Types (OvernightPreference(..), OvernightGenderPreference(..), Volunteer, VolunteerShift, Shift, VolunteerDetails, ShiftType(..))
 import App.ServerTypeConversion
 import ServerTypes (OvernightPreference(..), OvernightGenderPreference(..), Volunteer(..), VolunteerShift(..), Shift(..), VolunteerDetails(..), ShiftType(..), ShiftDate(..)) as API
@@ -118,11 +116,11 @@ spec = T.focus _header _HeaderAction H.spec
       cancelEdit
     performAction (VolDetailsAction (VD.Save d)) _ s =
       addOrUpdateCurrentVol d s
-    performAction (ShiftListAction (SL.RowAction _ (R.ShiftRowAction (SR.AddCurrentVol shiftDate shiftType)))) _ s =
+    performAction (ShiftListAction (SL.RowAction _ (SL.AddCurrentVol shiftDate shiftType))) _ s =
       addVolunteerShift shiftDate shiftType s
-    performAction (ShiftListAction (SL.RowAction _ (R.ShiftRowAction (SR.ChangeCurrentVolShiftType shiftDate shiftType)))) _ s =
+    performAction (ShiftListAction (SL.RowAction _ (SL.ChangeCurrentVolShiftType shiftDate shiftType))) _ s =
       updateVolunteerShift shiftDate shiftType s
-    performAction (ShiftListAction (SL.RowAction _ (R.ShiftRowAction (SR.RemoveCurrentVol shiftDate)))) _ s =
+    performAction (ShiftListAction (SL.RowAction _ (SL.RemoveCurrentVol shiftDate))) _ s =
       removeVolunteerShift shiftDate s
     performAction _ _ _ = pure unit
 
@@ -290,6 +288,7 @@ type APIEffect eff = ReaderT MySettings (ExceptT AjaxError (Aff (ajax :: AJAX, e
 
 apiReq :: forall a. Generic a => APIEffect _ a -> Aff _ (Either AjaxError a)
 apiReq m = do
+  delay $ Milliseconds 5000.0
   response <- runExceptT $ runReaderT m settings
   case response of
     Left err -> do

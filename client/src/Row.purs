@@ -1,4 +1,4 @@
-module App.Row (State(..), HeaderState, Action(..), HeaderRowAction(..), spec) where
+module App.Row (spec) where
 
 import Prelude
  
@@ -8,74 +8,49 @@ import React.DOM as RD
 import React.DOM.Props as RP
 import Thermite as T
 
-import App.ShiftRow (Action, State, spec) as SR
-
-data HeaderRowAction = PrevPeriod
-                     | NextPeriod
-
-data Action = ShiftRowAction SR.Action
-            | HeaderRowAction HeaderRowAction
-
-type HeaderState = { text :: String 
-                   }
-
-data State = ShiftRow SR.State
-           | StartRow HeaderState
-           | MonthHeaderRow HeaderState
-           | EndRow HeaderState
+import App.ShiftRow (spec) as SR
+import ShiftListState
 
 noOfCols :: Int
 noOfCols = 8
 
-_HeaderRowAction :: Prism' Action HeaderRowAction
-_HeaderRowAction = prism HeaderRowAction unwrap
-  where
-  unwrap (HeaderRowAction a) = Right a
-  unwrap ra = Left ra
-
-_ShiftRowAction :: Prism' Action SR.Action
-_ShiftRowAction = prism ShiftRowAction unwrap
-  where
-  unwrap (ShiftRowAction a) = Right a
-  unwrap ra = Left ra
-
-_StartRow :: Prism' State HeaderState
+_StartRow :: Prism' RowState HeaderRowState
 _StartRow = prism StartRow unwrap
   where
   unwrap (StartRow s) = Right s
   unwrap r = Left r
 
-_MonthHeaderRow :: Prism' State HeaderState
+_MonthHeaderRow :: Prism' RowState HeaderRowState
 _MonthHeaderRow = prism MonthHeaderRow unwrap
   where
   unwrap (MonthHeaderRow s) = Right s
   unwrap r = Left r
 
-_EndRow :: Prism' State HeaderState
+_EndRow :: Prism' RowState HeaderRowState
 _EndRow = prism EndRow unwrap
   where
   unwrap (EndRow s) = Right s
   unwrap r = Left r
 
-_ShiftRow :: Prism' State SR.State
+_ShiftRow :: Prism' RowState ShiftRowState
 _ShiftRow = prism ShiftRow unwrap
   where
   unwrap (ShiftRow s) = Right s
   unwrap r = Left r
 
-spec :: forall props eff. T.Spec eff State props Action
+spec :: forall props eff. T.Spec eff RowState props RowAction
 spec = 
-  (  T.split _StartRow (T.match _HeaderRowAction startRow)
-  <> T.split _MonthHeaderRow (T.match _HeaderRowAction monthHeaderRow)
-  <> T.split _ShiftRow (T.match _ShiftRowAction SR.spec)
-  <> T.split _EndRow (T.match _HeaderRowAction endRow)
+  (  T.split _StartRow startRow
+  <> T.split _MonthHeaderRow monthHeaderRow
+  <> T.split _ShiftRow SR.spec
+  <> T.split _EndRow endRow
   )
 
   where
-  startRow :: T.Spec _ HeaderState _ HeaderRowAction
+  startRow :: T.Spec _ HeaderRowState _ RowAction
   startRow = T.simpleSpec T.defaultPerformAction render
     where
-    render :: T.Render HeaderState _ HeaderRowAction
+    render :: T.Render HeaderRowState _ RowAction
     render dispatch _ state _ = [ RD.tr [ RP.className "month-header-row" ]
                                         [ RD.td [ RP.colSpan noOfCols ]
                                                 [ RD.text state.text
@@ -97,10 +72,10 @@ spec =
                                         ]
                                 ]
   
-  monthHeaderRow :: T.Spec _ HeaderState _ HeaderRowAction
+  monthHeaderRow :: T.Spec _ HeaderRowState _ RowAction
   monthHeaderRow = T.simpleSpec T.defaultPerformAction render
     where
-    render :: T.Render HeaderState _ HeaderRowAction
+    render :: T.Render HeaderRowState _ RowAction
     render dispatch _ state _ = [ RD.tr [ RP.className "month-header-row" ]
                                         [ RD.td [ RP.colSpan noOfCols ]
                                                 [ RD.text state.text
@@ -108,10 +83,10 @@ spec =
                                         ]
                                 ]
    
-  endRow :: T.Spec _ HeaderState _ HeaderRowAction
+  endRow :: T.Spec _ HeaderRowState _ RowAction
   endRow = T.simpleSpec T.defaultPerformAction render
     where
-    render :: T.Render HeaderState _ HeaderRowAction
+    render :: T.Render HeaderRowState _ RowAction
     render dispatch _ state _ = [ RD.tr [ RP.className "month-header-row" ]
                                         [ RD.td [ RP.colSpan noOfCols ]
                                                 [ RD.a [ RP.href "#"
