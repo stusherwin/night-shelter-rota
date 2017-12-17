@@ -36,6 +36,7 @@ type HeaderRowState = { text :: String
                       }
 
 type ShiftRowState = { date :: Date
+                     , currentDate :: Date
                      , status :: ShiftStatus
                      , currentVol :: Maybe CurrentVolState
                      , noOfVols :: Int
@@ -66,5 +67,4 @@ data ShiftStatus = Good
                  | Warning String
                  | Error String
                  | Info String
-                 | Past
                  | OK

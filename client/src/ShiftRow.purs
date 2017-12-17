@@ -33,19 +33,20 @@ spec = T.simpleSpec performAction render
 
   render :: T.Render ShiftRowState _ RowAction
   render dispatch _ state _ =
-    [ RD.tr [ classNames $ weekendClass state.date
-                        <> loadingClass state.loading
-                        <> statusClass state.status
-                        <> pastClass state.status
+    [ RD.tr [ classNames $ weekendClass state
+                        <> loadingClass state
+                        <> statusClass state
+                        <> pastClass state
+                        <> todayClass state
             ]
             [ RD.td [ classNames [ "shift-day shift-status collapsing" ] ]
                     [ RD.text $ S.toUpper $ S.take 3 $ show $ weekday state.date ]
             , RD.td [ classNames [ "shift-date shift-status collapsing" ] ]
                     [ RD.text $ toDayString state.date ]
-            , RD.td [ classNames [ "shift-status-icon shift-status collapsing" ] ]
-                    (statusIcon state.status)
             , RD.td [ classNames [ "vol-count shift-status collapsing" ] ]
                     [ RD.text $ "" <> show state.noOfVols <> "/" <> show state.maxVols ]
+            , RD.td [ classNames [ "shift-status-icon shift-status collapsing" ] ]
+                  $ statusIcon state
             , RD.td [ classNames [ "vol-markers shift-status collapsing" ] ]
                   $ fromFoldable $ map renderVolMarker state.volMarkers
             , RD.td [ classNames [ "shift-status" ] ]
@@ -55,29 +56,34 @@ spec = T.simpleSpec performAction render
             ]
     ]
     where
-    weekendClass :: Date -> Array String
-    weekendClass date | not $ isWeekday date = [ "weekend" ]
+    weekendClass :: ShiftRowState -> Array String
+    weekendClass { date } | not $ isWeekday date = [ "weekend" ]
     weekendClass _ = []
 
-    loadingClass true = [ "loading" ]
+    loadingClass :: ShiftRowState -> Array String
+    loadingClass { loading } | loading = [ "loading" ]
     loadingClass _ = []
 
-    pastClass :: ShiftStatus -> Array String
-    pastClass Past = [ "past" ]
+    pastClass :: ShiftRowState -> Array String
+    pastClass { date, currentDate } | date < currentDate = [ "past" ]
     pastClass _ = [] 
 
-    statusClass :: ShiftStatus -> Array String
-    statusClass Good        = [ "positive" ]
-    statusClass (Error _)   = [ "negative" ]
-    statusClass (Warning _) = [ "warning" ]
+    todayClass :: ShiftRowState -> Array String
+    todayClass { date, currentDate } | date == currentDate = [ "today" ]
+    todayClass _ = [] 
+
+    statusClass :: ShiftRowState -> Array String
+    -- statusClass Good        = [ "positive1" ]
+    statusClass { status: Error _ }   = [ "negative1" ]
+    statusClass { status: Warning _ } = [ "warning1" ]
     statusClass _ = []
 
-    statusIcon :: ShiftStatus -> Array ReactElement
-    statusIcon Past        = [ RD.i [ RP.className "icon-clock", RP.title "This shift is in the past" ] [] ]
-    statusIcon Good        = [ RD.i [ RP.className "icon-ok" ] [] ]
-    statusIcon (Error e)   = [ RD.i [ RP.className "icon-warning", RP.title e ] [] ]
-    statusIcon (Warning w) = [ RD.i [ RP.className "icon-info", RP.title w ] [] ]
-    statusIcon (Info i)    = [ RD.i [ RP.className "icon-info", RP.title i ] [] ]
+    statusIcon :: ShiftRowState -> Array ReactElement
+    statusIcon { date, currentDate } | date < currentDate = [ RD.i [ RP.className "icon-clock", RP.title "This shift is in the past" ] [] ]
+    -- statusIcon Good        = [ RD.i [ RP.className "icon-ok" ] [] ]
+    statusIcon { status: Error e }   = [ RD.i [ RP.className "icon-warning", RP.title e ] [] ]
+    statusIcon { status: Warning w } = [ RD.i [ RP.className "icon-info", RP.title w ] [] ]
+    statusIcon { status: Info i }    = [ RD.i [ RP.className "icon-info", RP.title i ] [] ]
     statusIcon _ = []
 
     renderVolMarker :: VolMarkerState -> ReactElement
@@ -183,7 +189,8 @@ spec = T.simpleSpec performAction render
 
 initialState :: RosterState -> ShiftRuleConfig -> Date -> ShiftRowState
 initialState roster config date = 
-  { date 
+  { date
+  , currentDate: config.currentDate
   , noOfVols: length shift.volunteers
   , maxVols: config.maxVolsPerShift
   , status: status
@@ -195,7 +202,6 @@ initialState roster config date =
   shift = maybe { date: date, volunteers: Nil } id
               $ find (\s -> s.date == date) roster.shifts
   status :: ShiftStatus
-  status | shift.date < config.currentDate = Past
   status =
     let errors = validateShift config shift
         firstErrorStatus = case head errors of
@@ -241,4 +247,4 @@ initialState roster config date =
                        , canAddOvernight: canAddVolunteer config { shiftType: Overnight, volunteer: cv} shift
                        , canAddEvening: canAddVolunteer config { shiftType: Evening, volunteer: cv} shift
                        , canChangeShiftType: canChangeVolunteerShiftType config cv shift
-                       }
+                       } 

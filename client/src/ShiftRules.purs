@@ -65,7 +65,7 @@ validateShift config shift =
   collectViolations params $ toUnfoldable [ must <<< notHaveSameVolunteerTwice
                                           , ignoreIf (isPast shift) <<< should <<< notExceedMaxVolunteers
                                           , ignoreIf (isPast shift) <<< mustIf (isLooming shift) <<< haveAtLeastOneVolunteer
-                                          , ignoreIf (isPast shift) <<< could <<< haveMoreThanOneVolunteer
+                                          -- , ignoreIf (isPast shift) <<< could <<< haveMoreThanOneVolunteer
                                           , ignoreIf (isPast shift) <<< mustIf (isLooming shift) <<< haveAnOvernightVolunteer
                                           , ignoreIf (isPast shift) <<< should <<< notViolateAnyVolsSharingPrefs
                                           ]
@@ -89,7 +89,7 @@ validateShift config shift =
 
   must   = map Error
   should = map Warning
-  could  = map Info
+  -- could  = map Info
   mustIf condition   = map $ if condition then Error else const Neutral
   ignoreIf condition = map $ if condition then const Neutral else id
 
