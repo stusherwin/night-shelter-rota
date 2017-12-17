@@ -45,3 +45,7 @@ type VolunteerDetails = { name :: String
                         , pref :: Maybe OvernightPreference
                         , genderPref :: Maybe OvernightGenderPreference
                         }
+
+otherShiftType :: ShiftType -> ShiftType
+otherShiftType Evening   = Overnight
+otherShiftType Overnight = Evening

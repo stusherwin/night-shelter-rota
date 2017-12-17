@@ -1,4 +1,4 @@
-module App.Data (RuleResult(..), Config, canAddVolunteer, validate, filterOut, canChangeVolunteerShiftType, updateVolunteer, updateShift) where
+module App.ShiftRules (RuleResult(..), ShiftRuleConfig, canAddVolunteer, validateShift, filterOut, canChangeVolunteerShiftType) where
 
 import Prelude
 
@@ -12,42 +12,15 @@ import Data.Int (fromString, toNumber)
 import Data.Maybe (Maybe(..), fromMaybe, isJust)
 import Data.Time.Duration (Days(..))
 
-import App.Types (Shift, Volunteer, OvernightPreference(..), OvernightGenderPreference(..), VolunteerShift, ShiftType(..))
+import App.Types (Shift, Volunteer, OvernightPreference(..), OvernightGenderPreference(..), VolunteerShift, ShiftType(..), otherShiftType)
 
-updateShift :: Date -> List VolunteerShift -> List Shift -> List Shift
-updateShift date volShifts shifts =
-  case findIndex (\s -> s.date == date) shifts of
-    Just i -> fromMaybe shifts $ modifyAt i (_ { volunteers = volShifts }) shifts
-    _      -> shifts `snoc` { date, volunteers: volShifts }
-
-otherShiftType :: VolunteerShift -> VolunteerShift
-otherShiftType v@{ shiftType: Overnight } = v { shiftType = Evening }
-otherShiftType v@{ shiftType: Evening }   = v { shiftType = Overnight }
-
-removeVolunteerShift :: Date -> Volunteer -> List Shift -> List Shift
-removeVolunteerShift date v shifts =
-  case findIndex (\s -> s.date == date) shifts of
-    Just i -> fromMaybe shifts $ modifyAt i (\s ->
-                case findIndex (\vs -> vs.volunteer.id == v.id) s.volunteers of
-                  Just j -> s{ volunteers = fromMaybe s.volunteers $ deleteAt j s.volunteers }
-                  _      -> s) shifts
-    _      -> shifts
-
-updateVolunteer :: Volunteer -> List Shift -> List Shift
-updateVolunteer v' = map updateShift
-  where
-  updateShift s = s { volunteers = map updateVol s.volunteers }
-
-  updateVol vs | vs.volunteer.id == v'.id = vs { volunteer = v' }
-  updateVol vs = vs
-
-type Config = { currentDate :: Date
-              , maxVolsPerShift :: Int
-              , urgentPeriodDays :: Int
-              }
+type ShiftRuleConfig = { currentDate :: Date
+                       , maxVolsPerShift :: Int
+                       , urgentPeriodDays :: Int
+                       }
   
 type RuleParams = { shift :: Shift
-                  , config :: Config
+                  , config :: ShiftRuleConfig
                   }
 
 type Rule = RuleParams -> Maybe String
@@ -56,10 +29,6 @@ data RuleResult = Error String
                 | Warning String
                 | Info String
                 | Neutral
-
-isError :: Maybe RuleResult -> Boolean
-isError (Just (Error _)) = true
-isError _                = false
 
 isOvernight :: VolunteerShift -> Boolean
 isOvernight { shiftType: Overnight } = true
@@ -75,23 +44,24 @@ isAllowed params = satisfies params $ toUnfoldable [ notHaveSameVolunteerTwice
   satisfies :: RuleParams -> List Rule -> Boolean
   satisfies p = all id <<< map (not <<< isJust) <<< (flip flap) p
 
-canAddVolunteer :: Config -> VolunteerShift -> Shift -> Boolean
+canAddVolunteer :: ShiftRuleConfig -> VolunteerShift -> Shift -> Boolean
 canAddVolunteer config volShift s =
   isAllowed { shift: s{ volunteers = Cons volShift s.volunteers }
             , config
             }
 
-canChangeVolunteerShiftType :: Config -> Volunteer -> Shift -> Boolean
+canChangeVolunteerShiftType :: ShiftRuleConfig -> Volunteer -> Shift -> Boolean
 canChangeVolunteerShiftType config v s =
   case find (\vs -> vs.volunteer.id == v.id) s.volunteers of
     Nothing -> false
-    (Just volShift) ->
-      isAllowed { shift: s{ volunteers = Cons (otherShiftType volShift) (filterOut v s.volunteers) }
-                , config
-                }
+    (Just vs) ->
+      let vs' = vs { shiftType = otherShiftType vs.shiftType }
+      in  isAllowed { shift: s{ volunteers = Cons vs' (filterOut v s.volunteers) }
+                    , config
+                    }
 
-validate :: Config -> Shift -> List RuleResult
-validate config shift =
+validateShift :: ShiftRuleConfig -> Shift -> List RuleResult
+validateShift config shift =
   collectViolations params $ toUnfoldable [ must <<< notHaveSameVolunteerTwice
                                           , ignoreIf (isPast shift) <<< should <<< notExceedMaxVolunteers
                                           , ignoreIf (isPast shift) <<< mustIf (isLooming shift) <<< haveAtLeastOneVolunteer

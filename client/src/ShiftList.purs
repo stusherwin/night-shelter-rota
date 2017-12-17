@@ -17,7 +17,7 @@ import React.DOM.Props as RP
 import Thermite as T
 
 import App.Common (tomorrow, modifyWhere, toMonthYearString, isFirstDayOfMonth, addDays, previousWeekday)
-import App.Data (Config, updateVolunteer)
+import App.ShiftRules (ShiftRuleConfig)
 import App.Types (Shift, Volunteer, VolunteerShift)
 import App.ShiftRow (initialState) as SR
 import App.Row (spec) as R
@@ -60,7 +60,7 @@ spec =
       T.modifyState \state -> adjustPeriod shiftCount state
     performAction _ _ _ = pure unit
     
-initialState :: forall c. Maybe Volunteer -> List Shift -> Config -> State
+initialState :: forall c. Maybe Volunteer -> List Shift -> ShiftRuleConfig -> State
 initialState currentVol shifts config = 
   let startDate = previousWeekday Monday config.currentDate 
       endDate = addDays (shiftCount - 1) startDate
@@ -75,7 +75,7 @@ initialState currentVol shifts config =
      , rows: rows roster config
      }
  
-rows :: RosterState -> Config -> List RowState
+rows :: RosterState -> ShiftRuleConfig -> List RowState
 rows roster config = rows' roster.startDate
   where   
   rows' :: Date -> List RowState

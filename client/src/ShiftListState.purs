@@ -3,7 +3,7 @@ module ShiftListState where
 import Data.List (List(..))
 import Data.Maybe (Maybe(..))
 import Data.DateTime (Date, Weekday(..), weekday)
-import App.Data(Config(..))
+import App.ShiftRules(ShiftRuleConfig(..))
 
 import App.Types (Volunteer, Shift, VolunteerShift, ShiftType(..), OvernightPreference(..), OvernightGenderPreference(..))
 
@@ -16,7 +16,7 @@ data RowAction = PrevPeriod
 data Action = RowAction Int RowAction
 
 type State = { roster :: RosterState
-             , config :: Config
+             , config :: ShiftRuleConfig
              , rows :: List RowState
              }
 

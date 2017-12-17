@@ -1,11 +1,11 @@
-module App.Common (unsafeEventValue, unsafeEventSelectedIndex, midnight, tomorrow, toDateString, updateWhere, modifyWhere, justIf, default, onlyIf, classNames, isJustWith, addDays, toMonthYearString, isFirstDayOfMonth, daysLeftInMonth, toDayString, sortWith, previousWeekday, nextWeekday, unsafeChecked, mkDate) where
+module App.Common (unsafeEventValue, unsafeEventSelectedIndex, midnight, tomorrow, toDateString, updateWhere, modifyWhere, justIf, default, onlyIf, classNames, isJustWith, addDays, toMonthYearString, isFirstDayOfMonth, daysLeftInMonth, toDayString, sortWith, previousWeekday, nextWeekday, unsafeChecked, mkDate, isWeekday) where
   
 import Prelude 
 
 import Data.Array (filter, elemIndex) as A
 import Data.List (List, sortBy, findIndex, updateAt, modifyAt)
 import Data.DateTime (DateTime(..), Date, Time(..), canonicalDate, date, adjust, month, year, day)
-import Data.Date (lastDayOfMonth, diff, Weekday, weekday)
+import Data.Date (lastDayOfMonth, diff, Weekday(..), weekday)
 import Data.Either (fromRight)
 import Data.Enum (fromEnum, toEnum)
 import Data.Formatter.DateTime (formatDateTime)
@@ -91,7 +91,12 @@ isFirstDayOfMonth :: Date -> Boolean
 isFirstDayOfMonth date = case toEnum 1 of
                            Just d | day date == d -> true
                            _ -> false
-
+isWeekday :: Date -> Boolean
+isWeekday date = case weekday date of
+                   Saturday -> false
+                   Sunday -> false
+                   _ -> true
+    
 daysLeftInMonth :: Date -> Int
 daysLeftInMonth date = (floor daysDiff) + 1
   where

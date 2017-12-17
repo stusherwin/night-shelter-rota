@@ -28,8 +28,9 @@ import Data.Date (year, month, day)
 import Data.Either (Either(..))
 import Data.Foldable (fold)
 import Data.Lens (Lens', lens, Prism', prism, over, _Just)
-import Data.List (List(..), snoc, last, fromFoldable)
-import Data.Maybe (Maybe(..), maybe)
+import Data.List (List(..), snoc, last, fromFoldable, findIndex)
+import Data.List (List(..), findIndex, find, modifyAt, snoc, deleteAt, length, all, nubBy, filter, catMaybes, any, singleton, length, filter, nubBy, any, findIndex, deleteAt, modifyAt, snoc)
+import Data.Maybe (Maybe(..), maybe, fromMaybe)
 import React as R
 import React.DOM (s)
 import React.DOM as RD
@@ -39,7 +40,7 @@ import Thermite as T
  
 import App.Common (updateWhere, sortWith, nextWeekday)
 import App.Header (State, Action(..), spec, initialState, volDetailsUpdated, editCancelled, reqStarted, reqSucceeded, reqFailed, initialDataLoaded) as H
-import App.Data (Config, updateVolunteer, updateShift)
+import App.ShiftRules (ShiftRuleConfig)
 import App.ShiftList (State, Action(..), RowAction(..), spec, initialState, changeCurrentVol, shiftUpdated) as SL
 import App.VolDetails (State, Action(..), spec, initialState, disable, enable) as VD
 import App.Types (OvernightPreference(..), OvernightGenderPreference(..), Volunteer, VolunteerShift, Shift, VolunteerDetails, ShiftType(..))
@@ -57,7 +58,7 @@ type State = { vols :: List Volunteer
              , currentVol :: Maybe Volunteer
              , header :: H.State
              , volDetails :: Maybe VD.State 
-             , config :: Config
+             , config :: ShiftRuleConfig
              }
  
 _shiftList :: Lens' State (Maybe SL.State)
@@ -278,6 +279,20 @@ modifyShifts date modify s =
        , shiftList = SL.shiftUpdated shifts' date <$> s.shiftList
        , header = H.reqSucceeded s.header
        }
+
+updateShift :: Date -> List VolunteerShift -> List Shift -> List Shift
+updateShift date volShifts shifts =
+  case findIndex (\s -> s.date == date) shifts of
+    Just i -> fromMaybe shifts $ modifyAt i (_ { volunteers = volShifts }) shifts
+    _      -> shifts `snoc` { date, volunteers: volShifts }
+
+updateVolunteer :: Volunteer -> List Shift -> List Shift
+updateVolunteer v' = map updateShift
+  where
+  updateShift s = s { volunteers = map updateVol s.volunteers }
+
+  updateVol vs | vs.volunteer.id == v'.id = vs { volunteer = v' }
+  updateVol vs = vs
 
 type MySettings = SPSettings_ SPParams_
 

@@ -16,10 +16,10 @@ import React.DOM as RD
 import React.DOM.Props as RP
 import Thermite as T
    
-import App.Common (onlyIf, classNames, toDayString, sortWith, justIf, toDateString)
-import App.Data (Config, validate, canChangeVolunteerShiftType, canAddVolunteer)
-import App.Data (RuleResult(..)) as D
-import App.Types (Volunteer, Shift, VolunteerShift, ShiftType(..), OvernightPreference(..), OvernightGenderPreference(..))
+import App.Common (onlyIf, classNames, toDayString, sortWith, justIf, toDateString, isWeekday)
+import App.ShiftRules (ShiftRuleConfig, validateShift, canChangeVolunteerShiftType, canAddVolunteer)
+import App.ShiftRules (RuleResult(..)) as SR
+import App.Types (Volunteer, Shift, VolunteerShift, ShiftType(..), OvernightPreference(..), OvernightGenderPreference(..), otherShiftType)
 import ShiftListState
  
 spec :: T.Spec _ ShiftRowState _ RowAction
@@ -33,11 +33,10 @@ spec = T.simpleSpec performAction render
 
   render :: T.Render ShiftRowState _ RowAction
   render dispatch _ state _ =
-    [ RD.tr [ classNames $ [ onlyIf (isWeekend state.date) "weekend"
-                           , onlyIf state.loading "loading"
-                           , statusClass state.status
-                           , pastClass state.status
-                           ]
+    [ RD.tr [ classNames $ weekendClass state.date
+                        <> loadingClass state.loading
+                        <> statusClass state.status
+                        <> pastClass state.status
             ]
             [ RD.td [ classNames [ "shift-day shift-status collapsing" ] ]
                     [ RD.text $ S.toUpper $ S.take 3 $ show $ weekday state.date ]
@@ -56,21 +55,22 @@ spec = T.simpleSpec performAction render
             ]
     ]
     where
-    isWeekend :: Date -> Boolean
-    isWeekend date = case weekday date of
-      Saturday -> true
-      Sunday   -> true
-      _ -> false 
+    weekendClass :: Date -> Array String
+    weekendClass date | not $ isWeekday date = [ "weekend" ]
+    weekendClass _ = []
 
-    pastClass :: ShiftStatus -> String
-    pastClass Past = "past"
-    pastClass _ = "" 
+    loadingClass true = [ "loading" ]
+    loadingClass _ = []
 
-    statusClass :: ShiftStatus -> String
-    statusClass Good        = "positive"
-    statusClass (Error _)   = "negative"
-    statusClass (Warning _) = "warning"
-    statusClass _ = ""
+    pastClass :: ShiftStatus -> Array String
+    pastClass Past = [ "past" ]
+    pastClass _ = [] 
+
+    statusClass :: ShiftStatus -> Array String
+    statusClass Good        = [ "positive" ]
+    statusClass (Error _)   = [ "negative" ]
+    statusClass (Warning _) = [ "warning" ]
+    statusClass _ = []
 
     statusIcon :: ShiftStatus -> Array ReactElement
     statusIcon Past        = [ RD.i [ RP.className "icon-clock", RP.title "This shift is in the past" ] [] ]
@@ -148,10 +148,6 @@ spec = T.simpleSpec performAction render
           code :: ShiftType -> String
           code Evening   = "evening"
           code Overnight = "overnight"
-
-          other :: ShiftType -> ShiftType
-          other Evening   = Overnight
-          other Overnight = Evening
       renderShiftType _ = []
 
       renderSelected :: CurrentVolState -> Array ReactElement
@@ -185,7 +181,7 @@ spec = T.simpleSpec performAction render
     renderIcon Evening   = RD.i [ RP.className "vol-icon icon-no-bed" ] []
     renderIcon Overnight = RD.i [ RP.className "vol-icon icon-bed" ]    []
 
-initialState :: RosterState -> Config -> Date -> ShiftRowState
+initialState :: RosterState -> ShiftRuleConfig -> Date -> ShiftRowState
 initialState roster config date = 
   { date 
   , noOfVols: length shift.volunteers
@@ -201,17 +197,17 @@ initialState roster config date =
   status :: ShiftStatus
   status | shift.date < config.currentDate = Past
   status =
-    let errors = validate config shift
+    let errors = validateShift config shift
         firstErrorStatus = case head errors of
-          Just (D.Error e)   -> Error
-          Just (D.Warning w) -> Warning
-          Just (D.Info i)    -> Info
-          Just (D.Neutral)   -> const OK
+          Just (SR.Error e)   -> Error
+          Just (SR.Warning w) -> Warning
+          Just (SR.Info i)    -> Info
+          Just (SR.Neutral)   -> const OK
           _ -> const Good
         
-        extractMsg (D.Error e)   = Just e
-        extractMsg (D.Warning w) = Just w
-        extractMsg (D.Info i)    = Just i
+        extractMsg (SR.Error e)   = Just e
+        extractMsg (SR.Warning w) = Just w
+        extractMsg (SR.Info i)    = Just i
         extractMsg _ = Nothing
 
         concat ""  (Just m) = "This shift " <> m
@@ -241,10 +237,8 @@ initialState roster config date =
 
   currentVolState :: Volunteer -> CurrentVolState
   currentVolState cv = { name: cv.name
-                       , shiftType: shiftType
+                       , shiftType: find (\v -> v.volunteer.id == cv.id) shift.volunteers <#> _.shiftType
                        , canAddOvernight: canAddVolunteer config { shiftType: Overnight, volunteer: cv} shift
                        , canAddEvening: canAddVolunteer config { shiftType: Evening, volunteer: cv} shift
                        , canChangeShiftType: canChangeVolunteerShiftType config cv shift
                        }
-    where
-    shiftType = find (\v -> v.volunteer.id == cv.id) shift.volunteers <#> _.shiftType
