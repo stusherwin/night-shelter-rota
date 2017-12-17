@@ -14,6 +14,8 @@ module Main where
   import Data.Time.Calendar (toGregorian)
   import Servant
   import Data.ByteString (ByteString)
+  import Network.Wai.Middleware.Cors (cors, simpleCorsResourcePolicy, corsRequestHeaders, corsMethods, simpleMethods, corsOrigins)
+  import Network.Wai.Middleware.Servant.Options (provideOptions)
   
   import Types 
   import Api
@@ -22,13 +24,21 @@ module Main where
   connectionString :: ByteString
   connectionString = "postgres://shelter_rota_user:password@localhost:5432/shelter_rota"
   
+  localHostOrigin :: ByteString
+  localHostOrigin = "http://localhost:5022"
+  
   main :: IO ()
   main = do
-    run 8081 (app connectionString)
-     
+    run 8081 $ app connectionString
+
   app :: ByteString -> Application
-  app conn = serve fullAPI (server conn)
-                            
+  app conn = cors (const $ Just policy)
+           $ provideOptions appAPI
+           $ serve fullAPI (server conn)
+    where policy = simpleCorsResourcePolicy { corsRequestHeaders = [ "content-type" ]
+                                            , corsMethods = simpleMethods ++ ["DELETE", "PUT"]
+                                            , corsOrigins = Just ([localHostOrigin], False) }
+           
   server :: ByteString -> Server FullAPI
   server conn = appServer conn
            :<|> serveDirectoryFileServer "client/static"

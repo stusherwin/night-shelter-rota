@@ -34,9 +34,11 @@ executable shelter-rota
                      , shelter-rota
                      , servant
                      , servant-server
+                     , servant-options
                      , servant-purescript
                      , warp
                      , wai
+                     , wai-cors
                      , aeson
                      , transformers
                      , time

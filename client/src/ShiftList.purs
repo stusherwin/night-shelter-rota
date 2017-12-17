@@ -42,7 +42,7 @@ spec =
   where
   table :: T.Spec eff State props Action -> T.Spec eff State props Action
   table = over T._render \render d p s c ->
-    [ RD.table [ RP.className "ui structured unstackable table" ]
+    [ RD.table [ RP.className "ui structured stackable table" ]
                [ RD.tbody' $ render d p s c
                ]
     ]
