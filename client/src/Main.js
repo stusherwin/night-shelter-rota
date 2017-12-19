@@ -1,5 +1,7 @@
 'use strict';
 
+require('../static/less/Style.less')
+
 exports.isServerSide = typeof document === 'undefined';
 
 exports.getElementById = function(id) {

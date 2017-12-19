@@ -4,11 +4,12 @@ const path = require('path');
 
 const webpack = require('webpack');
 
-const isWebpackDevServer = process.argv.filter(a => path.basename(a) === 'webpack-dev-server').length;
-
+const isWebpackDevServer = process.argv.filter(a => path.basename(a).indexOf('webpack-dev-server') >= 0).length;
 const isWatch = process.argv.filter(a => a === '--watch').length
 
-const plugins =
+var ExtractTextPlugin = require("extract-text-webpack-plugin");
+
+var plugins =
   isWebpackDevServer || !isWatch ? [] : [
     function(){
       this.plugin('done', function(stats){
@@ -17,6 +18,21 @@ const plugins =
     }
   ]
 ;
+
+var lessUse = [];
+if(isWebpackDevServer) {
+  lessUse = [
+    { loader: "style-loader" },
+    { loader: "css-loader" },
+    { loader: "less-loader" }
+  ];
+} else {
+  plugins.push(new ExtractTextPlugin("css/bundle.css"));
+  lessUse = ExtractTextPlugin.extract({
+    fallback: "style-loader",
+    use: [ "css-loader", "less-loader" ]
+  })
+}
 
 module.exports = {
   devtool: 'eval-source-map',
@@ -55,7 +71,13 @@ module.exports = {
             }
           }
         ]
-      },
+      }, {
+        test: /\.less$/,
+        use: lessUse
+      }, {
+        test: /\.(png|woff|woff2|eot|ttf|svg)$/,
+        loader: 'url-loader?limit=100000'
+      }
     ]
   },
 

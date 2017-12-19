@@ -11,7 +11,7 @@
   },
   "files": [],
   "scripts": {
-    "webpack": "webpack --progress --bail --output-path client/static/js --output-filename bundle.js",
+    "webpack": "webpack --progress --bail --output-path client/static --output-filename js/bundle.js",
     "webpack:watch": "PATH=$PATH:../releases/psc-package DEBUG=purs-loader DEBUG_DEPTH=100 webpack --progress --display-error-details --watch",
     "webpack:server": "webpack-dev-server --progress --inline --hot",
     "webpack:server:debug": "DEBUG=purs-loader* DEBUG_DEPTH=100 webpack-dev-server --progress --inline --hot",
@@ -31,6 +31,12 @@
     "wrappy": "^1.0.2"
   },
   "devDependencies": {
-    "purs-loader": "^3.1.1"
+    "css-loader": "^0.28.7",
+    "extract-text-webpack-plugin": "^2.1.2",
+    "file-loader": "^1.1.6",
+    "less-loader": "^4.0.5",
+    "purs-loader": "^3.1.1",
+    "style-loader": "^0.19.1",
+    "url-loader": "^0.6.2"
   }
 }

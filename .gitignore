@@ -9,3 +9,4 @@
 /.psa*
 /.stack-work/
 /client/static/js/bundle.js
+/client/static/css/bundle.css
