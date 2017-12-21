@@ -28,11 +28,10 @@ type RosterState = { currentVol :: Maybe Volunteer
                    }
 
 data RowState = ShiftRow ShiftRowState
-              | StartRow HeaderRowState
-              | MonthHeaderRow HeaderRowState
-              | EndRow HeaderRowState
+              | HeaderRow HeaderRowState
 
-type HeaderRowState = { text :: String 
+type HeaderRowState = { text :: String
+                      , showActions :: Boolean  
                       }
 
 type ShiftRowState = { date :: Date

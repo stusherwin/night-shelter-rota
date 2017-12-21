@@ -37,14 +37,13 @@ _RowAction = prism (uncurry RowAction) unwrap
  
 spec :: forall props eff. T.Spec eff State props Action
 spec = 
-  ( table $ T.focus _rows _RowAction $ T.foreach \_ -> R.spec )
+  ( roster $ T.focus _rows _RowAction $ T.foreach \_ -> R.spec )
   <> footerSpec
   where
-  table :: T.Spec eff State props Action -> T.Spec eff State props Action
-  table = over T._render \render d p s c ->
-    [ RD.table [ RP.className "ui structured stackable table" ]
-               [ RD.tbody' $ render d p s c
-               ]
+  roster :: T.Spec eff State props Action -> T.Spec eff State props Action
+  roster = over T._render \render d p s c ->
+    [ RD.div [ RP.className "roster" ]
+           $ render d p s c
     ]
       
   footerSpec :: T.Spec _ State _ Action
@@ -80,14 +79,14 @@ rows roster config = rows' roster.startDate
   where   
   rows' :: Date -> List RowState
   rows' date | date > roster.endDate = 
-      Cons (EndRow { text: "" })
+      Cons (HeaderRow { text: "", showActions: true })
     $ Nil
   rows' date | date == roster.startDate =
-      Cons (StartRow { text: toMonthYearString date})
+      Cons (HeaderRow { text: toMonthYearString date, showActions: true})
     $ Cons (ShiftRow $ SR.initialState roster config date)
     $ rows' $ tomorrow date
   rows' date | isFirstDayOfMonth date =
-      Cons (MonthHeaderRow { text: toMonthYearString date })
+      Cons (HeaderRow { text: toMonthYearString date, showActions: false })
     $ Cons (ShiftRow $ SR.initialState roster config date)
     $ rows' $ tomorrow date
   rows' date =

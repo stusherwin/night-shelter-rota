@@ -33,25 +33,26 @@ spec = T.simpleSpec performAction render
 
   render :: T.Render ShiftRowState _ RowAction
   render dispatch _ state _ =
-    [ RD.tr [ classNames $ weekendClass state
+    [ RD.div [ classNames $ ["row"]
+                        <> weekendClass state
                         <> loadingClass state
                         <> statusClass state
                         <> pastClass state
                         <> todayClass state
             ]
-            [ RD.td [ classNames [ "shift-day shift-status collapsing" ] ]
+            [ RD.div [ classNames [ "row-item shift-day shift-status collapsing" ] ]
                     [ RD.text $ S.toUpper $ S.take 3 $ show $ weekday state.date ]
-            , RD.td [ classNames [ "shift-date shift-status collapsing" ] ]
+            , RD.div [ classNames [ "row-item shift-date shift-status collapsing" ] ]
                     [ RD.text $ toDayString state.date ]
-            , RD.td [ classNames [ "vol-count shift-status collapsing" ] ]
+            , RD.div [ classNames [ "row-item vol-count shift-status collapsing" ] ]
                     [ RD.text $ "" <> show state.noOfVols <> "/" <> show state.maxVols ]
-            , RD.td [ classNames [ "shift-status-icon shift-status collapsing" ] ]
+            , RD.div [ classNames [ "row-item shift-status-icon shift-status collapsing" ] ]
                   $ statusIcon state
-            , RD.td [ classNames [ "vol-markers shift-status collapsing" ] ]
+            , RD.div [ classNames [ "row-item vol-markers shift-status collapsing" ] ]
                   $ fromFoldable $ map renderVolMarker state.volMarkers
-            , RD.td [ classNames [ "shift-status" ] ]
+            , RD.div [ classNames [ "row-item shift-status" ] ]
                     []
-            , RD.td [ classNames [ "shift-selected shift-status collapsing right aligned" ] ] 
+            , RD.div [ classNames [ "row-item current-vol shift-status collapsing right aligned" ] ] 
                   $ renderCurrentVol state.currentVol
             ]
     ]
@@ -89,8 +90,10 @@ spec = T.simpleSpec performAction render
     renderVolMarker :: VolMarkerState -> ReactElement
     renderVolMarker s =
       RD.span [ RP.className "vol-marker" ]
-              $ [ renderIcon s.shiftType
-                , RD.text $ s.name
+              $ [ RD.div [ RP.className "vol-name" ]
+                         [ renderIcon s.shiftType
+                         , RD.text $ s.name
+                         ]
                 ]
               <> map renderSharingPref s.sharingPrefs
       
