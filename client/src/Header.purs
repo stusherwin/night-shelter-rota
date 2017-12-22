@@ -43,45 +43,75 @@ spec = T.simpleSpec performAction render
     ]
   render dispatch _ state _ =
     [ RD.div [ RP.className "header" ]
-           $ case state.volDetailsState of
-               NotEditing -> newVolButton
-               _ -> []
-          <> case state.currentVol, state.volDetailsState of
-               Just v, NotEditing -> editVolButton v.name
-               _, _ -> []
-          <> statusIcon state
-          <> [ RD.h2' [ RD.text "Night Shelter Rota for "
-                      , RD.select [ RP.className "vol-select"
-                                  , RP.onChange $ dispatch <<< respond state <<< unsafeEventSelectedIndex
-                                  ]
-                               (  [ RD.option [ RP.value "" ]
-                                              [ RD.text $ "All volunteers" ]
-                                  ]
-                               <> map (option dispatch state.currentVol) (toUnfoldable state.vols)
-                               )
-                      ]
-             ]
-               
+             $ [ RD.div [ RP.className "header-buttons" ]
+                       $ case state.volDetailsState of
+                           NotEditing -> newVolButton
+                           _ -> []
+                      <> case state.currentVol, state.volDetailsState of
+                           Just v, NotEditing -> editVolButton v.name
+                           _, _ -> []
+               ]
+             <> statusIcon state
+             <> [ RD.h2' [ RD.text "Night Shelter Rota for " ]
+                , RD.select [ RP.className "vol-select"
+                            , RP.onChange $ dispatch <<< respond state <<< unsafeEventSelectedIndex
+                            ]
+                         (  [ RD.option [ RP.value "" ]
+                                        [ RD.text $ "All volunteers" ]
+                            ]
+                         <> map (option dispatch state.currentVol) (toUnfoldable state.vols)
+                         )
+                ]
     ]
     where
       editVolButton :: String -> Array R.ReactElement
-      editVolButton volName = [ RD.button [ RP.className "ui primary yellow button header-edit"
+      editVolButton volName = [ RD.button [ RP.className "ui primary button header-button header-button-edit media-large-screen"
                                           , RP.onClick \e -> do
                                               _ <- R.preventDefault e
                                               dispatch EditCurrentVol
                                           ]
                                           [ RD.i [ RP.className "icon icon-edit" ] []
-                                          , RD.text $ "Edit " <> volName <> "'s details"
+                                          , RD.text $ "Edit volunteer details"
+                                          ]
+                              , RD.button [ RP.className "ui primary button header-button header-button-edit media-medium-screen"
+                                          , RP.onClick \e -> do
+                                              _ <- R.preventDefault e
+                                              dispatch EditCurrentVol
+                                          ]
+                                          [ RD.i [ RP.className "icon icon-edit" ] []
+                                          , RD.text $ "Edit"
+                                          ]
+                              , RD.button [ RP.className "ui primary mini icon button header-button header-button-edit media-small-screen"
+                                          , RP.onClick \e -> do
+                                              _ <- R.preventDefault e
+                                              dispatch EditCurrentVol
+                                          ]
+                                          [ RD.i [ RP.className "icon icon-edit" ] []
                                           ]
                               ]
       newVolButton :: Array R.ReactElement
-      newVolButton = [ RD.button [ RP.className "ui button header-new"
+      newVolButton = [ RD.button [ RP.className "ui button header-button header-button-new media-large-screen"
                                  , RP.onClick \e -> do
                                      _ <- R.preventDefault e
                                      dispatch EditNewVol
                                  ]
                                  [ RD.i [ RP.className "icon icon-add" ] []
                                  , RD.text "New volunteer"
+                                 ]
+                     , RD.button [ RP.className "ui button header-button header-button-new media-medium-screen"
+                                 , RP.onClick \e -> do
+                                     _ <- R.preventDefault e
+                                     dispatch EditNewVol
+                                 ]
+                                 [ RD.i [ RP.className "icon icon-add" ] []
+                                 , RD.text "New"
+                                 ]
+                     , RD.button [ RP.className "ui mini icon button header-button header-button-new media-small-screen"
+                                 , RP.onClick \e -> do
+                                     _ <- R.preventDefault e
+                                     dispatch EditNewVol
+                                 ]
+                                 [ RD.i [ RP.className "icon icon-add" ] []
                                  ]
                      ]
 

@@ -2,47 +2,44 @@
   box-sizing: border-box;
 }
 
+body {
+  min-width: 320px;
+}
+
 ////////////////////// HEADER /////////////////////////
 
 .header {
   position: fixed;
+  min-width: 320px;
   top: 0;
   left: 0;
   right: 0;
+  height: 56px;
   background: #ffe6a8;
-  padding: 10px 6px 10px 10px;
+  padding: 10px 10px 8px 10px;
   z-index: 999;
   box-shadow: 5px 0px 10px 0px #000;
 
-  h2 {
-    margin: 0;
-    
-    &.initial-data-loading {
-      margin-top: 3px;
-    }
-  }
-  
   .header-status {
     float: left;
     font-size: 20px;
-    margin-top: 9px;
-    margin-left: 4px;
-    margin-right: 10px;
     width: 29px;
     height: 15px;
+    margin-top: 10px;
+    margin-right: 8px;
 
     i {
       float: left;
-      
+
       &.icon-warning {
         cursor: help;
         margin-top: 1px;
       }
-      
+
       &.icon-ok {
         color: #4d7547;
       }
-      
+
       &.logo {
         background-image: url(/img/logo.png);
         margin-top: 3px;
@@ -51,23 +48,17 @@
       }
     }
   }
-  
-  .header-edit {
-    float: right;
-    margin-left: 5px;
-  }
-  
-  .header-new {
-    float: right;
-    margin-left: 5px;
-    box-shadow: 0px 0px 0px 1px #ccc;
 
-    &:hover {
-      box-shadow: 0px 0px 0px 1px #ccc;
-    }
+  h2 {
+    margin: 0;
+    height: 36px;
+    float: left;
+    margin-right: 5px;
+    margin-top: 4px;
   }
-  
+
   select {
+    float: left;
     height: auto;
     background: #fff;
     border: 1px solid rgba(34,36,38,.15);
@@ -76,12 +67,164 @@
     color: #777;
     -webkit-transition: color .1s ease,border-color .1s ease;
     transition: color .1s ease,border-color .1s ease;
-    margin-top: 5px; 
     font-family: inherit;
     font-weight: 700;
     border: 1px solid #ccc;
-    margin-top: 2px;
-    margin-bottom: 3px;
+    font-size: 1.71428571rem;
+    line-height: 1.28571429em;
+    font-family: Lato,'Helvetica Neue',Arial,Helvetica,sans-serif;
+    position: relative;
+    top: -1px;
+    min-width: 200px;
+    max-width: calc(~"100% - 642px");
+    margin-top: 4px;
+  }
+
+  .header-buttons {
+    float: right;
+
+    .header-button {
+      float: right;
+      margin: 0;
+      margin-left: 5px;
+
+      &.media-small-screen {
+        display: none !important;
+      }
+
+      &.media-medium-screen {
+        display: none !important;
+      }
+
+      &.media-large-screen {
+        display: block !important;
+      }
+    }
+  }
+
+  &:after {
+    display: none;
+    position: absolute;
+    left: 5px;
+    bottom: -23px;
+    content: 'full';
+    background: #fff;
+  }
+
+  @media only screen and (max-width: 884px) {
+    &:after {
+      content: '884px';
+    }
+
+    select {
+      min-width: 200px;
+      max-width: calc(~"100% - 470px");
+    }
+ 
+    .header-buttons {
+      .header-button {
+        &.media-small-screen {
+          display: none !important;
+        }
+
+        &.media-medium-screen {
+          display: block !important;
+        }
+
+        &.media-large-screen {
+          display: none !important;
+        }
+      }
+    }
+  }
+
+  @media only screen and (max-width: 722px) {
+    height: 84px;
+    padding: 5px;
+
+    &:after {
+      content: '722px';
+    }
+    
+    .header-status {
+      margin-top: 8px;
+      margin-left: 5px;
+      margin-right: 8px;
+    }
+
+    h2 {
+      margin-top: 2px;
+    }
+
+    select {
+      min-width: 195px;
+      max-width: calc(~"100% - 128px");
+      margin-top: 3px;
+      margin-left: 37px;
+      clear: left;
+    }
+
+    .header-buttons {
+      float: right;
+
+      .header-button {
+        clear: right;
+        padding: 10px;
+        width: 80px;
+        max-width: 80px;
+
+        &.header-button-edit {
+          margin-top: 5px;
+        }
+      }
+    }
+  }
+
+  @media only screen and (max-width: 519px) {
+    height: 74px;
+
+    &:after {
+      content: '519px';
+    }
+
+    .header-status {
+      margin-top: 6px;
+      margin-right: 7px;
+    }
+
+    h2, select {
+      font-size: 20px;
+    }
+
+    h2 {
+      margin-top: 3px;
+    }
+    
+    select {
+      margin-top: -2px;
+      margin-left: 36px;
+      max-width: calc(~"100% - 80px");
+      clear: left;
+    }
+
+    .header-buttons {
+      .header-button {
+        width: auto;
+        max-width: auto;
+        
+        &.media-small-screen {
+          display: block !important;
+        }
+
+        &.media-medium-screen {
+          display: none !important;
+        }
+
+        &.media-large-screen {
+          display: none !important;
+        }
+      }
+    }
   }
 }
 
@@ -90,6 +233,10 @@
 .container {
   margin: 10px;
   margin-top: 70px;
+
+  @media only screen and (max-width: 400px) {
+    margin-top: 130px;
+  }
 }
 
 .float-right {
@@ -100,7 +247,7 @@ i {
   &.vol-icon {
     margin-right: 5px;
   }
-  
+
   &.loading {
     margin-left: -2px;
   }
@@ -133,7 +280,7 @@ a.action {
   text-align: center;
   background: #555;
   color: #fff;
-  border: 1px solid #555; 
+  border: 1px solid #555;
   margin-left: 5px;
   border-radius: 16px;
   cursor: help;
@@ -143,10 +290,9 @@ a.action {
   vertical-align: top;
 
   &.icon {
-    // font-weight: 300;
     i {
       margin-left: -1px;
-   
+
       &:before {
         margin-left: 3px;
       }
@@ -161,7 +307,7 @@ a.action {
     display: block;
     border-top: 1px solid rgba(34, 36, 38, 0.1);
     .group;
-    
+
     &.negative1 {
       .row-item.shift-day, .row-item.shift-date, .row-item.shift-status-icon, .row-item.vol-count {
         color: #9f3a38 !important;
@@ -184,7 +330,7 @@ a.action {
       float: left;
       padding: 10px 10px 10px 10px;
       .group;
-      
+
       &.shift-day {
         width: 3.5em;
       }
@@ -193,21 +339,21 @@ a.action {
         width: 3em;
         margin-left: 5px;
       }
-      
+
       &.vol-count {
         margin-left: 5px;
         width: 2.5em;
       }
-      
+
       &.shift-status-icon {
         width: 3em;
-        
+
         margin-left: 5px;
         padding-top: 13px;
-        
+
         i {
           opacity: 0.4;
-          
+
           &.icon-warning, &.icon-info, &.icon-clock {
             cursor: help;
             opacity: 0.65;
@@ -216,7 +362,7 @@ a.action {
       }
 
       &.vol-markers {
-        margin-left: 10px; 
+        margin-left: 10px;
         padding-top: 6px;
         padding-bottom: 6px;
 
@@ -231,7 +377,7 @@ a.action {
           padding-bottom: 2px;
           border-radius: 2px;
           border: 1px solid #ccc;
-        
+
           .vol-name {
             float: left;
           }
@@ -243,11 +389,11 @@ a.action {
           }
         }
       }
-      
+
       &.current-vol {
         float: right;
         color: #555;
-     
+
         .shift-type {
           float: left;
           margin-right: 10px;
@@ -256,7 +402,7 @@ a.action {
           label {
             margin-right: 20px;
           }
-          
+
           input[type="radio"] {
             margin-right: 5px;
           }
@@ -264,14 +410,14 @@ a.action {
 
         .ui.checkbox {
           float: right;
-          
+
           label:before {
             border-color: #aaa;
             border-radius: 2px;
             box-shadow: 0px 0px 5px 1px rgba(100,100,100,0.1);
           }
         }
-        
+
         i.icon-spin {
           float: right;
           margin-top: 2px;
@@ -298,7 +444,7 @@ a.action {
         padding-right: 10px;
       }
     }
-    
+
     &.past {
       .row-item {
         color: #999;
@@ -314,7 +460,7 @@ a.action {
     &.row-header {
       padding: 10px 10px 10px 10px;
       background-color: #555;
-      color: white; 
+      color: white;
 
       .row-header-actions {
         float: right;
@@ -334,11 +480,11 @@ a.action {
           border-bottom: 1px dashed #aaa;
           vertical-align: bottom;
         }
-        
+
         &:hover span {
           border-bottom: 1px dashed #ddd;
         }
-        
+
         i {
           position: relative;
           top: -1px;
@@ -354,8 +500,8 @@ a.action {
           position: absolute;
           left: 0;
           top: 14px;
-          width: 0; 
-          height: 0; 
+          width: 0;
+          height: 0;
           border-top: 6px solid transparent;
           border-bottom: 6px solid transparent;
           border-left: 6px solid rgba(85, 85, 85, 0.8);
@@ -394,7 +540,7 @@ form {
 label .notes {
   display: block;
   color: #bbb;
-  
+
   b {
     color: #555;
   }
