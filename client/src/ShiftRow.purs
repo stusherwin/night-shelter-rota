@@ -3,7 +3,7 @@ module App.ShiftRow (spec, initialState) where
 import Prelude
  
 import Data.Array (catMaybes, fromFoldable)
-import Data.DateTime (Date, Weekday(..), weekday)
+import Data.DateTime (Date, Weekday(..), weekday, month)
 import Data.Either (Either(..))
 import Data.Foldable (fold)
 import Data.Lens (Lens', lens, Prism', prism, over, _Just)
@@ -16,7 +16,7 @@ import React.DOM as RD
 import React.DOM.Props as RP
 import Thermite as T
    
-import App.Common (onlyIf, classNames, toDayString, sortWith, justIf, toDateString, isWeekday)
+import App.Common (onlyIf, classNames, dayString1, dayPostfix, sortWith, justIf, toDateString, isWeekday)
 import App.ShiftRules (ShiftRuleConfig, validateShift, canChangeVolunteerShiftType, canAddVolunteer)
 import App.ShiftRules (RuleResult(..)) as SR
 import App.Types (Volunteer, Shift, VolunteerShift, ShiftType(..), OvernightPreference(..), OvernightGenderPreference(..), otherShiftType)
@@ -33,28 +33,37 @@ spec = T.simpleSpec performAction render
 
   render :: T.Render ShiftRowState _ RowAction
   render dispatch _ state _ =
-    [ RD.div [ classNames $ ["row"]
-                        <> weekendClass state
-                        <> loadingClass state
-                        <> statusClass state
-                        <> pastClass state
-                        <> todayClass state
-            ]
-            [ RD.div [ classNames [ "row-item shift-day shift-status collapsing" ] ]
-                    [ RD.text $ S.toUpper $ S.take 3 $ show $ weekday state.date ]
-            , RD.div [ classNames [ "row-item shift-date shift-status collapsing" ] ]
-                    [ RD.text $ toDayString state.date ]
-            , RD.div [ classNames [ "row-item vol-count shift-status collapsing" ] ]
-                    [ RD.text $ "" <> show state.noOfVols <> "/" <> show state.maxVols ]
-            , RD.div [ classNames [ "row-item shift-status-icon shift-status collapsing" ] ]
-                  $ statusIcon state
-            , RD.div [ classNames [ "row-item vol-markers shift-status collapsing" ] ]
-                  $ fromFoldable $ map renderVolMarker state.volMarkers
-            , RD.div [ classNames [ "row-item shift-status" ] ]
-                    []
-            , RD.div [ classNames [ "row-item current-vol shift-status collapsing right aligned" ] ] 
-                  $ renderCurrentVol state.currentVol
-            ]
+    [ RD.div [ classNames $ [ "row" ]
+                            <> weekendClass state
+                            <> loadingClass state
+                            <> statusClass state
+                            <> pastClass state
+                            <> todayClass state
+             ]
+             [ RD.div [ classNames [ "row-item shift-date" ] ]
+                      [ RD.div [ classNames [ "shift-date-part shift-date-day collapsing" ] ]
+                               [ RD.text $ S.toUpper $ S.take 3 $ show $ weekday state.date ]
+                      , RD.div [ classNames [ "shift-date-part shift-date-month collapsing" ] ]
+                               [ RD.text $ S.toUpper $ S.take 3 $ show $ month state.date ]
+                      , RD.div [ classNames [ "shift-date-part shift-date-date collapsing" ] ]
+                               [ RD.text $ dayString1 state.date
+                               , RD.span [ RP.className "shift-date-postfix" ]
+                                         [ RD.text $ dayPostfix state.date ] 
+                               ]
+                      ]
+             , RD.div [ classNames [ "row-item shift-status" ] ]
+                      [ RD.div [ classNames [ "shift-status-part shift-status-vol-count collapsing" ] ]
+                               [ RD.text $ "" <> show state.noOfVols <> "/" <> show state.maxVols ]
+                      , RD.div [ classNames [ "shift-status-part shift-status-icon collapsing" ] ]
+                             $ statusIcon state
+                      ]
+             , RD.div [ classNames [ "row-item vol-markers collapsing" ] ]
+                    $ fromFoldable $ map renderVolMarker state.volMarkers
+             , RD.div [ classNames [ "row-item" ] ]
+                      []
+             , RD.div [ classNames [ "row-item current-vol collapsing right aligned" ] ] 
+                    $ renderCurrentVol state.currentVol
+             ]
     ]
     where
     weekendClass :: ShiftRowState -> Array String

@@ -42,7 +42,7 @@ spec = T.simpleSpec performAction render
   where 
   render :: T.Render State _ Action
   render dispatch _ state _ =
-    [ RD.form [ classNames [ "ui form", onlyIf formError "error" ] ]
+    [ RD.form [ classNames [ "ui form details", onlyIf formError "error" ] ]
               [ RD.h3' [ RD.text state.title ]
               , RD.div [ classNames [ "required field ", onlyIf formError "error" ] ]
                        [ RD.label [ RP.htmlFor "volName" ]

@@ -6,6 +6,13 @@ body {
   min-width: 320px;
 }
 
+@small-screen-max-width: 519px;
+@small-screen: ~"only screen and (max-width: " @small-screen-max-width ~")";
+@medium-screen-max-width:722px;
+@medium-screen: ~"only screen and (max-width: " @medium-screen-max-width ~")";
+@larger-screen-max-width: 884px;
+@larger-screen: ~"only screen and (max-width: " @larger-screen-max-width ~")";
+
 ////////////////////// HEADER /////////////////////////
 
 .header {
@@ -111,16 +118,16 @@ body {
     background: #fff;
   }
 
-  @media only screen and (max-width: 884px) {
+  @media @larger-screen {
     &:after {
-      content: '884px';
+      content: 'larger-screen';
     }
 
     select {
       min-width: 200px;
       max-width: calc(~"100% - 470px");
     }
- 
+
     .header-buttons {
       .header-button {
         &.media-small-screen {
@@ -138,14 +145,15 @@ body {
     }
   }
 
-  @media only screen and (max-width: 722px) {
+  @media @medium-screen {
     height: 84px;
     padding: 5px;
+    position: relative;
 
     &:after {
-      content: '722px';
+      content: 'medium-screen';
     }
-    
+
     .header-status {
       margin-top: 8px;
       margin-left: 5px;
@@ -180,11 +188,11 @@ body {
     }
   }
 
-  @media only screen and (max-width: 519px) {
+  @media @small-screen {
     height: 74px;
 
     &:after {
-      content: '519px';
+      content: 'small-screen';
     }
 
     .header-status {
@@ -199,7 +207,7 @@ body {
     h2 {
       margin-top: 3px;
     }
-    
+
     select {
       margin-top: -2px;
       margin-left: 36px;
@@ -211,7 +219,7 @@ body {
       .header-button {
         width: auto;
         max-width: auto;
-        
+
         &.media-small-screen {
           display: block !important;
         }
@@ -228,16 +236,17 @@ body {
   }
 }
 
-////////////////////// GENERAL /////////////////////////
-
 .container {
   margin: 10px;
   margin-top: 70px;
 
-  @media only screen and (max-width: 400px) {
-    margin-top: 130px;
+  @media @medium-screen {
+    margin: 0;
+    // margin-top: 15px;
   }
 }
+
+////////////////////// GENERAL /////////////////////////
 
 .float-right {
   float: right;
@@ -309,19 +318,19 @@ a.action {
     .group;
 
     &.negative1 {
-      .row-item.shift-day, .row-item.shift-date, .row-item.shift-status-icon, .row-item.vol-count {
+      .shift-date-part, .shift-status-part {
         color: #9f3a38 !important;
       }
     }
 
     &.warning1 {
-      .row-item.shift-day, .row-item.shift-date, .row-item.shift-status-icon, .row-item.vol-count {
+      .shift-date-part, .shift-status-part {
         color: #573a08 !important;
       }
     }
 
     &.positive1 {
-      .row-item.shift-day, .row-item.shift-date, .row-item.shift-status-icon, .row-item.vol-count {
+      .shift-date-part, .shift-status-part {
         color: #2c662d !important;
       }
     }
@@ -331,32 +340,52 @@ a.action {
       padding: 10px 10px 10px 10px;
       .group;
 
-      &.shift-day {
-        width: 3.5em;
-      }
-
       &.shift-date {
-        width: 3em;
-        margin-left: 5px;
+        .group;
+
+        .shift-date-part {
+          float: left;
+
+          &.shift-date-day {
+            width: 3.5em;
+          }
+
+          &.shift-date-date {
+            width: 3em;
+            margin-left: 5px;
+          }
+
+          &.shift-date-month {
+            display: none;
+          }
+        }
       }
 
-      &.vol-count {
-        margin-left: 5px;
-        width: 2.5em;
-      }
+      &.shift-status {
+        .group;
 
-      &.shift-status-icon {
-        width: 3em;
+        .shift-status-part {
+          float: left;
 
-        margin-left: 5px;
-        padding-top: 13px;
+          &.shift-status-vol-count {
+            margin-left: 5px;
+            width: 2.5em;
+          }
 
-        i {
-          opacity: 0.4;
+          &.shift-status-icon {
+            width: 3em;
 
-          &.icon-warning, &.icon-info, &.icon-clock {
-            cursor: help;
-            opacity: 0.65;
+            margin-left: 5px;
+            margin-top: 3px;
+
+            i {
+              opacity: 0.4;
+
+              &.icon-warning, &.icon-info, &.icon-clock {
+                cursor: help;
+                opacity: 0.65;
+              }
+            }
           }
         }
       }
@@ -386,6 +415,11 @@ a.action {
             margin-top: 2px;
             display: block;
             float: left;
+
+            i {
+              position: relative;
+              left: -1px;
+            }
           }
         }
       }
@@ -429,7 +463,7 @@ a.action {
     &.weekend {
       background: #eee !important;
       .row-item {
-        &.shift-date, &.shift-day {
+        &.shift-date-date, &.shift-day {
           font-weight: bold;
         }
       }
@@ -467,7 +501,7 @@ a.action {
       }
 
       .action {
-        float: right;
+        float: left;
         margin-right: -5px;
         margin-left: 20px;
         color: #ddd;
@@ -493,19 +527,171 @@ a.action {
     }
 
     &.today {
-      .row-item:first-child {
-        position: relative;
+      background: rgb(218, 239, 255) !important;
+      position: relative;
 
-        &:after {
-          position: absolute;
-          left: 0;
-          top: 14px;
-          width: 0;
-          height: 0;
-          border-top: 6px solid transparent;
-          border-bottom: 6px solid transparent;
-          border-left: 6px solid rgba(85, 85, 85, 0.8);
-          content: " ";
+      &:before {
+        position: absolute;
+        left: 0px;
+        top: 14px;
+        width: 0;
+        height: 0;
+        border-top: 6px solid transparent;
+        border-bottom: 6px solid transparent;
+        border-left: 6px solid #555; //rgba(34, 36, 38, 0.3); //rgba(85, 85, 85, 0.8);
+        content: " ";
+      }
+    }
+  }
+
+  @media @medium-screen {
+    .row {
+      min-height: 56px;
+      position: relative;
+      padding-left: 5px;
+      padding-right: 5px;
+
+      &:nth-child(2) {
+        border-top: none;
+      }
+
+      &.row-header {
+        padding: 10px;
+        padding-bottom: 12px;
+
+        position: relative;
+        min-height: 0;
+        // display: none;
+        .row-header-actions {
+          // background: red;
+          display: block;
+          width: 234px;
+          margin: 0 auto 10px auto;
+          float: none;
+
+          .action {
+            float: none;
+            margin: 0;
+            &:first-child {
+              margin-right: 10px;
+            }
+          }
+        }
+      }
+
+      .row-item {
+        &.shift-date {
+          float: left;
+          // background: #faa;
+          width: 40px;
+          position: relative;
+          // height: 100%;
+          // margin-left: 10px;
+
+          .shift-date-part {
+            float: none;
+            display: block;
+            position: absolute;
+            // background: #faa;
+
+            &.shift-date-day {
+              top: 5px;
+              font-size: 10px;
+              margin: 0;
+              left: 0px;
+              right: 0px;
+              width: auto;
+              // font-family: monospace;
+              text-align: center;
+            }
+
+            &.shift-date-date {
+              top: 24px;
+              margin: 0;
+              left: 0px;
+              font-weight: 300;
+              right: 0px;
+              width: auto;
+              text-align: center;
+              font-size: 25px;
+
+              .shift-date-postfix {
+                display: none;
+              }
+            }
+
+            &.shift-date-month {
+              display: none; //block;
+              bottom: 1px;
+              margin: 0;
+              left: 0px;
+              right: 0px;
+              width: auto;
+              font-size: 10px;
+              text-align: center;
+            }
+          }
+        }
+
+        &.shift-status {
+          float: left;
+          // background: #aaf;
+          width: 45px;
+          // .group;
+          position: relative;
+
+          .shift-status-part {
+            float: none;
+            display: block;
+            position: absolute;
+            // background: #faa;
+
+            &.shift-status-vol-count {
+              top: 28px;
+              left: 0;
+              right: 0;
+              text-align: center;
+            }
+
+            &.shift-status-icon {
+              top: 10px;
+              left: -4px;
+              right: 0;
+              text-align: center;
+            }
+          }
+        }
+
+        &.current-vol {
+          margin-top: 10px;
+        }
+
+        &.vol-markers {
+          // background: #faa;
+          padding: 4px;
+          margin: 0;
+
+          .vol-marker {
+            float: left;
+            clear: left;
+            margin-top: 4px;
+            padding: 0px 3px;
+
+            &:first-child {
+              margin-top: 0;
+            }
+          }
+        }
+      }
+
+      &.today {
+
+        &:before {
+          top: 22px;
+          border-top-width: 6px;
+          border-bottom-width: 6px;
+          border-left-width: 6px;
+          border-left-color: #555;
         }
       }
     }
@@ -524,39 +710,48 @@ a.action {
 
 //////////////////////// DETAILS ///////////////////////
 
-form {
+form.details {
   background: #f2f2f2;
   padding: 10px;
   margin-top: 10px;
   border: 1px solid #ddd;
   border-radius: 3px;
-}
 
-.field .ui.radio.checkbox {
-  margin-right: 20px;
-  margin-top: 10px;
-}
-
-label .notes {
-  display: block;
-  color: #bbb;
-
-  b {
-    color: #555;
+  .field {
+    .ui.radio.checkbox {
+      margin-right: 20px;
+      margin-top: 10px;
+    }
   }
-}
 
-label .sharing-pref {
-  margin-left: 0px;
-  margin-right: 5px;
-  padding-bottom: 2px;
-  position: relative;
-  top: 1px;
-  cursor: inherit;
+  label .notes {
+    display: block;
+    color: #bbb;
 
-  span {
+    b {
+      color: #555;
+    }
+  }
+
+  label .sharing-pref {
+    margin-left: 0px;
+    margin-right: 5px;
+    padding-bottom: 2px;
     position: relative;
-    top: 0px;
-    left: 0px;
+    top: 1px;
+    cursor: inherit;
+
+    span {
+      position: relative;
+      top: 0px;
+      left: 0px;
+    }
+  }
+
+  @media @medium-screen {
+    .field .ui.radio.checkbox {
+      // background: #faa;
+      display: block;
+    }
   }
 }

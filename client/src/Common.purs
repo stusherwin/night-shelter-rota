@@ -1,4 +1,4 @@
-module App.Common (unsafeEventValue, unsafeEventSelectedIndex, midnight, tomorrow, toDateString, updateWhere, modifyWhere, justIf, default, onlyIf, classNames, isJustWith, addDays, toMonthYearString, isFirstDayOfMonth, daysLeftInMonth, toDayString, sortWith, previousWeekday, nextWeekday, unsafeChecked, mkDate, isWeekday) where
+module App.Common (unsafeEventValue, unsafeEventSelectedIndex, midnight, tomorrow, toDateString, updateWhere, modifyWhere, justIf, default, onlyIf, classNames, isJustWith, addDays, toMonthYearString, isFirstDayOfMonth, daysLeftInMonth, dayString1, dayPostfix, sortWith, previousWeekday, nextWeekday, unsafeChecked, mkDate, isWeekday) where
   
 import Prelude 
 
@@ -83,9 +83,13 @@ positionalPostfix n | n `mod` 10 == 2 = "nd"
 positionalPostfix n | n `mod` 10 == 3 = "rd"
 positionalPostfix _ = "th"
 
-toDayString :: Date -> String 
-toDayString date = let d = fromEnum $ day date
-                   in show d <> positionalPostfix d
+dayString1 :: Date -> String
+dayString1 date = let d = fromEnum $ day date
+                  in show d
+
+dayPostfix :: Date -> String
+dayPostfix date = let d = fromEnum $ day date
+                  in positionalPostfix d
 
 isFirstDayOfMonth :: Date -> Boolean
 isFirstDayOfMonth date = case toEnum 1 of
