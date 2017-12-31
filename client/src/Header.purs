@@ -73,7 +73,7 @@ spec = T.simpleSpec performAction render
                                           [ RD.i [ RP.className "icon icon-edit" ] []
                                           , RD.text $ "Edit volunteer details"
                                           ]
-                              , RD.button [ RP.className "ui primary button header-button header-button-edit media-medium-screen"
+                              , RD.button [ RP.className "ui primary button header-button header-button-edit media-larger-screen media-medium-screen"
                                           , RP.onClick \e -> do
                                               _ <- R.preventDefault e
                                               dispatch EditCurrentVol
@@ -98,7 +98,7 @@ spec = T.simpleSpec performAction render
                                  [ RD.i [ RP.className "icon icon-add" ] []
                                  , RD.text "New volunteer"
                                  ]
-                     , RD.button [ RP.className "ui button header-button header-button-new media-medium-screen"
+                     , RD.button [ RP.className "ui button header-button header-button-new media-larger-screen media-medium-screen"
                                  , RP.onClick \e -> do
                                      _ <- R.preventDefault e
                                      dispatch EditNewVol

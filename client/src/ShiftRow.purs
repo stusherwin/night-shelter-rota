@@ -137,10 +137,25 @@ spec = T.simpleSpec performAction render
       where
       renderShiftType :: CurrentVolState -> Array ReactElement
       renderShiftType s@{ shiftType: Just st } | s.canChangeShiftType =
-        [ RD.span [ RP.className "shift-type" ]
+        [ RD.span [ RP.className "current-vol-shift-type radio media-large-screen media-larger-screen" ]
                   ( renderShiftTypeRadio Overnight st
                  <> renderShiftTypeRadio Evening st
                   )
+        , RD.span [ RP.className "current-vol-shift-type toggle media-medium-screen media-small-screen" ]
+                  [ RD.div [ RP.className "ui toggle checkbox" ]
+                           [ RD.input [ RP.tabIndex 0
+                                      , RP.className "hidden"
+                                      , RP._type "checkbox"
+                                      , RP._id $ "shift-type-" <> toDateString state.date
+                                      , RP.checked $ st == Overnight
+                                      , RP.onChange \_ -> dispatch $ ChangeCurrentVolShiftType state.date $ otherShiftType st
+                                      ]
+                                      []
+                           , RD.label [ RP.htmlFor $ "shift-type-" <> toDateString state.date ]
+                                      -- [ RD.text $ description st ]
+                                      []
+                           ]
+                  ]
         ]
         where
         renderShiftTypeRadio :: ShiftType -> ShiftType -> Array ReactElement
@@ -158,19 +173,18 @@ spec = T.simpleSpec performAction render
                      , RD.text $ description shiftType
                      ]
           ]
-          where
-          description :: ShiftType -> String
-          description Evening   = "Evening only"
-          description Overnight = "Overnight"
+        description :: ShiftType -> String
+        description Evening   = "Evening only"
+        description Overnight = "Overnight"
 
-          code :: ShiftType -> String
-          code Evening   = "evening"
-          code Overnight = "overnight"
+        code :: ShiftType -> String
+        code Evening   = "evening"
+        code Overnight = "overnight"
       renderShiftType _ = []
 
       renderSelected :: CurrentVolState -> Array ReactElement
       renderSelected s@{ shiftType: Nothing } | not state.loading =
-        [ RD.span [ RP.className "ui fitted checkbox" ]
+        [ RD.span [ RP.className "current-vol-selected ui fitted checkbox" ]
                   [ RD.input [ RP._type "checkbox"
                              , RP.disabled $ state.loading || (not s.canAddOvernight && not s.canAddEvening)
                              , RP.checked false
@@ -181,7 +195,7 @@ spec = T.simpleSpec performAction render
                   ]
         ]
       renderSelected s@{ shiftType: Just st } | not state.loading =
-        [ RD.span [ RP.className "ui fitted checkbox" ]
+        [ RD.span [ RP.className "current-vol-selected ui fitted checkbox" ]
                   [ RD.input [ RP._type "checkbox"
                              , RP.disabled $ state.loading
                              , RP.checked true

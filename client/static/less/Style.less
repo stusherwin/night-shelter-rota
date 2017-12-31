@@ -13,6 +13,59 @@ body {
 @larger-screen-max-width: 884px;
 @larger-screen: ~"only screen and (max-width: " @larger-screen-max-width ~")";
 
+.media-larger-screen, .media-medium-screen, .media-small-screen {
+  display: none !important;
+}
+
+.media-large-screen {
+  display: block !important;
+}
+
+@media @larger-screen {
+  .media-large-screen,
+  .media-medium-screen,
+  .media-small-screen,
+  .media-medium-screen.media-small-screen {
+    display: none !important;
+  }
+
+  .media-larger-screen,
+  .media-larger-screen.media-large-screen,
+  .media-larger-screen.media-medium-screen {
+    display: block !important;
+  }
+}
+
+@media @medium-screen {
+  .media-large-screen,
+  .media-larger-screen,
+  .media-small-screen,
+  .media-large-screen.media-larger-screen {
+    display: none !important;
+  }
+
+  .media-medium-screen,
+  .media-medium-screen.media-larger-screen,
+  .media-medium-screen.media-small-screen {
+    display: block !important;
+  }
+}
+
+@media @small-screen {
+  .media-large-screen,
+  .media-larger-screen,
+  .media-medium-screen,
+  .media-large-screen.media-larger-screen,
+  .media-larger-screen.media-medium-screen {
+    display: none !important;
+  }
+
+  .media-small-screen,
+  .media-small-screen.media-medium-screen {
+    display: block !important;
+  }
+}
+
 ////////////////////// HEADER /////////////////////////
 
 .header {
@@ -94,23 +147,11 @@ body {
       float: right;
       margin: 0;
       margin-left: 5px;
-
-      &.media-small-screen {
-        display: none !important;
-      }
-
-      &.media-medium-screen {
-        display: none !important;
-      }
-
-      &.media-large-screen {
-        display: block !important;
-      }
     }
   }
 
   &:after {
-    display: none;
+    // display: none;
     position: absolute;
     left: 5px;
     bottom: -23px;
@@ -126,22 +167,6 @@ body {
     select {
       min-width: 200px;
       max-width: calc(~"100% - 470px");
-    }
-
-    .header-buttons {
-      .header-button {
-        &.media-small-screen {
-          display: none !important;
-        }
-
-        &.media-medium-screen {
-          display: block !important;
-        }
-
-        &.media-large-screen {
-          display: none !important;
-        }
-      }
     }
   }
 
@@ -219,18 +244,6 @@ body {
       .header-button {
         width: auto;
         max-width: auto;
-
-        &.media-small-screen {
-          display: block !important;
-        }
-
-        &.media-medium-screen {
-          display: none !important;
-        }
-
-        &.media-large-screen {
-          display: none !important;
-        }
       }
     }
   }
@@ -428,21 +441,103 @@ a.action {
         float: right;
         color: #555;
 
-        .shift-type {
+        .current-vol-shift-type {
           float: left;
           margin-right: 10px;
           vertical-align: bottom;
 
-          label {
-            margin-right: 20px;
+          &.radio {
+            label {
+              margin-right: 20px;
+            }
+
+            input[type="radio"] {
+              margin-right: 5px;
+            }
           }
 
-          input[type="radio"] {
-            margin-right: 5px;
+          &.toggle {
+            .ui.toggle.checkbox {
+              input[type="checkbox"].hidden {
+                // visibility: hidden;
+
+                & + label {
+                  position: relative;
+                  // top: 10px;
+                  padding-left: 51px;
+                  // font-size: 10px;
+                  // text-transform: uppercase;
+                  // text-align: center;
+                  &::before {
+                    // text-align: right;
+                    // font-size: 14px;
+                    // top: -22px;
+                    top: -2px;
+                    // left: 50px;
+                    
+                    height: 20px;
+                    content: '\e806';
+                    font-family: "fontello";
+                    font-style: normal;
+                    font-weight: normal;
+
+                    display: inline-block;
+                    text-decoration: inherit;
+                    /* opacity: .8; */
+                   
+                    /* For safety - reset parent styles, that can break glyph codes*/
+                    font-variant: normal;
+                    text-transform: none;
+                   
+                    /* fix buttons height, for twitter bootstrap */
+                    line-height: 1em;
+                   
+                    /* Animation center compensation - margins should be symmetric */
+                    /* remove if not needed */
+                   
+                    /* you can be more comfortable with increased icons size */
+                    /* font-size: 120%; */
+                   
+                    /* Font smoothing. That was taken from TWBS */
+                    -webkit-font-smoothing: antialiased;
+                    -moz-osx-font-smoothing: grayscale;
+                    padding: 3px;
+                    padding-left: 25px;
+                    box-shadow: inset 0 0 1px 0 rgba(0, 0, 0, 0.25);       
+                  }
+
+                  &::after {
+                    top: -2px;
+                    // top: -22px;
+                    // left: 50px;
+                    // height: 19px;
+                    // width: 19px;
+                    background: #fff;
+                    box-shadow: inset 0 0 1px 0 #000;       
+                    // border: 1px solid rgba(0, 0, 0, 0.05);       
+                  }
+                }
+
+                &:checked + label {
+                  &::before {
+                    color: #fff;
+                    padding: 3px 9px;
+                    content: '\f236';
+                  }
+                  
+                  &::after {
+                    // border: 1px solid rgb(33, 133, 208);
+                    box-shadow: inset 0 0 1px 0 darken(rgb(33, 133, 208), 40%);
+                  }
+                  // background: green;
+                  // background: red;
+                }
+              }
+            }
           }
         }
 
-        .ui.checkbox {
+        .current-vol-selected.ui.checkbox {
           float: right;
 
           label:before {
@@ -755,3 +850,4 @@ form.details {
     }
   }
 }
+
