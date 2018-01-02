@@ -308,8 +308,9 @@
     .row {
       .row-item {
         &.vol-markers {
-          width: ~"calc(100% - 370px)";        
+          width: ~"calc(100% - 370px)";
         }
+
         &.current-vol {
           width: 180px;
           .current-vol-selected.ui.checkbox {
@@ -440,12 +441,15 @@
         }
 
         &.current-vol {
-          width: 100px;
+          width: 103px;
+          display: none;
+
           .current-vol-shift-type {
             &.toggle {
               margin-top: 9px;
             }
           }
+
           .current-vol-selected.ui.checkbox {
             margin-top: 9px;
           }
@@ -460,7 +464,7 @@
           padding: 0px;
           margin: 0;
           margin-left: 6px;
-          width: ~"calc(100% - 196px)";
+          width: ~"calc(100% - 98px)";
 
           .vol-marker {
             float: left;
@@ -501,14 +505,26 @@
         }
       }
     }
+
+    &.has-current-vol {
+      .row {
+        .row-item {
+          &.current-vol {
+            display: block;
+          }
+
+          &.vol-markers {
+            width: ~"calc(100% - 196px)";
+          }
+        }
+      }
+    }      
   }
 
   @media @small-screen {
     .row {
       .row-item {
         &.vol-markers {
-          width: ~"calc(100% - 100px)";
-          // margin-left: 80px;
         }
         &.current-vol {
           display: none;
@@ -524,8 +540,8 @@
           }
 
           &.vol-markers {
-            width: ~"calc(100% - 148px)";        
-            // margin-left: 80px;
+            width: ~"calc(100% - 153px)";        
+            padding-left: 2px;
           }
 
           &.current-vol {
