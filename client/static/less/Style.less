@@ -360,13 +360,12 @@ a.action {
 
     .row-item {
       float: left;
+      .group;
       padding: 10px 0px 10px 10px;
-
+      
       &:last-child {
         padding-right: 10px;
       }
-
-      .group;
 
       &.shift-date {
         .group;
@@ -421,10 +420,7 @@ a.action {
       &.vol-markers {
         float: left;
         margin-left: 16px;
-        padding-top: 6px;
-        padding-bottom: 6px;
-        padding: 0;
-        padding-top: 7px;
+        padding: 7px 0 6px 0;
         width: ~"calc(100% - 500px)";        
 
         .vol-marker {
@@ -434,14 +430,12 @@ a.action {
           margin-right: 6px;
           margin-bottom: 6px;
           max-width: 100%;
+
           &:last-child {
             margin-right: 0;
           }
 
-          padding-left: 5px;
-          padding-right: 5px;
-          padding-top: 2px;
-          padding-bottom: 2px;
+          padding: 2px 5px 2px 5px;
           border-radius: 2px;
           border: 1px solid #ccc;
 
@@ -912,4 +906,3 @@ form.details {
     }
   }
 }
-
