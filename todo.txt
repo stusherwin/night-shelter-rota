@@ -1,6 +1,5 @@
 * Remove circles around vol prefs
 * Remove left margin from dropdown on small screen
-* Add padding to header on small screen
 * Change prev/next 4 week behaviour
 * Add 'introduction' section on vol details
 * Remove volunteers

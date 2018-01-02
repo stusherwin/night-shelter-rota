@@ -35,10 +35,9 @@ spec = T.simpleSpec performAction render
   where 
   render :: T.Render State _ Action
   render _ _ state@{ initialDataLoaded: loaded } _ | not loaded =
-    [ RD.div [ RP.className "header" ]
+    [ RD.div [ RP.className "header initial-data-loading" ]
            $ statusIcon state
-          <> [ RD.h2 [ RP.className "initial-data-loading" ]
-                     [ RD.text "Night Shelter Rota" ]
+          <> [ RD.h2' [ RD.text "Night Shelter Rota" ]
              ]
     ]
   render dispatch _ state _ =
