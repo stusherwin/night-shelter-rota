@@ -57,12 +57,12 @@ spec = T.simpleSpec performAction render
                       , RD.div [ classNames [ "shift-status-part shift-status-icon collapsing" ] ]
                              $ statusIcon state
                       ]
-             , RD.div [ classNames [ "row-item vol-markers collapsing" ] ]
-                    $ fromFoldable $ map renderVolMarker state.volMarkers
-             , RD.div [ classNames [ "row-item" ] ]
-                      []
              , RD.div [ classNames [ "row-item current-vol collapsing right aligned" ] ] 
                     $ renderCurrentVol state.currentVol
+             , RD.div [ classNames [ "row-item vol-markers collapsing" ] ]
+                    $ fromFoldable $ map renderVolMarker state.volMarkers
+            --  , RD.div [ classNames [ "row-item" ] ]
+            --           []
              ]
     ]
     where
@@ -132,8 +132,8 @@ spec = T.simpleSpec performAction render
 
     renderCurrentVol :: Maybe CurrentVolState -> Array ReactElement
     renderCurrentVol Nothing = []
-    renderCurrentVol (Just currentVol) = renderShiftType currentVol
-                                      <> renderSelected currentVol
+    renderCurrentVol (Just currentVol) = renderSelected currentVol
+                                      <> renderShiftType currentVol
       where
       renderShiftType :: CurrentVolState -> Array ReactElement
       renderShiftType s@{ shiftType: Just st } | s.canChangeShiftType =
@@ -160,18 +160,20 @@ spec = T.simpleSpec performAction render
         where
         renderShiftTypeRadio :: ShiftType -> ShiftType -> Array ReactElement
         renderShiftTypeRadio shiftType currentShiftType = 
-          [ RD.input [ RP._type "radio"
-                     , RP._id $ "shift-type-" <> toDateString state.date <> "-" <> code shiftType
-                     , RP.name $ "shift-type-" <> toDateString state.date
-                     , RP.checked $ currentShiftType == shiftType
-                     , RP.onChange \_ -> dispatch $ ChangeCurrentVolShiftType state.date shiftType
-                     ]
-                     [ ]
-          , RD.label [ RP.className "action-label"
-                     , RP.htmlFor $ "shift-type-" <> toDateString state.date <> "-" <> code shiftType ]
-                     [ renderIcon shiftType
-                     , RD.text $ description shiftType
-                     ]
+          [ RD.span [ RP.className "current-vol-shift-type-option" ]
+                    [ RD.input [ RP._type "radio"
+                               , RP._id $ "shift-type-" <> toDateString state.date <> "-" <> code shiftType
+                               , RP.name $ "shift-type-" <> toDateString state.date
+                               , RP.checked $ currentShiftType == shiftType
+                               , RP.onChange \_ -> dispatch $ ChangeCurrentVolShiftType state.date shiftType
+                               ]
+                               [ ]
+                    , RD.label [ RP.className "action-label"
+                               , RP.htmlFor $ "shift-type-" <> toDateString state.date <> "-" <> code shiftType ]
+                               [ renderIcon shiftType
+                               , RD.text $ description shiftType
+                               ]
+                    ]
           ]
         description :: ShiftType -> String
         description Evening   = "Evening only"

@@ -9,14 +9,14 @@ import Data.DateTime (Date, Weekday(..))
 import Data.Either (Either(..))
 import Data.Lens (Lens', lens, Prism', prism, over)
 import Data.List (List(..), zipWith)
-import Data.Maybe (Maybe(..), maybe)
+import Data.Maybe (Maybe(..), maybe, isJust)
 import Data.Time.Duration (Milliseconds(..))
 import Data.Tuple (Tuple(..), uncurry, snd)
 import React.DOM as RD 
 import React.DOM.Props as RP
 import Thermite as T
 
-import App.Common (tomorrow, modifyWhere, toMonthYearString, isFirstDayOfMonth, addDays, previousWeekday)
+import App.Common (tomorrow, modifyWhere, toMonthYearString, isFirstDayOfMonth, addDays, previousWeekday, classNames, onlyIf)
 import App.ShiftRules (ShiftRuleConfig)
 import App.Types (Shift, Volunteer, VolunteerShift)
 import App.ShiftRow (initialState) as SR
@@ -42,8 +42,8 @@ spec =
   where
   roster :: T.Spec eff State props Action -> T.Spec eff State props Action
   roster = over T._render \render d p s c ->
-    [ RD.div [ RP.className "roster" ]
-           $ render d p s c
+    [ RD.div [ classNames [ "roster", onlyIf ( isJust s.roster.currentVol) "has-current-vol" ] ]
+             $ render d p s c
     ]
       
   footerSpec :: T.Spec _ State _ Action

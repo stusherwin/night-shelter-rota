@@ -6,7 +6,7 @@ body {
   min-width: 320px;
 }
 
-@small-screen-max-width: 519px;
+@small-screen-max-width: 400px;
 @small-screen: ~"only screen and (max-width: " @small-screen-max-width ~")";
 @medium-screen-max-width:722px;
 @medium-screen: ~"only screen and (max-width: " @medium-screen-max-width ~")";
@@ -271,7 +271,7 @@ i {
   }
 
   &.loading {
-    margin-left: -2px;
+    // margin-left: -2px;
   }
 }
 
@@ -322,6 +322,20 @@ a.action {
   }
 }
 
+.fontello {
+  font-family: "fontello";
+  font-style: normal;
+  font-weight: normal;
+
+  display: inline-block;
+  text-decoration: inherit;
+  font-variant: normal;
+  text-transform: none;
+  line-height: 1em;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
 ////////////////////// ROSTER /////////////////////////
 
 .roster {
@@ -350,21 +364,28 @@ a.action {
 
     .row-item {
       float: left;
-      padding: 10px 10px 10px 10px;
+      padding: 10px 0px 10px 10px;
+
+      &:last-child {
+        padding-right: 10px;
+      }
+
       .group;
+      // background: #faa;
 
       &.shift-date {
         .group;
 
         .shift-date-part {
           float: left;
+          // background: #afa;
 
           &.shift-date-day {
             width: 3.5em;
           }
 
           &.shift-date-date {
-            width: 3em;
+            width: 2.5em;
             margin-left: 5px;
           }
 
@@ -379,14 +400,15 @@ a.action {
 
         .shift-status-part {
           float: left;
+          // background: #afa;
 
           &.shift-status-vol-count {
             margin-left: 5px;
-            width: 2.5em;
+            width: 1.5em;
           }
 
           &.shift-status-icon {
-            width: 3em;
+            width: 1.5em;
 
             margin-left: 5px;
             margin-top: 3px;
@@ -404,15 +426,26 @@ a.action {
       }
 
       &.vol-markers {
-        margin-left: 10px;
+        // background: #faa;
+        float: none;
+        margin-left: 170px;
         padding-top: 6px;
         padding-bottom: 6px;
+        padding: 0;
+        padding-top: 7px;
 
         .vol-marker {
           display: inline-block;
           background: #ddd;
           color: #555;
           margin-right: 10px;
+          // margin-top: 6px;
+          margin-bottom: 6px;
+
+          &:last-child {
+            margin-right: 0;
+          }
+
           padding-left: 5px;
           padding-right: 5px;
           padding-top: 2px;
@@ -422,6 +455,10 @@ a.action {
 
           .vol-name {
             float: left;
+            max-width: 200px;
+            overflow: hidden;
+            white-space: nowrap;
+            text-overflow: ellipsis;
           }
 
           .sharing-pref {
@@ -431,90 +468,73 @@ a.action {
 
             i {
               position: relative;
-              left: -1px;
+              left: 0px;
             }
           }
         }
       }
 
       &.current-vol {
+        width: 310px;
+        min-width: 80px;
         float: right;
         color: #555;
+        padding: 10px;
+        // background: #ffa;
 
         .current-vol-shift-type {
           float: left;
-          margin-right: 10px;
+          // background: #aaf;
+          // margin-right: 10px;
           vertical-align: bottom;
+          margin-top: 0px;
 
           &.radio {
-            label {
+            .current-vol-shift-type-option {
+              float: left;
+              // background: #afa;
+              white-space: nowrap;
               margin-right: 20px;
-            }
 
-            input[type="radio"] {
-              margin-right: 5px;
+              label {
+                white-space: nowrap;
+              }
+
+              input[type="radio"] {
+                margin-right: 5px;
+              }
             }
           }
 
           &.toggle {
+            // background: #faa;
+            margin-right: 0px;
+            // margin-top: 19px;
             .ui.toggle.checkbox {
               input[type="checkbox"].hidden {
-                // visibility: hidden;
 
                 & + label {
                   position: relative;
-                  // top: 10px;
                   padding-left: 51px;
-                  // font-size: 10px;
-                  // text-transform: uppercase;
-                  // text-align: center;
+
                   &::before {
-                    // text-align: right;
-                    // font-size: 14px;
-                    // top: -22px;
+                    .fontello;
+                    margin: 0;
                     top: -2px;
-                    // left: 50px;
-                    
                     height: 20px;
                     content: '\e806';
-                    font-family: "fontello";
-                    font-style: normal;
-                    font-weight: normal;
 
-                    display: inline-block;
-                    text-decoration: inherit;
-                    /* opacity: .8; */
-                   
-                    /* For safety - reset parent styles, that can break glyph codes*/
-                    font-variant: normal;
-                    text-transform: none;
-                   
-                    /* fix buttons height, for twitter bootstrap */
-                    line-height: 1em;
-                   
-                    /* Animation center compensation - margins should be symmetric */
-                    /* remove if not needed */
-                   
-                    /* you can be more comfortable with increased icons size */
-                    /* font-size: 120%; */
-                   
-                    /* Font smoothing. That was taken from TWBS */
-                    -webkit-font-smoothing: antialiased;
-                    -moz-osx-font-smoothing: grayscale;
                     padding: 3px;
                     padding-left: 25px;
-                    box-shadow: inset 0 0 1px 0 rgba(0, 0, 0, 0.25);       
+                    box-shadow: inset 0 0 1px 0 rgba(0, 0, 0, 0.25);
                   }
 
                   &::after {
                     top: -2px;
-                    // top: -22px;
-                    // left: 50px;
-                    // height: 19px;
-                    // width: 19px;
+                    height: 20px;
+                    width: 20px;
                     background: #fff;
-                    box-shadow: inset 0 0 1px 0 #000;       
-                    // border: 1px solid rgba(0, 0, 0, 0.05);       
+                    box-shadow: inset 0 0 1px 0 #000;
                   }
                 }
 
@@ -524,13 +544,12 @@ a.action {
                     padding: 3px 9px;
                     content: '\f236';
                   }
-                  
+
                   &::after {
-                    // border: 1px solid rgb(33, 133, 208);
+                    height: 20px;
+                    width: 20px;
                     box-shadow: inset 0 0 1px 0 darken(rgb(33, 133, 208), 40%);
                   }
-                  // background: green;
-                  // background: red;
                 }
               }
             }
@@ -538,6 +557,7 @@ a.action {
         }
 
         .current-vol-selected.ui.checkbox {
+          margin-top: 1px;
           float: right;
 
           label:before {
@@ -569,8 +589,8 @@ a.action {
       background-color: #f9f9f9;
 
       .row-item.current-vol {
-        padding-left: 10px;
-        padding-right: 10px;
+        // padding-left: 10px;
+        // padding-right: 10px;
       }
     }
 
@@ -633,15 +653,29 @@ a.action {
         height: 0;
         border-top: 6px solid transparent;
         border-bottom: 6px solid transparent;
-        border-left: 6px solid #555; //rgba(34, 36, 38, 0.3); //rgba(85, 85, 85, 0.8);
+        border-left: 6px solid #555;
         content: " ";
+      }
+    }
+  }
+
+  @media @larger-screen {
+    .row {
+      .row-item {
+        &.current-vol {
+          width: 170px;
+
+          .current-vol-shift-type {
+            float: none;
+          }
+        }
       }
     }
   }
 
   @media @medium-screen {
     .row {
-      min-height: 56px;
+      min-height: 55px;
       position: relative;
       padding-left: 5px;
       padding-right: 5px;
@@ -656,9 +690,8 @@ a.action {
 
         position: relative;
         min-height: 0;
-        // display: none;
+
         .row-header-actions {
-          // background: red;
           display: block;
           width: 234px;
           margin: 0 auto 10px auto;
@@ -677,17 +710,13 @@ a.action {
       .row-item {
         &.shift-date {
           float: left;
-          // background: #faa;
           width: 40px;
           position: relative;
-          // height: 100%;
-          // margin-left: 10px;
 
           .shift-date-part {
             float: none;
             display: block;
             position: absolute;
-            // background: #faa;
 
             &.shift-date-day {
               top: 5px;
@@ -696,7 +725,6 @@ a.action {
               left: 0px;
               right: 0px;
               width: auto;
-              // font-family: monospace;
               text-align: center;
             }
 
@@ -730,11 +758,10 @@ a.action {
 
         &.shift-status {
           float: left;
-          // background: #aaf;
-          width: 45px;
-          // .group;
+          width: 30px;
           position: relative;
-
+          margin-right: 10px;
+          
           .shift-status-part {
             float: none;
             display: block;
@@ -746,47 +773,96 @@ a.action {
               left: 0;
               right: 0;
               text-align: center;
+              width: auto;
             }
 
             &.shift-status-icon {
               top: 10px;
-              left: -4px;
+              left: 0px;
               right: 0;
               text-align: center;
+              width: auto;
+              
             }
           }
         }
 
         &.current-vol {
-          margin-top: 10px;
+          // margin-top: 19px;
+          // padding: 0;
+          // margin-right: 10px;
+          width: 100px;
+          .current-vol-shift-type {
+            &.toggle {
+              margin-top: 9px;
+            }
+          }
+          .current-vol-selected.ui.checkbox {
+            margin-top: 9px;
+          }
+
+          i.loading {
+            margin-top: 9px;
+          }
         }
 
         &.vol-markers {
-          // background: #faa;
-          padding: 4px;
+          float: left;
+          padding: 0px;
           margin: 0;
+          margin-left: 6px;
 
           .vol-marker {
             float: left;
             clear: left;
             margin-top: 4px;
+            margin-bottom: 0;
             padding: 0px 3px;
 
+            .vol-name {
+              max-width: 106px;
+            }
+
             &:first-child {
-              margin-top: 0;
+              &:last-child {
+                margin-top: 17px;
+              }
             }
           }
         }
       }
 
       &.today {
-
         &:before {
           top: 22px;
           border-top-width: 6px;
           border-bottom-width: 6px;
           border-left-width: 6px;
           border-left-color: #555;
+        }
+      }
+    }
+  }
+
+  @media @small-screen {
+    .row {
+      .row-item {
+        &.vol-markers {
+          .vol-marker {
+            .vol-name {
+              max-width: 83px;
+            }
+          }
+        }
+      }
+    }
+
+    &.has-current-vol {
+      .row {
+        .row-item {
+          &.shift-status {
+            display: none;
+          }
         }
       }
     }
@@ -845,7 +921,6 @@ form.details {
 
   @media @medium-screen {
     .field .ui.radio.checkbox {
-      // background: #faa;
       display: block;
     }
   }
