@@ -1,0 +1,49 @@
+form.details {
+  background: #f2f2f2;
+  padding: 10px;
+  margin-top: 10px;
+  border: 1px solid #ddd;
+  border-radius: 3px;
+
+  .field {
+    .ui.radio.checkbox {
+      margin-right: 20px;
+      margin-top: 10px;
+    }
+  }
+
+  label .notes {
+    display: block;
+    color: #bbb;
+
+    b {
+      color: #555;
+    }
+  }
+
+  label .sharing-pref {
+    margin-left: 0px;
+    margin-right: 5px;
+    padding-bottom: 2px;
+    position: relative;
+    top: 1px;
+    cursor: inherit;
+
+    span {
+      position: relative;
+      top: 0px;
+      left: 0px;
+    }
+  }
+
+  @media @medium-screen {
+    margin-top: 0px;
+    margin-bottom: -10px;
+    border: none;
+    border-radius: 0px;
+  
+    .field .ui.radio.checkbox {
+      display: block;
+    }
+  }
+}

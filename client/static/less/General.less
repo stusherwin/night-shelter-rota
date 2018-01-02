@@ -1,0 +1,141 @@
+@import "Variables.less";
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  min-width: 320px;
+}
+
+.media-larger-screen, .media-medium-screen, .media-small-screen {
+  display: none !important;
+}
+
+.media-large-screen {
+  display: block !important;
+}
+
+@media @larger-screen {
+  .media-large-screen,
+  .media-medium-screen,
+  .media-small-screen,
+  .media-medium-screen.media-small-screen {
+    display: none !important;
+  }
+
+  .media-larger-screen,
+  .media-larger-screen.media-large-screen,
+  .media-larger-screen.media-medium-screen {
+    display: block !important;
+  }
+}
+
+@media @medium-screen {
+  .media-large-screen,
+  .media-larger-screen,
+  .media-small-screen,
+  .media-large-screen.media-larger-screen {
+    display: none !important;
+  }
+
+  .media-medium-screen,
+  .media-medium-screen.media-larger-screen,
+  .media-medium-screen.media-small-screen {
+    display: block !important;
+  }
+}
+
+@media @small-screen {
+  .media-large-screen,
+  .media-larger-screen,
+  .media-medium-screen,
+  .media-large-screen.media-larger-screen,
+  .media-larger-screen.media-medium-screen {
+    display: none !important;
+  }
+
+  .media-small-screen,
+  .media-small-screen.media-medium-screen {
+    display: block !important;
+  }
+}
+
+.float-right {
+  float: right;
+}
+
+i {
+  &.vol-icon {
+    margin-right: 5px;
+  }
+}
+
+a.action {
+  cursor: pointer;
+
+  &[disabled] {
+    cursor: default;
+    cursor: text;
+    pointer-events: none;
+    color: #999;
+  }
+}
+
+.group {
+  &::after {
+    content: " ";
+    height: 0;
+    display: block;
+    clear: both;
+  }
+}
+
+.sharing-pref {
+  display: inline-block;
+  width: 16px;
+  height: 16px;
+  text-align: center;
+  background: #555;
+  color: #fff;
+  border: 1px solid #555;
+  margin-left: 5px;
+  border-radius: 16px;
+  cursor: help;
+  font-weight: bold;
+  font-size: 12px;
+  line-height: 15px;
+  vertical-align: top;
+
+  &.icon {
+    i {
+      margin-left: -1px;
+
+      &:before {
+        margin-left: 3px;
+      }
+    }
+  }
+}
+
+.fontello {
+  font-family: "fontello";
+  font-style: normal;
+  font-weight: normal;
+
+  display: inline-block;
+  text-decoration: inherit;
+  font-variant: normal;
+  text-transform: none;
+  line-height: 1em;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+.action-label {
+  cursor: pointer !important;
+}
+
+.ui.checkbox input[type="checkbox"][disabled] {
+  cursor: default;
+}
