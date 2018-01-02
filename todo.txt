@@ -1,0 +1,11 @@
+* Remove circles around vol prefs
+* Remove left margin from dropdown on small screen
+* Add padding to header on small screen
+* Change prev/next 4 week behaviour
+* Add 'introduction' section on vol details
+* Remove volunteers
+* Add 'overnight'/'evening' text to small screen toggle
+* Click on vol marker to get vol details popup
+* Does it make sense to have date coloured red without alert icon?
+* Alert icon tooltip on mobile? Need to touch to get alert popup
+* Error message tooltip: just show message, also mobile popup behaviour
