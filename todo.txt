@@ -2,8 +2,7 @@
 * Remove left margin from dropdown on small screen
 * Change prev/next 4 week behaviour
 * Add 'introduction' section on vol details
-* Remove volunteers
-* Add 'overnight'/'evening' text to small screen toggle
+* Ability to remove/hide volunteers
 * Click on vol marker to get vol details popup
 * Does it make sense to have date coloured red without alert icon?
 * Alert icon tooltip on mobile? Need to touch to get alert popup

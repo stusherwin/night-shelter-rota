@@ -131,7 +131,7 @@
       }
 
       &.current-vol {
-        width: 310px;
+        width: 280px;
         min-width: 80px;
         float: right;
         color: #555;
@@ -160,6 +160,8 @@
 
           &.toggle {
             margin-right: 0px;
+            position: relative;
+
             .ui.toggle.checkbox {
               input[type="checkbox"].hidden {
 
@@ -202,6 +204,21 @@
                   }
                 }
               }
+            }
+
+            .current-vol-shift-type-toggle-description {
+              font-size: 8px;
+              text-transform: uppercase;
+              position: absolute;
+              bottom: -14px;
+              left: -2;
+              right: 0;
+              text-align: center;
+              color: fadeout(#555, 80%);
+              font-family: sans-serif;
+              letter-spacing: 1px;
+              font-weight: 100;
+              // text-shadow: 0.5px 0.5px 0.5px fadeout(#fff, 20%);
             }
           }
         }
@@ -308,11 +325,11 @@
     .row {
       .row-item {
         &.vol-markers {
-          width: ~"calc(100% - 370px)";
+          width: ~"calc(100% - 365px)";
         }
 
         &.current-vol {
-          width: 180px;
+          width: 175px;
           .current-vol-selected.ui.checkbox {
             margin-left: 10px;
           }
@@ -455,7 +472,7 @@
           }
 
           i.loading {
-            margin-top: 9px;
+            margin-top: 10px;
           }
         }
 

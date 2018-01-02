@@ -152,8 +152,9 @@ spec = T.simpleSpec performAction render
                                       ]
                                       []
                            , RD.label [ RP.htmlFor $ "shift-type-" <> toDateString state.date ]
-                                      -- [ RD.text $ description st ]
                                       []
+                           , RD.span [ RP.className "current-vol-shift-type-toggle-description" ]
+                                     [ RD.text $ description st ]
                            ]
                   ]
         ]
@@ -176,7 +177,7 @@ spec = T.simpleSpec performAction render
                     ]
           ]
         description :: ShiftType -> String
-        description Evening   = "Evening only"
+        description Evening   = "Evening"
         description Overnight = "Overnight"
 
         code :: ShiftType -> String
