@@ -70,8 +70,9 @@ spec = T.simpleSpec performAction render
                                            [ ]
                                 , RD.label [ RP.className "action-label"
                                            , RP.htmlFor "pref-alone-2" ]
-                                           [ renderPref PreferAnotherVolunteer 
-                                           , RD.text "I prefer to work with a second volunteer"
+                                           [ RD.text "I prefer to work with a second volunteer ("
+                                           , renderPref PreferAnotherVolunteer 
+                                           , RD.text ")"
                                            ]
                                 ]
                        , RD.div [ RP.className "ui radio checkbox" ]
@@ -87,8 +88,9 @@ spec = T.simpleSpec performAction render
                                            [ ]
                                 , RD.label [ RP.className "action-label"
                                            , RP.htmlFor "pref-alone-1" ]
-                                           [ renderPref PreferToBeAlone
-                                           , RD.text "I prefer to be on my own"
+                                           [ RD.text "I prefer to be on my own ("
+                                           , renderPref PreferToBeAlone
+                                           , RD.text ")"
                                            ]
                                 ]
                        , RD.div [ RP.className "ui radio checkbox" ]
@@ -123,8 +125,9 @@ spec = T.simpleSpec performAction render
                                            [ ]
                                 , RD.label [ RP.className "action-label"
                                            , RP.htmlFor "pref-gender-f" ]
-                                           [ renderGenderPref Female
-                                           , RD.text "Females only"
+                                           [ RD.text "Females only ("
+                                           , renderGenderPref Female
+                                           , RD.text ")"
                                            ]
                                 ]
                        , RD.div [ RP.className "ui radio checkbox" ]
@@ -140,8 +143,9 @@ spec = T.simpleSpec performAction render
                                            [ ]
                                 , RD.label [ RP.className "action-label"
                                            , RP.htmlFor "pref-gender-m" ]
-                                           [ renderGenderPref Male 
-                                           , RD.text "Males only"
+                                           [ RD.text "Males only ("
+                                           , renderGenderPref Male 
+                                           , RD.text ")"
                                            ]
                                 ]
                        , RD.div [ RP.className "ui radio checkbox" ]
@@ -257,16 +261,16 @@ isValid { name } | length name == 0 = false
 isValid _ = true
 
 renderGenderPref :: OvernightGenderPreference -> ReactElement
-renderGenderPref Male   = RD.div [ RP.className "sharing-pref gender" 
-                                 ] 
-                                 [ RD.span' [ RD.text "M" ] ]
-renderGenderPref Female = RD.div [ RP.className "sharing-pref gender" 
-                                 ] 
-                                 [ RD.span' [ RD.text "F" ] ]
+renderGenderPref Male   = RD.span [ RP.className "sharing-pref gender" 
+                                  ] 
+                                  [ RD.span' [ RD.text "M" ] ]
+renderGenderPref Female = RD.span [ RP.className "sharing-pref gender" 
+                                  ] 
+                                  [ RD.span' [ RD.text "F" ] ]
 renderPref :: OvernightPreference -> ReactElement
-renderPref PreferToBeAlone        = RD.div [ RP.className "sharing-pref alone" 
-                                           ] 
-                                           [ RD.span' [ RD.text "1" ] ]
-renderPref PreferAnotherVolunteer = RD.div [ RP.className "sharing-pref alone" 
-                                           ] 
-                                           [ RD.span' [ RD.text "2" ] ]
+renderPref PreferToBeAlone        = RD.span [ RP.className "sharing-pref alone" 
+                                            ] 
+                                            [ RD.span' [ RD.text "1" ] ]
+renderPref PreferAnotherVolunteer = RD.span [ RP.className "sharing-pref alone" 
+                                            ] 
+                                            [ RD.span' [ RD.text "2" ] ]

@@ -99,36 +99,36 @@ spec = T.simpleSpec performAction render
     renderVolMarker :: VolMarkerState -> ReactElement
     renderVolMarker s =
       RD.span [ RP.className "vol-marker" ]
-              $ (map renderSharingPref $ reverse s.sharingPrefs)
-              <> [ RD.div [ RP.className "vol-name" ]
-                         [ renderIcon s.shiftType
-                         , RD.text $ s.name
-                         ]
-                 ]
+              [ RD.span [ RP.className "vol-name" ]
+                        $ [ renderIcon s.shiftType
+                          , RD.text $ s.name
+                          ]
+                          <> (map renderSharingPref s.sharingPrefs)
+              ]
       
       where
       renderSharingPref :: SharingPref -> ReactElement
-      renderSharingPref GM    = RD.div [ RP.className "sharing-pref gender" 
-                                       , RP.title "Males only" 
-                                       ] 
-                                       [ RD.span' [ RD.text "M" ] ]
-      renderSharingPref GF    = RD.div [ RP.className "sharing-pref gender" 
-                                       , RP.title "Females only" 
-                                       ] 
-                                       [ RD.span' [ RD.text "F" ] ]
-      renderSharingPref P1    = RD.div [ RP.className "sharing-pref alone" 
-                                       , RP.title "I prefer to be on my own" 
-                                       ] 
-                                       [ RD.span' [ RD.text "1" ] ]
-      renderSharingPref P2    = RD.div [ RP.className "sharing-pref alone" 
-                                       , RP.title "I prefer to work with another volunteer" 
-                                       ] 
-                                       [ RD.span' [ RD.text "2" ] ]
-      renderSharingPref (N n) = RD.div [ RP.className "sharing-pref icon" 
-                                       , RP.title n
-                                       , RP.dangerouslySetInnerHTML { __html: "<i class=\"icon-info-1\"></i>&nbsp;" }
-                                       ] 
-                                       []
+      renderSharingPref GM    = RD.span [ RP.className "sharing-pref gender" 
+                                        , RP.title "Males only" 
+                                        ] 
+                                        [ RD.span' [ RD.text "M" ] ]
+      renderSharingPref GF    = RD.span [ RP.className "sharing-pref gender" 
+                                        , RP.title "Females only" 
+                                        ] 
+                                        [ RD.span' [ RD.text "F" ] ]
+      renderSharingPref P1    = RD.span [ RP.className "sharing-pref alone" 
+                                        , RP.title "I prefer to be on my own" 
+                                        ] 
+                                        [ RD.span' [ RD.text "1" ] ]
+      renderSharingPref P2    = RD.span [ RP.className "sharing-pref alone" 
+                                        , RP.title "I prefer to work with another volunteer" 
+                                        ] 
+                                        [ RD.span' [ RD.text "2" ] ]
+      renderSharingPref (N n) = RD.span [ RP.className "sharing-pref icon" 
+                                        , RP.title n
+                                        , RP.dangerouslySetInnerHTML { __html: "<i class=\"icon-info\"></i>&nbsp;" }
+                                        ] 
+                                        []
 
     renderCurrentVol :: Maybe CurrentVolState -> Array ReactElement
     renderCurrentVol Nothing = []
