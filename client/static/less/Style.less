@@ -427,21 +427,23 @@ a.action {
 
       &.vol-markers {
         // background: #faa;
-        float: none;
-        margin-left: 170px;
+        float: left;
+        margin-left: 16px;
         padding-top: 6px;
         padding-bottom: 6px;
         padding: 0;
         padding-top: 7px;
+        width: ~"calc(100% - 500px)";        
 
         .vol-marker {
           display: inline-block;
           background: #ddd;
           color: #555;
           margin-right: 10px;
+          // margin-left: 10px;
           // margin-top: 6px;
           margin-bottom: 6px;
-
+          max-width: 100%;
           &:last-child {
             margin-right: 0;
           }
@@ -454,8 +456,8 @@ a.action {
           border: 1px solid #ccc;
 
           .vol-name {
-            float: left;
-            max-width: 200px;
+            // float: left;
+            // max-width: 200px;
             overflow: hidden;
             white-space: nowrap;
             text-overflow: ellipsis;
@@ -464,7 +466,7 @@ a.action {
           .sharing-pref {
             margin-top: 2px;
             display: block;
-            float: left;
+            float: right;
 
             i {
               position: relative;
@@ -662,8 +664,14 @@ a.action {
   @media @larger-screen {
     .row {
       .row-item {
+        &.vol-markers {
+          width: ~"calc(100% - 370px)";        
+        }
         &.current-vol {
-          width: 170px;
+          width: 180px;
+          .current-vol-selected.ui.checkbox {
+            margin-left: 10px;
+          }
 
           .current-vol-shift-type {
             float: none;
@@ -788,6 +796,8 @@ a.action {
         }
 
         &.current-vol {
+          // height: 56px;
+          // background: #aaf;
           // margin-top: 19px;
           // padding: 0;
           // margin-right: 10px;
@@ -808,9 +818,13 @@ a.action {
 
         &.vol-markers {
           float: left;
+          // background: #faa;
+          // float: none;
           padding: 0px;
           margin: 0;
           margin-left: 6px;
+          // margin-left: 85px;
+          width: ~"calc(100% - 196px)";
 
           .vol-marker {
             float: left;
@@ -818,9 +832,18 @@ a.action {
             margin-top: 4px;
             margin-bottom: 0;
             padding: 0px 3px;
-
+            white-space: nowrap;
+            max-width: 100%;//~"calc(100% - 200px)";
+            // position: relative;
+            // top: -20px;
             .vol-name {
-              max-width: 106px;
+              //max-width: 106px;
+              max-width:none;
+              float: none;
+            }
+
+            .sharing-pref {
+              float: right;
             }
 
             &:first-child {
@@ -848,9 +871,10 @@ a.action {
     .row {
       .row-item {
         &.vol-markers {
+          width: ~"calc(100% - 148px)";        
           .vol-marker {
             .vol-name {
-              max-width: 83px;
+              // max-width: 83px;
             }
           }
         }

@@ -99,12 +99,12 @@ spec = T.simpleSpec performAction render
     renderVolMarker :: VolMarkerState -> ReactElement
     renderVolMarker s =
       RD.span [ RP.className "vol-marker" ]
-              $ [ RD.div [ RP.className "vol-name" ]
+              $ map renderSharingPref s.sharingPrefs
+              <> [ RD.div [ RP.className "vol-name" ]
                          [ renderIcon s.shiftType
                          , RD.text $ s.name
                          ]
-                ]
-              <> map renderSharingPref s.sharingPrefs
+                 ]
       
       where
       renderSharingPref :: SharingPref -> ReactElement
