@@ -2,7 +2,7 @@ module App.ShiftRow (spec, initialState) where
  
 import Prelude
  
-import Data.Array (catMaybes, fromFoldable)
+import Data.Array (catMaybes, fromFoldable, reverse)
 import Data.DateTime (Date, Weekday(..), weekday, month)
 import Data.Either (Either(..))
 import Data.Foldable (fold)
@@ -99,7 +99,7 @@ spec = T.simpleSpec performAction render
     renderVolMarker :: VolMarkerState -> ReactElement
     renderVolMarker s =
       RD.span [ RP.className "vol-marker" ]
-              $ map renderSharingPref s.sharingPrefs
+              $ (map renderSharingPref $ reverse s.sharingPrefs)
               <> [ RD.div [ RP.className "vol-name" ]
                          [ renderIcon s.shiftType
                          , RD.text $ s.name

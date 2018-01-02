@@ -151,7 +151,7 @@ body {
   }
 
   &:after {
-    // display: none;
+    display: none;
     position: absolute;
     left: 5px;
     bottom: -23px;
@@ -269,10 +269,6 @@ i {
   &.vol-icon {
     margin-right: 5px;
   }
-
-  &.loading {
-    // margin-left: -2px;
-  }
 }
 
 a.action {
@@ -371,14 +367,12 @@ a.action {
       }
 
       .group;
-      // background: #faa;
 
       &.shift-date {
         .group;
 
         .shift-date-part {
           float: left;
-          // background: #afa;
 
           &.shift-date-day {
             width: 3.5em;
@@ -400,7 +394,6 @@ a.action {
 
         .shift-status-part {
           float: left;
-          // background: #afa;
 
           &.shift-status-vol-count {
             margin-left: 5px;
@@ -426,7 +419,6 @@ a.action {
       }
 
       &.vol-markers {
-        // background: #faa;
         float: left;
         margin-left: 16px;
         padding-top: 6px;
@@ -439,9 +431,7 @@ a.action {
           display: inline-block;
           background: #ddd;
           color: #555;
-          margin-right: 10px;
-          // margin-left: 10px;
-          // margin-top: 6px;
+          margin-right: 6px;
           margin-bottom: 6px;
           max-width: 100%;
           &:last-child {
@@ -456,8 +446,6 @@ a.action {
           border: 1px solid #ccc;
 
           .vol-name {
-            // float: left;
-            // max-width: 200px;
             overflow: hidden;
             white-space: nowrap;
             text-overflow: ellipsis;
@@ -482,19 +470,15 @@ a.action {
         float: right;
         color: #555;
         padding: 10px;
-        // background: #ffa;
 
         .current-vol-shift-type {
           float: left;
-          // background: #aaf;
-          // margin-right: 10px;
           vertical-align: bottom;
           margin-top: 0px;
 
           &.radio {
             .current-vol-shift-type-option {
               float: left;
-              // background: #afa;
               white-space: nowrap;
               margin-right: 20px;
 
@@ -509,9 +493,7 @@ a.action {
           }
 
           &.toggle {
-            // background: #faa;
             margin-right: 0px;
-            // margin-top: 19px;
             .ui.toggle.checkbox {
               input[type="checkbox"].hidden {
 
@@ -589,11 +571,6 @@ a.action {
     &.loading {
       opacity: 0.6;
       background-color: #f9f9f9;
-
-      .row-item.current-vol {
-        // padding-left: 10px;
-        // padding-right: 10px;
-      }
     }
 
     &.past {
@@ -752,7 +729,7 @@ a.action {
             }
 
             &.shift-date-month {
-              display: none; //block;
+              display: none;
               bottom: 1px;
               margin: 0;
               left: 0px;
@@ -774,7 +751,6 @@ a.action {
             float: none;
             display: block;
             position: absolute;
-            // background: #faa;
 
             &.shift-status-vol-count {
               top: 28px;
@@ -796,11 +772,6 @@ a.action {
         }
 
         &.current-vol {
-          // height: 56px;
-          // background: #aaf;
-          // margin-top: 19px;
-          // padding: 0;
-          // margin-right: 10px;
           width: 100px;
           .current-vol-shift-type {
             &.toggle {
@@ -818,12 +789,9 @@ a.action {
 
         &.vol-markers {
           float: left;
-          // background: #faa;
-          // float: none;
           padding: 0px;
           margin: 0;
           margin-left: 6px;
-          // margin-left: 85px;
           width: ~"calc(100% - 196px)";
 
           .vol-marker {
@@ -831,13 +799,13 @@ a.action {
             clear: left;
             margin-top: 4px;
             margin-bottom: 0;
+            &:last-child {
+              margin-bottom: 4px;
+            }
             padding: 0px 3px;
             white-space: nowrap;
-            max-width: 100%;//~"calc(100% - 200px)";
-            // position: relative;
-            // top: -20px;
+            max-width: 100%;
             .vol-name {
-              //max-width: 106px;
               max-width:none;
               float: none;
             }
@@ -872,11 +840,6 @@ a.action {
       .row-item {
         &.vol-markers {
           width: ~"calc(100% - 148px)";        
-          .vol-marker {
-            .vol-name {
-              // max-width: 83px;
-            }
-          }
         }
       }
     }
