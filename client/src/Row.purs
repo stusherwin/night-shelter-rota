@@ -39,23 +39,29 @@ spec = T.split _HeaderRow headerRowSpec
                                 ]
       where
       actions :: Array R.ReactElement
-      actions = if state.showActions then
-                  [ RD.div [ RP.className "row-header-actions" ]
-                           [ RD.a [ RP.href "#"
-                                  , RP.className "action"
-                                  , RP.onClick \_ -> dispatch PrevPeriod
-                                  ]
-                                  [ RD.i [ RP.className "icon-left-open"] []
-                                  , RD.span' [ RD.text "previous 4 weeks" ]
-                                  ]
-                           , RD.a [ RP.href "#"
-                                  , RP.className "action"
-                                  , RP.onClick \_ -> dispatch NextPeriod
-                                  ]
-                                  [ RD.span' [ RD.text "next 4 weeks" ]
-                                  , RD.i [ RP.className "icon-right-open"] []
-                                  ]
-                           ]
-                  ]
-                else
-                  []
+      actions = [ RD.div [ RP.className "row-header-actions" ]
+                         $ if state.showPrev then
+                             [ RD.a [ RP.href "#"
+                                    , RP.className "action"
+                                    , RP.onClick \e -> do
+                                       _ <- R.preventDefault e
+                                       dispatch PrevPeriod
+                                    ]
+                                    [ RD.i [ RP.className "icon-up-open"] []
+                                    , RD.span' [ RD.text "previous 4 weeks" ]
+                                    ]
+                             ]
+                           else []
+                         <> if state.showNext then 
+                             [ RD.a [ RP.href "#"
+                                    , RP.className "action"
+                                    , RP.onClick \e -> do
+                                       _ <- R.preventDefault e
+                                       dispatch NextPeriod
+                                    ]
+                                    [ RD.i [ RP.className "icon-down-open"] []
+                                    , RD.span' [ RD.text "next 4 weeks" ]
+                                    ]
+                             ]
+                            else []
+                ]

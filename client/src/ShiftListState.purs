@@ -31,7 +31,8 @@ data RowState = ShiftRow ShiftRowState
               | HeaderRow HeaderRowState
 
 type HeaderRowState = { text :: String
-                      , showActions :: Boolean  
+                      , showNext :: Boolean  
+                      , showPrev :: Boolean  
                       }
 
 type ShiftRowState = { date :: Date

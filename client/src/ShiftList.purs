@@ -4,17 +4,21 @@ import Prelude
 
 import Control.Monad.Aff (delay)
 import Control.Monad.Aff.Class (liftAff)
+import Control.Monad.Eff.Class (liftEff)
+import Control.Monad.Eff (Eff)
 import Control.Monad.Trans.Class (lift)
 import Data.DateTime (Date, Weekday(..))
 import Data.Either (Either(..))
 import Data.Lens (Lens', lens, Prism', prism, over)
-import Data.List (List(..), zipWith)
+import Data.List (List(..), zipWith, length)
 import Data.Maybe (Maybe(..), maybe, isJust)
 import Data.Time.Duration (Milliseconds(..))
 import Data.Tuple (Tuple(..), uncurry, snd)
 import React.DOM as RD 
 import React.DOM.Props as RP
 import Thermite as T
+import React as R
+import Control.Monad.Eff.Console (log, CONSOLE)
 
 import App.Common (tomorrow, modifyWhere, toMonthYearString, isFirstDayOfMonth, addDays, previousWeekday, classNames, onlyIf)
 import App.ShiftRules (ShiftRuleConfig)
@@ -35,12 +39,12 @@ _RowAction = prism (uncurry RowAction) unwrap
   unwrap (RowAction i a) = Right (Tuple i a)
   unwrap a = Left a
  
-spec :: forall props eff. T.Spec eff State props Action
+spec :: T.Spec _ State _ Action
 spec = 
   ( roster $ T.focus _rows _RowAction $ T.foreach \_ -> R.spec )
   <> footerSpec
   where
-  roster :: T.Spec eff State props Action -> T.Spec eff State props Action
+  roster :: T.Spec _ State _ Action -> T.Spec _ State _ Action
   roster = over T._render \render d p s c ->
     [ RD.div [ classNames [ "roster", onlyIf ( isJust s.roster.currentVol) "has-current-vol" ] ]
              $ render d p s c
@@ -54,9 +58,23 @@ spec =
 
     performAction :: T.PerformAction _ State _ Action
     performAction (RowAction _ PrevPeriod) _ _ = void do
-      T.modifyState \state -> adjustPeriod (-shiftCount) state
+      id <- lift $ liftEff $ firstElementIdByClassName "shift-row"
+      st <- lift $ liftEff $ scrollTop
+      ot <- lift $ liftEff $ elementOffsetTopById id
+      let pos = ot - st
+      _ <- T.modifyState \state -> loadPrevPeriod state
+      ot' <- lift $ liftEff $ elementOffsetTopById id
+      let st' = ot' - pos
+      lift $ liftEff $ scrollTo $ st' + 1.0
     performAction (RowAction _ NextPeriod) _ _ = void do
-      T.modifyState \state -> adjustPeriod shiftCount state
+      id <- lift $ liftEff $ lastElementIdByClassName "shift-row"
+      st <- lift $ liftEff $ scrollTop
+      ot <- lift $ liftEff $ elementOffsetTopById id
+      let pos = ot - st
+      _ <- T.modifyState \state -> loadNextPeriod state
+      ot' <- lift $ liftEff $ elementOffsetTopById id
+      let st' = ot' - pos
+      lift $ liftEff $ scrollTo st'
     performAction _ _ _ = pure unit
     
 initialState :: forall c. Maybe Volunteer -> List Shift -> ShiftRuleConfig -> State
@@ -79,14 +97,14 @@ rows roster config = rows' roster.startDate
   where   
   rows' :: Date -> List RowState
   rows' date | date > roster.endDate = 
-      Cons (HeaderRow { text: "", showActions: true })
+      Cons (HeaderRow { text: "", showNext: true, showPrev: false })
     $ Nil
   rows' date | date == roster.startDate =
-      Cons (HeaderRow { text: toMonthYearString date, showActions: true})
+      Cons (HeaderRow { text: toMonthYearString date, showNext: false, showPrev: true })
     $ Cons (ShiftRow $ SR.initialState roster config date)
     $ rows' $ tomorrow date
   rows' date | isFirstDayOfMonth date =
-      Cons (HeaderRow { text: toMonthYearString date, showActions: false })
+      Cons (HeaderRow { text: toMonthYearString date, showNext: false, showPrev: false })
     $ Cons (ShiftRow $ SR.initialState roster config date)
     $ rows' $ tomorrow date
   rows' date =
@@ -108,10 +126,30 @@ changeCurrentVol currentVol state =
            , rows = preserveLoading state.rows $ rows roster' state.config
            }
 
-adjustPeriod :: Int -> State -> State
-adjustPeriod adj state = 
-  let roster' = state.roster { startDate = addDays adj state.roster.startDate
-                             , endDate = addDays adj state.roster.endDate
+loadPrevPeriod :: State -> State
+loadPrevPeriod state =
+  -- if we've already added an extra set of shifts to the roster we don't want to add any more,
+  -- so just bring the end date back as well
+  let endDateDiff = if length state.rows > shiftCount + 4 {- no. of header rows that can appear -}
+                       then (-shiftCount)
+                       else 0
+      roster' = state.roster { startDate = addDays (-shiftCount) state.roster.startDate
+                             , endDate = addDays endDateDiff state.roster.endDate
+                             , loading = false
+                             }
+  in state { roster = roster'
+           , rows = rows roster' state.config
+           }
+
+loadNextPeriod :: State -> State
+loadNextPeriod state =
+  -- if we've already added an extra set of shifts to the roster we don't want to add any more,
+  -- so just bring the start date forward as well
+  let startDateDiff = if length state.rows > shiftCount + 4 {- no. of header rows that can appear -}
+                       then shiftCount
+                       else 0
+      roster' = state.roster { startDate = addDays startDateDiff state.roster.startDate
+                             , endDate = addDays shiftCount state.roster.endDate
                              , loading = false
                              }
   in state { roster = roster'
@@ -132,3 +170,13 @@ shiftUpdated shifts date state =
   in state { roster = roster'
            , rows = modifyWhere isShiftOnDate cancelLoading $ preserveLoading state.rows $ rows roster' state.config
            }
+
+foreign import scrollTop :: forall eff. Eff eff Number
+
+foreign import scrollTo :: forall eff. Number -> Eff eff Unit
+
+foreign import elementOffsetTopById :: forall eff. String -> Eff eff Number
+
+foreign import firstElementIdByClassName :: forall eff. String -> Eff eff String
+
+foreign import lastElementIdByClassName :: forall eff. String -> Eff eff String

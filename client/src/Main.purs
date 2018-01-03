@@ -303,7 +303,7 @@ type APIEffect eff = ReaderT MySettings (ExceptT AjaxError (Aff (ajax :: AJAX, e
 
 apiReq :: forall a. Generic a => APIEffect _ a -> Aff _ (Either AjaxError a)
 apiReq m = do
-  delay $ Milliseconds 5000.0
+  delay $ Milliseconds 50.0
   response <- runExceptT $ runReaderT m settings
   case response of
     Left err -> do
@@ -349,4 +349,3 @@ foreign import isServerSide :: Boolean
 foreign import getElementById :: forall eff. String -> Eff eff Element
 
 foreign import hot :: forall eff. Eff eff Unit
- 

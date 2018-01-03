@@ -33,12 +33,13 @@ spec = T.simpleSpec performAction render
 
   render :: T.Render ShiftRowState _ RowAction
   render dispatch _ state _ =
-    [ RD.div [ classNames $ [ "row" ]
+    [ RD.div [ classNames $ [ "row shift-row" ]
                             <> weekendClass state
                             <> loadingClass state
                             <> statusClass state
                             <> pastClass state
                             <> todayClass state
+             , RP._id $ "shift-row-" <> toDateString state.date
              ]
              [ RD.div [ classNames [ "row-item shift-date" ] ]
                       [ RD.div [ classNames [ "shift-date-part shift-date-day collapsing" ] ]
