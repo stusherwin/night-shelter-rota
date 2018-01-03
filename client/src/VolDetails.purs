@@ -176,30 +176,32 @@ spec = T.simpleSpec performAction render
                                   ]
                                   []
                        ]
-               , RD.div [ RP.className "ui error message" ]
-                        [ RD.div [ RP.className "header" ]
-                                 [ RD.text "Please check these fields and try again:" ]
-                        , RD.p' [ RD.text "Volunteer name should not be empty." ]
-                        ]
-              , RD.button [ RP.className "ui primary button"
-                          , RP._type "submit"
-                          , RP.disabled formError
-                          , RP.onClick \e -> do
-                              _ <- preventDefault e
-                              dispatch $ if state.formValid then Save state.details else SetSubmitted
-                          , RP.disabled state.readOnly
-                          ]
-                          [ RD.i [ RP.className "icon icon-ok" ] []
-                          , RD.text "Save" ]
-              , RD.button [ RP.className "ui button"
-                          , RP.disabled formError
-                          , RP.onClick \e -> do
-                              _ <- preventDefault e
-                              dispatch $ Cancel
-                          , RP.disabled state.readOnly
-                          ]
-                          [ RD.i [ RP.className "icon icon-cancel" ] []
-                          , RD.text "Cancel" ]
+              , RD.div [ RP.className "ui error message" ]
+                       [ RD.div [ RP.className "header" ]
+                                [ RD.text "Please check these fields and try again:" ]
+                       , RD.p' [ RD.text "Volunteer name should not be empty." ]
+                       ]
+              , RD.div [ RP.className "buttons" ]
+                       [ RD.button [ RP.className "ui button"
+                                   , RP.disabled formError
+                                   , RP.onClick \e -> do
+                                       _ <- preventDefault e
+                                       dispatch $ Cancel
+                                   , RP.disabled state.readOnly
+                                   ]
+                                   [ RD.i [ RP.className "icon icon-cancel" ] []
+                                   , RD.text "Cancel" ]
+                       , RD.button [ RP.className "ui primary button"
+                                   , RP._type "submit"
+                                   , RP.disabled formError
+                                   , RP.onClick \e -> do
+                                       _ <- preventDefault e
+                                       dispatch $ if state.formValid then Save state.details else SetSubmitted
+                                   , RP.disabled state.readOnly
+                                   ]
+                                   [ RD.i [ RP.className "icon icon-ok" ] []
+                                   , RD.text "Save" ]
+                       ]
               ]
     ]
     where

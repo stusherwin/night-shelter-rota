@@ -220,17 +220,17 @@
             }
 
             .current-vol-shift-type-toggle-description {
-              font-size: 8px;
-              text-transform: uppercase;
+              display: none;
+              font-size: 10px;
+              // text-transform: uppercase;
               position: absolute;
               bottom: -14px;
               left: -2;
               right: 0;
               text-align: center;
-              color: fadeout(#555, 80%);
-              font-family: sans-serif;
-              letter-spacing: 1px;
-              font-weight: 100;
+              color: fadeout(#555, 60%);
+              // letter-spacing: 0.5px;
+              font-weight: 0;
               // text-shadow: 0.5px 0.5px 0.5px fadeout(#fff, 20%);
             }
           }
@@ -512,10 +512,6 @@
               float: none;
             }
 
-            .sharing-pref {
-              // float: right;
-            }
-
             &:first-child {
               &:last-child {
                 margin-top: 17px;
@@ -554,8 +550,6 @@
   @media @small-screen {
     .row {
       .row-item {
-        &.vol-markers {
-        }
         &.current-vol {
           display: none;
         }
