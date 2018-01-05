@@ -43,7 +43,7 @@ import App.Header (State, Action(..), spec, initialState, volDetailsUpdated, edi
 import App.ShiftRules (ShiftRuleConfig)
 import App.ShiftList (State, Action(..), RowAction(..), spec, initialState, changeCurrentVol, shiftUpdated) as SL
 import App.VolDetails (State, Action(..), spec, initialState, disable, enable) as VD
-import App.Types (OvernightPreference(..), OvernightGenderPreference(..), Volunteer, VolunteerShift, Shift, VolunteerDetails, ShiftType(..))
+import App.Types (OvernightPreference(..), OvernightGenderPreference(..), Volunteer, VolunteerShift, Shift, VolunteerDetails, ShiftType(..), overnightPrefMarker, overnightPrefDescription, overnightGenderPrefMarker, overnightGenderPrefDescription)
 import App.ServerTypeConversion
 import ServerTypes (OvernightPreference(..), OvernightGenderPreference(..), Volunteer(..), VolunteerShift(..), Shift(..), VolunteerDetails(..), ShiftType(..), ShiftDate(..)) as API
 
@@ -51,6 +51,9 @@ data Action = ShiftListAction SL.Action
             | HeaderAction H.Action
             | VolDetailsAction VD.Action
             | ReportError AjaxError
+            | VolInfoAction VolInfoAction
+
+data VolInfoAction = Close
 
 type State = { vols :: List Volunteer 
              , shifts :: List Shift
@@ -59,6 +62,7 @@ type State = { vols :: List Volunteer
              , header :: H.State
              , volDetails :: Maybe VD.State 
              , config :: ShiftRuleConfig
+             , volInfo :: Maybe Volunteer
              }
  
 _shiftList :: Lens' State (Maybe SL.State)
@@ -88,6 +92,15 @@ _VolDetailsAction = prism VolDetailsAction unwrap
   unwrap (VolDetailsAction a) = Right a
   unwrap a = Left a 
  
+_volInfo :: Lens' State (Maybe Volunteer)
+_volInfo = lens _.volInfo _{volInfo = _}
+
+_VolInfoAction :: Prism' Action VolInfoAction
+_VolInfoAction = prism VolInfoAction unwrap
+  where 
+  unwrap (VolInfoAction a) = Right a
+  unwrap a = Left a 
+
 spec :: T.Spec _ State _ Action
 spec = T.focus _header _HeaderAction H.spec 
     <> (over T._render container $ fold [ T.focus _volDetails _VolDetailsAction
@@ -96,6 +109,7 @@ spec = T.focus _header _HeaderAction H.spec
                                             $ T.split _Just SL.spec
                                         , handler
                                         ])
+    <> T.focus _volInfo _VolInfoAction volInfo
   where 
   container :: T.Render State _ Action -> T.Render State _ Action
   container render d p s c =
@@ -123,7 +137,75 @@ spec = T.focus _header _HeaderAction H.spec
       updateVolunteerShift shiftDate shiftType s
     performAction (ShiftListAction (SL.RowAction _ (SL.RemoveCurrentVol shiftDate))) _ s =
       removeVolunteerShift shiftDate s
+    performAction (ShiftListAction (SL.RowAction _ (SL.ShowVolInfo v))) _ _ =
+      showVolInfo v
+    performAction (VolInfoAction Close) _ _ =
+      hideVolInfo
     performAction _ _ _ = pure unit
+  volInfo :: T.Spec _ (Maybe Volunteer) _ VolInfoAction
+  volInfo = T.simpleSpec T.defaultPerformAction render
+    where
+    render :: T.Render (Maybe Volunteer) _ VolInfoAction
+    render dispatch _ Nothing _ = []
+    render dispatch _ (Just v) _ = [ RD.div [ RP.className "vol-info-fadeout" ]
+                                            [ RD.div [ RP.className "vol-info" ]
+                                                     [ RD.h2' [ RD.text v.name ]
+                                                     , RD.a [ RP.href "#"
+                                                            , RP.onClick \e -> do
+                                                               _ <- R.preventDefault e
+                                                               dispatch Close
+                                                            ]
+                                                            [ RD.i [ RP.className "icon-cancel"] []
+                                                            ]
+                                                     , RD.div [ RP.className "vol-info-content" ]
+                                                              $ renderIntro v
+                                                                <> renderPreferences v
+                                                                <> renderNotes v
+                                                     ]
+                                            ]
+                                   ]
+      where
+      renderIntro :: Volunteer -> Array R.ReactElement
+      renderIntro v | false = [ RD.div [ RP.className "vol-info-intro" ]
+                                      [ RD.p' [ RD.text "Hi, I've been a volunteer here for 10 years, I like fish and I don't want any trouble." ]
+                                      , RD.p' [ RD.text "I should add that I really don't like Tuesdays, and I have a secret phobia of falling down sideways into black forest gateaus. Or is it gateaux?" ]
+                                      ]
+                             ]
+      renderIntro v = [ RD.div [ RP.className "vol-info-no-intro" ]
+                               [ RD.text $ v.name <> " doesn't have an intro yet."
+                               ]
+                      ]
+      renderPreferences :: Volunteer -> Array R.ReactElement
+      renderPreferences { overnightPreference: Nothing, overnightGenderPreference: Nothing } = []
+      renderPreferences v = [ RD.h3' [ RD.text "My preferences" ] ]
+                            <> renderOvernight v.overnightPreference
+                            <> renderGender v.overnightGenderPreference
+        where
+        renderOvernight :: Maybe OvernightPreference -> Array R.ReactElement
+        renderOvernight Nothing = []
+        renderOvernight (Just p) = [ RD.div' [ RD.span [ RP.className "vol-info-pref-marker" ]
+                                                       [ RD.text $ overnightPrefMarker p ]
+                                             , RD.span' [ RD.text $ overnightPrefDescription p ]
+                                             ] 
+                                   ]
+    
+        renderGender :: Maybe OvernightGenderPreference -> Array R.ReactElement
+        renderGender Nothing = []
+        renderGender (Just p) = [ RD.div' [ RD.span [ RP.className "vol-info-pref-marker" ]
+                                                    [ RD.text $ overnightGenderPrefMarker p ]
+                                          , RD.span' [ RD.text $ overnightGenderPrefDescription p ]
+                                          ] 
+                                ]
+  
+      renderNotes :: Volunteer -> Array R.ReactElement
+      renderNotes { notes: "" } = []
+      renderNotes { notes } = [ RD.h3' [ RD.text "Notes for other volunteers" ]
+                              , RD.div' [ RD.span [ RP.className "vol-info-pref-marker" ] 
+                                                  [ RD.i [ RP.className "icon-info" ] []
+                                                  ]
+                                        , RD.span' [ RD.text notes ]
+                                        ]
+                              ]
 
 changeCurrentVol :: Maybe Volunteer -> State -> _
 changeCurrentVol currentVol' { shiftList: Nothing } = do
@@ -249,6 +331,16 @@ removeVolunteerShift date { currentVol: Just v } = do
                                            }
 removeVolunteerShift _ _ = pure unit
 
+showVolInfo :: Volunteer -> _
+showVolInfo v = do
+  void $ T.modifyState \s -> s{ volInfo = Just v
+                              }
+
+hideVolInfo :: _
+hideVolInfo = do
+  void $ T.modifyState \s -> s{ volInfo = Nothing
+                              }
+
 initialState :: Date -> State
 initialState currentDate =
   let config = { maxVolsPerShift: 2
@@ -262,6 +354,7 @@ initialState currentDate =
       , header: H.initialState
       , volDetails: Nothing
       , config
+      , volInfo: Nothing
       }
 
 initialDataLoaded :: List Volunteer -> List Shift -> State -> State

@@ -112,3 +112,116 @@ a.action {
 .ui.checkbox input[type="checkbox"][disabled] {
   cursor: default;
 }
+
+.vol-info-fadeout {
+  position: fixed;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: rgba(0, 0, 0, 0.5);
+  z-index: 2;
+}
+
+.vol-info {
+  color: #555;
+  background: #fff;
+  z-index: 3;
+  width: 90%;
+  max-width: 400px;
+  // min-width: 50%;
+  height: 90%;
+  max-height: 500px;
+  position: absolute;
+  top: 50%;  
+  left: 50%;
+  transform: translate(-50%, -50%);
+  border-radius: 5px;
+  padding: 10px;
+  
+  h2 {
+    text-align: center;
+    margin-top: 15px;
+    margin-bottom: 0;
+  }
+
+  a {
+    position: absolute;
+    top: 10px;
+    right: 5px;
+    color: #555;
+
+    &:hover {
+      color: #999;
+    }
+  }
+
+  .vol-info-content {
+    position: absolute;
+    overflow-x: hidden;
+    overflow-y: auto;
+    margin-left: 5px;
+    margin-right: 5px;
+    top: 70px;
+    left: 5px;
+    right: 5px;
+    bottom: 15px;
+    padding: 0 15px;
+    margin-bottom: 15px;
+
+    .vol-info-intro {
+      position: relative;
+      padding: 0px 22px;
+      font-style: italic;
+      line-height: 16px;
+
+      &:before, &:after {
+        font-style: normal;
+        font-size: 25px;
+        color: #bbb;
+
+        //TODO: Find a better font for this
+        font-family: Georgia, Times, Times New Roman, serif;
+        font-weight: bold;
+        position: absolute;
+      }
+
+      &:before {
+        left: 0;
+        top: 5px;
+        content: '\201C';
+      }
+
+      &:after {
+        right: 0;
+        bottom: -9px;
+        content: '\201D';
+      }
+    }
+
+    .vol-info-no-intro {
+      color: #aaa;
+      font-style: italic;
+      text-align: center;
+      line-height: 16px;
+    }
+
+    h3 {
+      font-size: 16px;
+      margin-top: 20px;
+      margin-bottom: 5px;
+    }
+
+    .vol-info-pref-marker {
+      display: inline-block;
+      width: 30px;
+      font-weight: bold;
+      i {
+        margin: 0;
+        &:before {
+          margin: 0;
+        }
+      }
+    }
+  }
+}

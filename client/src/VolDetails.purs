@@ -10,7 +10,7 @@ import React.DOM.Props as RP
 import Thermite as T
  
 import App.Common (unsafeEventValue, classNames, onlyIf, unsafeChecked)
-import App.Types (OvernightPreference(..), OvernightGenderPreference(..), Volunteer, VolunteerDetails)
+import App.Types (OvernightPreference(..), OvernightGenderPreference(..), Volunteer, VolunteerDetails, overnightPrefMarker, overnightPrefDescription, overnightGenderPrefMarker, overnightGenderPrefDescription)
 
 type State = { details :: VolunteerDetails
              , title :: String
@@ -70,7 +70,8 @@ spec = T.simpleSpec performAction render
                                            [ ]
                                 , RD.label [ RP.className "action-label"
                                            , RP.htmlFor "pref-alone-2" ]
-                                           [ RD.text "I prefer to work with a second volunteer ("
+                                           [ RD.text $ overnightPrefDescription PreferAnotherVolunteer
+                                           , RD.text " ("
                                            , renderPref PreferAnotherVolunteer 
                                            , RD.text ")"
                                            ]
@@ -88,7 +89,8 @@ spec = T.simpleSpec performAction render
                                            [ ]
                                 , RD.label [ RP.className "action-label"
                                            , RP.htmlFor "pref-alone-1" ]
-                                           [ RD.text "I prefer to be on my own ("
+                                           [ RD.text $ overnightPrefDescription PreferToBeAlone
+                                           , RD.text " ("
                                            , renderPref PreferToBeAlone
                                            , RD.text ")"
                                            ]
@@ -125,7 +127,8 @@ spec = T.simpleSpec performAction render
                                            [ ]
                                 , RD.label [ RP.className "action-label"
                                            , RP.htmlFor "pref-gender-f" ]
-                                           [ RD.text "Females only ("
+                                           [ RD.text $ overnightGenderPrefDescription Female
+                                           , RD.text " ("
                                            , renderGenderPref Female
                                            , RD.text ")"
                                            ]
@@ -143,7 +146,8 @@ spec = T.simpleSpec performAction render
                                            [ ]
                                 , RD.label [ RP.className "action-label"
                                            , RP.htmlFor "pref-gender-m" ]
-                                           [ RD.text "Males only ("
+                                           [ RD.text $ overnightGenderPrefDescription Male
+                                           , RD.text " ("
                                            , renderGenderPref Male 
                                            , RD.text ")"
                                            ]
@@ -262,17 +266,12 @@ isValid :: VolunteerDetails -> Boolean
 isValid { name } | length name == 0 = false
 isValid _ = true
 
-renderGenderPref :: OvernightGenderPreference -> ReactElement
-renderGenderPref Male   = RD.span [ RP.className "sharing-pref gender" 
-                                  ] 
-                                  [ RD.span' [ RD.text "M" ] ]
-renderGenderPref Female = RD.span [ RP.className "sharing-pref gender" 
-                                  ] 
-                                  [ RD.span' [ RD.text "F" ] ]
 renderPref :: OvernightPreference -> ReactElement
-renderPref PreferToBeAlone        = RD.span [ RP.className "sharing-pref alone" 
-                                            ] 
-                                            [ RD.span' [ RD.text "1" ] ]
-renderPref PreferAnotherVolunteer = RD.span [ RP.className "sharing-pref alone" 
-                                            ] 
-                                            [ RD.span' [ RD.text "2" ] ]
+renderPref p = RD.span [ RP.className "sharing-pref alone" 
+                       ] 
+                       [ RD.span' [ RD.text $ overnightPrefMarker p ] ]
+
+renderGenderPref :: OvernightGenderPreference -> ReactElement
+renderGenderPref p = RD.span [ RP.className "sharing-pref gender" 
+                             ] 
+                             [ RD.span' [ RD.text $ overnightGenderPrefMarker p ] ]

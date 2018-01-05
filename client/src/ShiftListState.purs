@@ -12,6 +12,7 @@ data RowAction = PrevPeriod
                | AddCurrentVol Date ShiftType
                | RemoveCurrentVol Date
                | ChangeCurrentVolShiftType Date ShiftType
+               | ShowVolInfo Volunteer
 
 data Action = RowAction Int RowAction
 
@@ -41,14 +42,9 @@ type ShiftRowState = { date :: Date
                      , currentVol :: Maybe CurrentVolState
                      , noOfVols :: Int
                      , maxVols :: Int
-                     , volMarkers :: List VolMarkerState
+                     , volMarkers :: List VolunteerShift
                      , loading :: Boolean
                      }
-
-type VolMarkerState = { name :: String
-                      , shiftType :: ShiftType
-                      , sharingPrefs :: Array SharingPref
-                      }
 
 type CurrentVolState = { name :: String
                        , shiftType :: Maybe ShiftType
@@ -56,12 +52,6 @@ type CurrentVolState = { name :: String
                        , canAddEvening :: Boolean
                        , canChangeShiftType :: Boolean
                        }  
-
-data SharingPref = GM
-                 | GF
-                 | P1
-                 | P2
-                 | N String
 
 data ShiftStatus = Good
                  | Warning String

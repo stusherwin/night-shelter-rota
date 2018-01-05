@@ -1,6 +1,5 @@
 * Add 'introduction' section on vol details
 * Ability to remove/hide volunteers
-* Click on vol marker to get vol details popup
 * Does it make sense to have date coloured red without alert icon?
 * Alert icon tooltip on mobile? Need to touch to get alert popup
 * Error message tooltip: just show message, also mobile popup behaviour

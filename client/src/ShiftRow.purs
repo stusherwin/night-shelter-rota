@@ -19,7 +19,7 @@ import Thermite as T
 import App.Common (onlyIf, classNames, dayString1, dayPostfix, sortWith, justIf, toDateString, isWeekday)
 import App.ShiftRules (ShiftRuleConfig, validateShift, canChangeVolunteerShiftType, canAddVolunteer)
 import App.ShiftRules (RuleResult(..)) as SR
-import App.Types (Volunteer, Shift, VolunteerShift, ShiftType(..), OvernightPreference(..), OvernightGenderPreference(..), otherShiftType)
+import App.Types (Volunteer, Shift, VolunteerShift, ShiftType(..), OvernightPreference(..), OvernightGenderPreference(..), otherShiftType, overnightPrefMarker, overnightPrefDescription, overnightGenderPrefMarker, overnightGenderPrefDescription)
 import ShiftListState
  
 spec :: T.Spec _ ShiftRowState _ RowAction
@@ -61,7 +61,7 @@ spec = T.simpleSpec performAction render
              , RD.div [ classNames [ "row-item current-vol collapsing right aligned" ] ] 
                     $ renderCurrentVol state.currentVol
              , RD.div [ classNames [ "row-item vol-markers collapsing" ] ]
-                    $ fromFoldable $ map renderVolMarker state.volMarkers
+                    $ fromFoldable $ map (renderVolMarker dispatch) state.volMarkers
             --  , RD.div [ classNames [ "row-item" ] ]
             --           []
              ]
@@ -97,39 +97,39 @@ spec = T.simpleSpec performAction render
     statusIcon { status: Info i }    = [ RD.i [ RP.className "icon-info", RP.title i ] [] ]
     statusIcon _ = []
 
-    renderVolMarker :: VolMarkerState -> ReactElement
-    renderVolMarker s =
+    renderVolMarker :: _ -> VolunteerShift -> ReactElement
+    renderVolMarker d s =
       RD.span [ RP.className "vol-marker" ]
-              [ RD.span [ RP.className "vol-name" ]
+              [ RD.span [ RP.className "vol-name"
+                        , RP.onClick \_ -> d $ ShowVolInfo s.volunteer
+                        ]
                         $ [ renderIcon s.shiftType
-                          , RD.text $ s.name
+                          , RD.text $ s.volunteer.name
                           ]
-                          <> (map renderSharingPref s.sharingPrefs)
+                          <> renderSharingPrefs s.volunteer
               ]
-      
       where
-      renderSharingPref :: SharingPref -> ReactElement
-      renderSharingPref GM    = RD.span [ RP.className "sharing-pref gender" 
-                                        , RP.title "Males only" 
-                                        ] 
-                                        [ RD.span' [ RD.text "M" ] ]
-      renderSharingPref GF    = RD.span [ RP.className "sharing-pref gender" 
-                                        , RP.title "Females only" 
-                                        ] 
-                                        [ RD.span' [ RD.text "F" ] ]
-      renderSharingPref P1    = RD.span [ RP.className "sharing-pref alone" 
-                                        , RP.title "I prefer to be on my own" 
-                                        ] 
-                                        [ RD.span' [ RD.text "1" ] ]
-      renderSharingPref P2    = RD.span [ RP.className "sharing-pref alone" 
-                                        , RP.title "I prefer to work with another volunteer" 
-                                        ] 
-                                        [ RD.span' [ RD.text "2" ] ]
-      renderSharingPref (N n) = RD.span [ RP.className "sharing-pref icon" 
-                                        , RP.title n
-                                        , RP.dangerouslySetInnerHTML { __html: "<i class=\"icon-info\"></i>&nbsp;" }
-                                        ] 
-                                        []
+      renderSharingPrefs :: Volunteer -> Array ReactElement
+      renderSharingPrefs vol = catMaybes [ map renderOvernight vol.overnightPreference
+                                         , map renderGender vol.overnightGenderPreference
+                                         , map renderNotes $ justIf vol.notes $ S.length vol.notes > 0
+                                         ]
+
+      renderOvernight :: OvernightPreference -> ReactElement
+      renderOvernight p = RD.span [ RP.className "sharing-pref alone" 
+                                  ] 
+                                  [ RD.span' [ RD.text $ overnightPrefMarker p ] ]
+
+      renderGender :: OvernightGenderPreference -> ReactElement
+      renderGender p = RD.span [ RP.className "sharing-pref gender" 
+                               ] 
+                               [ RD.span' [ RD.text $ overnightGenderPrefMarker p ] ]
+
+      renderNotes :: String -> ReactElement
+      renderNotes n = RD.span [ RP.className "sharing-pref icon" 
+                              , RP.dangerouslySetInnerHTML { __html: "<i class=\"icon-info\"></i>&nbsp;" }
+                              ] 
+                              []
 
     renderCurrentVol :: Maybe CurrentVolState -> Array ReactElement
     renderCurrentVol Nothing = []
@@ -226,7 +226,7 @@ initialState roster config date =
   , status: status
   , loading: false
   , currentVol: map currentVolState roster.currentVol
-  , volMarkers: sortWith (S.toLower <<< _.name) $ map volMarkerState shift.volunteers
+  , volMarkers: sortWith (S.toLower <<< _.volunteer.name) $ shift.volunteers
   }
   where
   shift = maybe { date: date, volunteers: Nil } id
@@ -250,26 +250,6 @@ initialState roster config date =
         concat msg (Just m) = msg <> ", and also " <> m
         concat msg Nothing  = msg
     in firstErrorStatus $ foldl concat "" $ map extractMsg errors
-
-  volMarkerState :: VolunteerShift -> VolMarkerState
-  volMarkerState { volunteer: v, shiftType } = { name: v.name
-                                               , shiftType: shiftType
-                                               , sharingPrefs: sharingPrefs v
-                                               }
-    where
-    sharingPrefs :: Volunteer -> Array SharingPref
-    sharingPrefs vol = catMaybes [ map overnight vol.overnightPreference
-                                 , map gender vol.overnightGenderPreference
-                                 , justIf (N vol.notes) $ S.length vol.notes > 0
-                                 ]
-
-    overnight :: OvernightPreference -> SharingPref
-    overnight PreferToBeAlone = P1
-    overnight PreferAnotherVolunteer = P2
-
-    gender :: OvernightGenderPreference -> SharingPref
-    gender Male = GM
-    gender Female = GF
 
   currentVolState :: Volunteer -> CurrentVolState
   currentVolState cv = { name: cv.name
