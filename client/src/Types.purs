@@ -9,6 +9,7 @@ import Prelude
 
 type Volunteer = { id :: Int
                  , name :: String
+                 , intro :: String
                  , overnightPreference :: Maybe OvernightPreference
                  , overnightGenderPreference :: Maybe OvernightGenderPreference
                  , notes :: String
@@ -41,9 +42,10 @@ data ShiftType =
 derive instance eqShiftType :: Eq ShiftType
 
 type VolunteerDetails = { name :: String
-                        , notes :: String
+                        , intro :: String
                         , pref :: Maybe OvernightPreference
                         , genderPref :: Maybe OvernightGenderPreference
+                        , notes :: String
                         }
 
 otherShiftType :: ShiftType -> ShiftType

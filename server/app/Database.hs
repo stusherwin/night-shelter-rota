@@ -46,7 +46,7 @@ module Database (getAllVolunteers, getVolunteer, addVolunteer, updateVolunteer, 
         _ -> mzero
 
   instance FromRow Volunteer where
-    fromRow = Volunteer <$> field <*> field <*> field <*> field <*> field
+    fromRow = Volunteer <$> field <*> field <*> field <*> field <*> field <*> field
 
   instance FromField ShiftDate where
     fromField f date = do
@@ -80,7 +80,7 @@ module Database (getAllVolunteers, getVolunteer, addVolunteer, updateVolunteer, 
   getAllVolunteers connectionString = do
     conn <- connectPostgreSQL connectionString
     result <- query_ conn
-      " select id, name, overnight_pref, overnight_gender_pref, notes\
+      " select id, name, intro, overnight_pref, overnight_gender_pref, notes\
       \ from volunteer"
     close conn
     return result
@@ -89,7 +89,7 @@ module Database (getAllVolunteers, getVolunteer, addVolunteer, updateVolunteer, 
   getVolunteer connectionString id = do
     conn <- connectPostgreSQL connectionString
     result <- query conn
-      " select id, name, overnight_pref, overnight_gender_pref, notes\
+      " select id, name, intro, overnight_pref, overnight_gender_pref, notes\
       \ from volunteer\
       \ where id = ?"
       (Only id)
@@ -101,11 +101,12 @@ module Database (getAllVolunteers, getVolunteer, addVolunteer, updateVolunteer, 
     conn <- connectPostgreSQL connectionString
     [Only id] <- query conn
       " insert into volunteer\
-      \   (name, overnight_pref, overnight_gender_pref, notes)\
+      \   (name, intro, overnight_pref, overnight_gender_pref, notes)\
       \ values\
-      \   (?, ?, ?, ?)\
+      \   (?, ?, ?, ?, ?)\
       \ returning id"
       ( vdName details
+      , vdIntro details
       , vdPref details
       , vdGenderPref details
       , vdNotes details
@@ -119,12 +120,14 @@ module Database (getAllVolunteers, getVolunteer, addVolunteer, updateVolunteer, 
     result <- query conn
       " update volunteer\
       \ set name = ?\
+      \   , intro = ?\
       \   , overnight_pref = ?\
       \   , overnight_gender_pref = ?\
       \   , notes = ?\
       \ where id = ?\
-      \ returning id, name, overnight_pref, overnight_gender_pref, notes"
+      \ returning id, name, intro, overnight_pref, overnight_gender_pref, notes"
       ( vdName details
+      , vdIntro details
       , vdPref details
       , vdGenderPref details
       , vdNotes details
@@ -138,7 +141,7 @@ module Database (getAllVolunteers, getVolunteer, addVolunteer, updateVolunteer, 
     conn <- connectPostgreSQL connectionString
     -- TODO: convert to single db query
     rVols <- query_ conn
-      " select id, name, overnight_pref, overnight_gender_pref, notes\
+      " select id, name, intro, overnight_pref, overnight_gender_pref, notes\
       \ from volunteer v\
       \ join volunteer_shift vs\
       \   on vs.volunteerId = v.id"
@@ -158,7 +161,7 @@ module Database (getAllVolunteers, getVolunteer, addVolunteer, updateVolunteer, 
     conn <- connectPostgreSQL connectionString
     -- TODO: convert to single db query
     rVols <- query conn
-      " select id, name, overnight_pref, overnight_gender_pref, notes\
+      " select id, name, intro, overnight_pref, overnight_gender_pref, notes\
       \ from volunteer v\
       \ join volunteer_shift vs\
       \   on vs.volunteerId = v.id\
@@ -204,7 +207,7 @@ module Database (getAllVolunteers, getVolunteer, addVolunteer, updateVolunteer, 
       return 0
   
     rVols <- query conn
-      " select id, name, overnight_pref, overnight_gender_pref, notes\
+      " select id, name, intro, overnight_pref, overnight_gender_pref, notes\
       \ from volunteer v\
       \ join volunteer_shift vs\
       \   on vs.volunteerId = v.id\
@@ -235,7 +238,7 @@ module Database (getAllVolunteers, getVolunteer, addVolunteer, updateVolunteer, 
       return Nothing
     else do
       rVols <- query conn
-        " select id, name, overnight_pref, overnight_gender_pref, notes\
+        " select id, name, intro, overnight_pref, overnight_gender_pref, notes\
         \ from volunteer v\
         \ join volunteer_shift vs\
         \   on vs.volunteerId = v.id\
@@ -268,7 +271,7 @@ module Database (getAllVolunteers, getVolunteer, addVolunteer, updateVolunteer, 
       return Nothing
     else do
       rVols <- query conn
-        " select id, name, overnight_pref, overnight_gender_pref, notes\
+        " select id, name, intro, overnight_pref, overnight_gender_pref, notes\
         \ from volunteer v\
         \ join volunteer_shift vs\
         \   on vs.volunteerId = v.id\

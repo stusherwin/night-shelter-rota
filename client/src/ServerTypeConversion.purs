@@ -56,6 +56,7 @@ fromAPIVols vols = map fromAPIVol $ fromFoldable vols
 fromAPIVol :: API.Volunteer -> Volunteer
 fromAPIVol (API.Volunteer v) = { id: v.vId
                                , name: v.vName
+                               , intro: v.vIntro
                                , overnightPreference: fromAPIOvernightPreference <$> v.vOvernightPreference
                                , overnightGenderPreference: fromAPIOvernightGenderPreference <$> v.vOvernightGenderPreference
                                , notes: v.vNotes
@@ -71,7 +72,8 @@ fromAPIShift (API.Shift s) = { date: fromAPIShiftDate s.sDate
 
 toAPIVolDetails :: VolunteerDetails -> API.VolunteerDetails
 toAPIVolDetails d = API.VolunteerDetails { vdName: d.name
-                                         , vdNotes: d.notes
+                                         , vdIntro: d.intro
                                          , vdPref: toAPIOvernightPreference <$> d.pref
                                          , vdGenderPref: toAPIOvernightGenderPreference <$> d.genderPref
+                                         , vdNotes: d.notes
                                          }

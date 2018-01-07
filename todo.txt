@@ -1,4 +1,3 @@
-* Add 'introduction' section on vol details
 * Ability to remove/hide volunteers
 * Does it make sense to have date coloured red without alert icon?
 * Alert icon tooltip on mobile? Need to touch to get alert popup

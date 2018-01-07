@@ -20,6 +20,7 @@ module Types where
   
   data Volunteer = Volunteer { vId :: Int
                              , vName :: String
+                             , vIntro :: String
                              , vOvernightPreference :: Maybe OvernightPreference
                              , vOvernightGenderPreference :: Maybe OvernightGenderPreference
                              , vNotes :: String
@@ -27,9 +28,10 @@ module Types where
   instance ToJSON Volunteer
 
   data VolunteerDetails = VolunteerDetails { vdName :: String
-                                           , vdNotes :: String
+                                           , vdIntro :: String
                                            , vdPref :: Maybe OvernightPreference
                                            , vdGenderPref :: Maybe OvernightGenderPreference
+                                           , vdNotes :: String
                                            } deriving (Eq, Show, Generic)
                             
   instance ToJSON VolunteerDetails
@@ -58,7 +60,7 @@ module Types where
   instance ToJSON Shift
 
   newVolunteer :: Int -> VolunteerDetails -> Volunteer
-  newVolunteer id details = Volunteer id (vdName details) (vdPref details) (vdGenderPref details) (vdNotes details)
+  newVolunteer id details = Volunteer id (vdName details) (vdIntro details) (vdPref details) (vdGenderPref details) (vdNotes details)
 
   toShiftDate :: Day -> ShiftDate
   toShiftDate day = let (y, m, d) = toGregorian day

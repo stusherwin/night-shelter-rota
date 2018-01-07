@@ -16,6 +16,7 @@ newtype Volunteer =
     Volunteer {
       vId :: Int
     , vName :: String
+    , vIntro :: String
     , vOvernightPreference :: Maybe OvernightPreference
     , vOvernightGenderPreference :: Maybe OvernightGenderPreference
     , vNotes :: String
@@ -27,7 +28,7 @@ derive instance newtypeVolunteer :: Newtype Volunteer _
 
 
 --------------------------------------------------------------------------------
-_Volunteer :: Iso' Volunteer { vId :: Int, vName :: String, vOvernightPreference :: Maybe OvernightPreference, vOvernightGenderPreference :: Maybe OvernightGenderPreference, vNotes :: String}
+_Volunteer :: Iso' Volunteer { vId :: Int, vName :: String, vIntro :: String, vOvernightPreference :: Maybe OvernightPreference, vOvernightGenderPreference :: Maybe OvernightGenderPreference, vNotes :: String}
 _Volunteer = _Newtype
 
 --------------------------------------------------------------------------------
@@ -146,9 +147,10 @@ _Evening = prism' (\_ -> Evening) f
 newtype VolunteerDetails =
     VolunteerDetails {
       vdName :: String
-    , vdNotes :: String
+    , vdIntro :: String
     , vdPref :: Maybe OvernightPreference
     , vdGenderPref :: Maybe OvernightGenderPreference
+    , vdNotes :: String
     }
 
 derive instance genericVolunteerDetails :: Generic VolunteerDetails
@@ -157,7 +159,7 @@ derive instance newtypeVolunteerDetails :: Newtype VolunteerDetails _
 
 
 --------------------------------------------------------------------------------
-_VolunteerDetails :: Iso' VolunteerDetails { vdName :: String, vdNotes :: String, vdPref :: Maybe OvernightPreference, vdGenderPref :: Maybe OvernightGenderPreference}
+_VolunteerDetails :: Iso' VolunteerDetails { vdName :: String, vdIntro :: String, vdPref :: Maybe OvernightPreference, vdGenderPref :: Maybe OvernightGenderPreference, vdNotes :: String}
 _VolunteerDetails = _Newtype
 
 --------------------------------------------------------------------------------

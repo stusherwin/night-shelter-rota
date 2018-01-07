@@ -20,9 +20,10 @@ type State = { details :: VolunteerDetails
              }
  
 data Action = SetName String
-            | SetNotes String
+            | SetIntro String
             | SetPref (Maybe OvernightPreference)
             | SetGenderPref (Maybe OvernightGenderPreference)
+            | SetNotes String
             | SetSubmitted
             | Save VolunteerDetails
             | Cancel
@@ -54,6 +55,15 @@ spec = T.simpleSpec performAction render
                                   , RP.disabled state.readOnly
                                   ]
                                   []
+                       ]
+              , RD.div [ classNames [ "field " ] ]
+                       [ RD.label [ RP.htmlFor "volIntro" ]
+                                  [ RD.text "A short intro about yourself"
+                                  ]
+                       , RD.textarea [ RP.onChange $ dispatch <<< SetIntro <<< unsafeEventValue
+                                     , RP.disabled state.readOnly
+                                     ]
+                                     [ RD.text state.details.intro ]
                        ]
               , RD.div [ classNames [ "field " ] ]
                        [ RD.label' [ RD.text "Would you prefer to work with another volunteer?" ]
@@ -218,8 +228,8 @@ spec = T.simpleSpec performAction render
     in state { details = details'
              , formValid = isValid details'
              }
-  performAction (SetNotes notes) _ _ = void $ T.modifyState \state ->
-    let details' = state.details { notes = notes }
+  performAction (SetIntro intro) _ _ = void $ T.modifyState \state ->
+    let details' = state.details { intro = intro }
     in state { details = details'
              , formValid = isValid details'
              }
@@ -233,20 +243,27 @@ spec = T.simpleSpec performAction render
     in state { details = details'
              , formValid = isValid details'
              }
+  performAction (SetNotes notes) _ _ = void $ T.modifyState \state ->
+    let details' = state.details { notes = notes }
+    in state { details = details'
+             , formValid = isValid details'
+             }
   performAction SetSubmitted _ _ = void $ T.modifyState \state -> state { formSubmitted = true }
   performAction _ _ _ = pure unit 
 
 initialState :: Maybe Volunteer -> State
 initialState currentVol =
   let defaultDetails = { name: ""
-                       , notes: ""
+                       , intro: ""
                        , pref: Nothing
                        , genderPref: Nothing
+                       , notes: ""
                        }
       currentVolDetails cv = { name: cv.name
-                             , notes: cv.notes
+                             , intro: cv.intro
                              , pref: cv.overnightPreference
                              , genderPref: cv.overnightGenderPreference
+                             , notes: cv.notes
                              }
       details = maybe defaultDetails currentVolDetails currentVol
   in { details

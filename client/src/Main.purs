@@ -25,12 +25,14 @@ import DOM.Node.Types (Element)
 import Data.DateTime (Date, Weekday(..))
 import Data.DateTime.Locale (LocalValue(..))
 import Data.Date (year, month, day)
-import Data.Either (Either(..))
+import Data.Either (Either(..), either)
 import Data.Foldable (fold)
 import Data.Lens (Lens', lens, Prism', prism, over, _Just)
 import Data.List (List(..), snoc, last, fromFoldable, findIndex)
 import Data.List (List(..), findIndex, find, modifyAt, snoc, deleteAt, length, all, nubBy, filter, catMaybes, any, singleton, length, filter, nubBy, any, findIndex, deleteAt, modifyAt, snoc)
 import Data.Maybe (Maybe(..), maybe, fromMaybe)
+import Data.String.Regex (regex, split)
+import Data.String.Regex.Flags (multiline)
 import React as R
 import React.DOM (s)
 import React.DOM as RD
@@ -166,15 +168,16 @@ spec = T.focus _header _HeaderAction H.spec
                                    ]
       where
       renderIntro :: Volunteer -> Array R.ReactElement
-      renderIntro v | false = [ RD.div [ RP.className "vol-info-intro" ]
-                                      [ RD.p' [ RD.text "Hi, I've been a volunteer here for 10 years, I like fish and I don't want any trouble." ]
-                                      , RD.p' [ RD.text "I should add that I really don't like Tuesdays, and I have a secret phobia of falling down sideways into black forest gateaus. Or is it gateaux?" ]
-                                      ]
-                             ]
-      renderIntro v = [ RD.div [ RP.className "vol-info-no-intro" ]
-                               [ RD.text $ v.name <> " doesn't have an intro yet."
-                               ]
-                      ]
+      renderIntro { intro: "" } = [ RD.div [ RP.className "vol-info-no-intro" ]
+                                           [ RD.text $ v.name <> " doesn't have an intro yet."
+                                           ]
+                                  ]
+      renderIntro { intro } = [ RD.div [ RP.className "vol-info-intro" ]
+                                       $ map (\p -> RD.p' [ RD.text p ]) paras
+                              ]
+        where
+        paras :: Array String
+        paras = either (const []) id $ (regex "[\r\n]+" multiline) <#> (flip split intro)
       renderPreferences :: Volunteer -> Array R.ReactElement
       renderPreferences { overnightPreference: Nothing, overnightGenderPreference: Nothing } = []
       renderPreferences v = [ RD.h3' [ RD.text "My preferences" ] ]
