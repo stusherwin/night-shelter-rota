@@ -24,8 +24,14 @@
       float: left;
 
       &.icon-warning {
-        cursor: help;
-        margin-top: 1px;
+        @warnColor: rgba(255, 0, 0, 0.788);
+        color: @warnColor;
+        cursor: pointer;
+        margin-left: 1px;
+        
+        &:hover {
+          color: lighten(@warnColor, 10%);
+        }
       }
 
       &.icon-ok {

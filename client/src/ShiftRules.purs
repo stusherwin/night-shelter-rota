@@ -12,7 +12,7 @@ import Data.Int (fromString, toNumber)
 import Data.Maybe (Maybe(..), fromMaybe, isJust)
 import Data.Time.Duration (Days(..))
 
-import App.Types (Shift, Volunteer, OvernightPreference(..), OvernightGenderPreference(..), VolunteerShift, ShiftType(..), otherShiftType)
+import App.Types (Shift, Vol, OvernightPreference(..), OvernightGenderPreference(..), VolShift, ShiftType(..), otherShiftType)
 
 type ShiftRuleConfig = { currentDate :: Date
                        , maxVolsPerShift :: Int
@@ -30,11 +30,11 @@ data RuleResult = Error String
                 | Info String
                 | Neutral
 
-isOvernight :: VolunteerShift -> Boolean
+isOvernight :: VolShift -> Boolean
 isOvernight { shiftType: Overnight } = true
 isOvernight _ = false
 
-filterOut :: Volunteer -> List VolunteerShift -> List VolunteerShift
+filterOut :: Vol -> List VolShift -> List VolShift
 filterOut v = filter (\vs -> vs.volunteer.id /= v.id)
 
 isAllowed :: RuleParams -> Boolean
@@ -44,13 +44,13 @@ isAllowed params = satisfies params $ toUnfoldable [ notHaveSameVolunteerTwice
   satisfies :: RuleParams -> List Rule -> Boolean
   satisfies p = all id <<< map (not <<< isJust) <<< (flip flap) p
 
-canAddVolunteer :: ShiftRuleConfig -> VolunteerShift -> Shift -> Boolean
+canAddVolunteer :: ShiftRuleConfig -> VolShift -> Shift -> Boolean
 canAddVolunteer config volShift s =
   isAllowed { shift: s{ volunteers = Cons volShift s.volunteers }
             , config
             }
 
-canChangeVolunteerShiftType :: ShiftRuleConfig -> Volunteer -> Shift -> Boolean
+canChangeVolunteerShiftType :: ShiftRuleConfig -> Vol -> Shift -> Boolean
 canChangeVolunteerShiftType config v s =
   case find (\vs -> vs.volunteer.id == v.id) s.volunteers of
     Nothing -> false
@@ -129,7 +129,7 @@ notViolateAnyVolsSharingPrefs { shift: s } =
   justIf "goes against a volunteer's preferences"
        $ any violatesSharingPrefs s.volunteers
   where
-  violatesSharingPrefs :: VolunteerShift -> Boolean
+  violatesSharingPrefs :: VolShift -> Boolean
   violatesSharingPrefs { shiftType: Overnight
                        , volunteer: vol@{ overnightPreference: Just PreferToBeAlone }
                        } =

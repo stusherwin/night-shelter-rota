@@ -10,7 +10,7 @@ import React.DOM.Props as RP
 import Thermite as T
  
 import App.Common (unsafeEventValue, classNames, onlyIf, unsafeChecked)
-import App.Types (OvernightPreference(..), OvernightGenderPreference(..), Volunteer, VolunteerDetails, overnightPrefMarker, overnightPrefDescription, overnightGenderPrefMarker, overnightGenderPrefDescription)
+import App.Types (OvernightPreference(..), OvernightGenderPreference(..), Vol, VolunteerDetails, overnightPrefMarker, overnightPrefDescription, overnightGenderPrefMarker, overnightGenderPrefDescription)
 
 type State = { details :: VolunteerDetails
              , title :: String
@@ -251,7 +251,7 @@ spec = T.simpleSpec performAction render
   performAction SetSubmitted _ _ = void $ T.modifyState \state -> state { formSubmitted = true }
   performAction _ _ _ = pure unit 
 
-initialState :: Maybe Volunteer -> State
+initialState :: Maybe Vol -> State
 initialState currentVol =
   let defaultDetails = { name: ""
                        , intro: ""

@@ -5,14 +5,14 @@ import Data.Maybe (Maybe(..))
 import Data.DateTime (Date, Weekday(..), weekday)
 import App.ShiftRules(ShiftRuleConfig(..))
 
-import App.Types (Volunteer, Shift, VolunteerShift, ShiftType(..), OvernightPreference(..), OvernightGenderPreference(..))
+import App.Types (Vol, Shift, VolShift, ShiftType(..), OvernightPreference(..), OvernightGenderPreference(..))
 
 data RowAction = PrevPeriod
                | NextPeriod
                | AddCurrentVol Date ShiftType
                | RemoveCurrentVol Date
                | ChangeCurrentVolShiftType Date ShiftType
-               | ShowVolInfo Volunteer
+               | ShowVolInfo Vol
 
 data Action = RowAction Int RowAction
 
@@ -21,7 +21,7 @@ type State = { roster :: RosterState
              , rows :: List RowState
              }
 
-type RosterState = { currentVol :: Maybe Volunteer
+type RosterState = { currentVol :: Maybe Vol
                    , shifts :: List Shift
                    , startDate :: Date
                    , endDate :: Date
@@ -42,7 +42,7 @@ type ShiftRowState = { date :: Date
                      , currentVol :: Maybe CurrentVolState
                      , noOfVols :: Int
                      , maxVols :: Int
-                     , volMarkers :: List VolunteerShift
+                     , volMarkers :: List VolShift
                      , loading :: Boolean
                      }
 

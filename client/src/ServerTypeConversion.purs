@@ -1,4 +1,4 @@
-module App.ServerTypeConversion where
+module App.ServerTypeConversion (fromAPIShiftDate, toAPIShiftDate, fromAPIShiftType, toAPIShiftType, fromAPIOvernightPreference, fromAPIOvernightGenderPreference, toAPIOvernightPreference, toAPIOvernightGenderPreference, fromAPIVolShifts, fromAPIVolShift, fromAPIVols, fromAPIVol, fromAPIShifts, fromAPIShift, toAPIVolDetails) where
 
 import Data.DateTime (Date)
 import Data.Date (year, month, day)
@@ -6,7 +6,7 @@ import Data.List (List(..), fromFoldable)
 import App.Common (mkDate)
 import Data.Enum (fromEnum)
 import ServerTypes as API
-import App.Types
+import App.Types (Vol, VolShift, Shift, ShiftType(..), OvernightPreference(..), OvernightGenderPreference(..), VolunteerDetails)
 import Prelude
 
 fromAPIShiftDate :: API.ShiftDate -> Date
@@ -42,18 +42,18 @@ toAPIOvernightGenderPreference :: OvernightGenderPreference -> API.OvernightGend
 toAPIOvernightGenderPreference Male = API.Male
 toAPIOvernightGenderPreference Female = API.Female
 
-fromAPIVolShifts :: Array API.VolunteerShift -> List VolunteerShift
+fromAPIVolShifts :: Array API.VolunteerShift -> List VolShift
 fromAPIVolShifts volShifts = map fromAPIVolShift $ fromFoldable volShifts
 
-fromAPIVolShift :: API.VolunteerShift -> VolunteerShift
+fromAPIVolShift :: API.VolunteerShift -> VolShift
 fromAPIVolShift (API.VolunteerShift vs) = { volunteer: fromAPIVol vs.vsVolunteer
                                           , shiftType: fromAPIShiftType vs.vsShiftType
                                           }
 
-fromAPIVols :: Array API.Volunteer -> List Volunteer
+fromAPIVols :: Array API.Volunteer -> List Vol
 fromAPIVols vols = map fromAPIVol $ fromFoldable vols
 
-fromAPIVol :: API.Volunteer -> Volunteer
+fromAPIVol :: API.Volunteer -> Vol
 fromAPIVol (API.Volunteer v) = { id: v.vId
                                , name: v.vName
                                , intro: v.vIntro

@@ -45,9 +45,9 @@ import App.Header (State, Action(..), spec, initialState, volDetailsUpdated, edi
 import App.ShiftRules (ShiftRuleConfig)
 import App.ShiftList (State, Action(..), RowAction(..), spec, initialState, changeCurrentVol, shiftUpdated) as SL
 import App.VolDetails (State, Action(..), spec, initialState, disable, enable) as VD
-import App.Types (OvernightPreference(..), OvernightGenderPreference(..), Volunteer, VolunteerShift, Shift, VolunteerDetails, ShiftType(..), overnightPrefMarker, overnightPrefDescription, overnightGenderPrefMarker, overnightGenderPrefDescription)
+import App.Types (OvernightPreference(..), OvernightGenderPreference(..), Vol, VolShift, Shift, VolunteerDetails, ShiftType(..), overnightPrefMarker, overnightPrefDescription, overnightGenderPrefMarker, overnightGenderPrefDescription)
 import App.ServerTypeConversion
-import ServerTypes (OvernightPreference(..), OvernightGenderPreference(..), Volunteer(..), VolunteerShift(..), Shift(..), VolunteerDetails(..), ShiftType(..), ShiftDate(..)) as API
+import ServerTypes as API
 
 data Action = ShiftListAction SL.Action
             | HeaderAction H.Action
@@ -57,14 +57,14 @@ data Action = ShiftListAction SL.Action
 
 data VolInfoAction = Close
 
-type State = { vols :: List Volunteer 
+type State = { vols :: List Vol 
              , shifts :: List Shift
              , shiftList :: Maybe SL.State
-             , currentVol :: Maybe Volunteer
+             , currentVol :: Maybe Vol
              , header :: H.State
              , volDetails :: Maybe VD.State 
              , config :: ShiftRuleConfig
-             , volInfo :: Maybe Volunteer
+             , volInfo :: Maybe Vol
              }
  
 _shiftList :: Lens' State (Maybe SL.State)
@@ -94,7 +94,7 @@ _VolDetailsAction = prism VolDetailsAction unwrap
   unwrap (VolDetailsAction a) = Right a
   unwrap a = Left a 
  
-_volInfo :: Lens' State (Maybe Volunteer)
+_volInfo :: Lens' State (Maybe Vol)
 _volInfo = lens _.volInfo _{volInfo = _}
 
 _VolInfoAction :: Prism' Action VolInfoAction
@@ -144,10 +144,10 @@ spec = T.focus _header _HeaderAction H.spec
     performAction (VolInfoAction Close) _ _ =
       hideVolInfo
     performAction _ _ _ = pure unit
-  volInfo :: T.Spec _ (Maybe Volunteer) _ VolInfoAction
+  volInfo :: T.Spec _ (Maybe Vol) _ VolInfoAction
   volInfo = T.simpleSpec T.defaultPerformAction render
     where
-    render :: T.Render (Maybe Volunteer) _ VolInfoAction
+    render :: T.Render (Maybe Vol) _ VolInfoAction
     render dispatch _ Nothing _ = []
     render dispatch _ (Just v) _ = [ RD.div [ RP.className "vol-info-fadeout" ]
                                             [ RD.div [ RP.className "vol-info" ]
@@ -167,7 +167,7 @@ spec = T.focus _header _HeaderAction H.spec
                                             ]
                                    ]
       where
-      renderIntro :: Volunteer -> Array R.ReactElement
+      renderIntro :: Vol -> Array R.ReactElement
       renderIntro { intro: "" } = [ RD.div [ RP.className "vol-info-no-intro" ]
                                            [ RD.text $ v.name <> " doesn't have an intro yet."
                                            ]
@@ -178,7 +178,7 @@ spec = T.focus _header _HeaderAction H.spec
         where
         paras :: Array String
         paras = either (const []) id $ (regex "[\r\n]+" multiline) <#> (flip split intro)
-      renderPreferences :: Volunteer -> Array R.ReactElement
+      renderPreferences :: Vol -> Array R.ReactElement
       renderPreferences { overnightPreference: Nothing, overnightGenderPreference: Nothing } = []
       renderPreferences v = [ RD.h3' [ RD.text "My preferences" ] ]
                             <> renderOvernight v.overnightPreference
@@ -200,7 +200,7 @@ spec = T.focus _header _HeaderAction H.spec
                                           ] 
                                 ]
   
-      renderNotes :: Volunteer -> Array R.ReactElement
+      renderNotes :: Vol -> Array R.ReactElement
       renderNotes { notes: "" } = []
       renderNotes { notes } = [ RD.h3' [ RD.text "Notes for other volunteers" ]
                               , RD.div' [ RD.span [ RP.className "vol-info-pref-marker" ] 
@@ -210,7 +210,7 @@ spec = T.focus _header _HeaderAction H.spec
                                         ]
                               ]
 
-changeCurrentVol :: Maybe Volunteer -> State -> _
+changeCurrentVol :: Maybe Vol -> State -> _
 changeCurrentVol currentVol' { shiftList: Nothing } = do
   void $ T.modifyState \s -> s { currentVol = currentVol'
                                , shiftList = Just $ SL.initialState currentVol' s.shifts s.config
@@ -280,7 +280,7 @@ addOrUpdateCurrentVol d s = case s.currentVol of
                                                , volDetails = VD.enable <$> s.volDetails
                                                }
      
-    updateVols :: { currentVol :: Maybe Volunteer, vols :: List Volunteer, shifts :: List Shift } -> State -> State
+    updateVols :: { currentVol :: Maybe Vol, vols :: List Vol, shifts :: List Shift } -> State -> State
     updateVols { currentVol, vols, shifts } s = s { currentVol = currentVol
                                                   , vols = vols
                                                   , shifts = shifts
@@ -334,7 +334,7 @@ removeVolunteerShift date { currentVol: Just v } = do
                                            }
 removeVolunteerShift _ _ = pure unit
 
-showVolInfo :: Volunteer -> _
+showVolInfo :: Vol -> _
 showVolInfo v = do
   void $ T.modifyState \s -> s{ volInfo = Just v
                               }
@@ -360,7 +360,7 @@ initialState currentDate =
       , volInfo: Nothing
       }
 
-initialDataLoaded :: List Volunteer -> List Shift -> State -> State
+initialDataLoaded :: List Vol -> List Shift -> State -> State
 initialDataLoaded vols shifts s =
   s { vols = vols
     , shifts = shifts
@@ -376,13 +376,13 @@ modifyShifts date modify s =
        , header = H.reqSucceeded s.header
        }
 
-updateShift :: Date -> List VolunteerShift -> List Shift -> List Shift
+updateShift :: Date -> List VolShift -> List Shift -> List Shift
 updateShift date volShifts shifts =
   case findIndex (\s -> s.date == date) shifts of
     Just i -> fromMaybe shifts $ modifyAt i (_ { volunteers = volShifts }) shifts
     _      -> shifts `snoc` { date, volunteers: volShifts }
 
-updateVolunteer :: Volunteer -> List Shift -> List Shift
+updateVolunteer :: Vol -> List Shift -> List Shift
 updateVolunteer v' = map updateShift
   where
   updateShift s = s { volunteers = map updateVol s.volunteers }

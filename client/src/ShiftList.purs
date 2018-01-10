@@ -22,7 +22,7 @@ import Control.Monad.Eff.Console (log, CONSOLE)
 
 import App.Common (tomorrow, modifyWhere, toMonthYearString, isFirstDayOfMonth, addDays, previousWeekday, classNames, onlyIf)
 import App.ShiftRules (ShiftRuleConfig)
-import App.Types (Shift, Volunteer, VolunteerShift)
+import App.Types (Shift, Vol, VolShift)
 import App.ShiftRow (initialState) as SR
 import App.Row (spec) as R
 import ShiftListState
@@ -77,7 +77,7 @@ spec =
       lift $ liftEff $ scrollTo st'
     performAction _ _ _ = pure unit
     
-initialState :: forall c. Maybe Volunteer -> List Shift -> ShiftRuleConfig -> State
+initialState :: forall c. Maybe Vol -> List Shift -> ShiftRuleConfig -> State
 initialState currentVol shifts config = 
   let startDate = previousWeekday Monday config.currentDate 
       endDate = addDays (shiftCount - 1) startDate
@@ -117,7 +117,7 @@ preserveLoading = zipWith row
   row (ShiftRow old) (ShiftRow new) = ShiftRow new { loading = old.loading }
   row _ new = new
  
-changeCurrentVol :: Maybe Volunteer -> State -> State
+changeCurrentVol :: Maybe Vol -> State -> State
 changeCurrentVol currentVol state =
   let roster' = state.roster { currentVol = currentVol
                              , loading = false

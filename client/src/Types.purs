@@ -1,4 +1,4 @@
-module App.Types where
+module App.Types (Vol, VolShift, Shift, ShiftType(..), OvernightPreference(..), OvernightGenderPreference(..), VolunteerDetails, otherShiftType, overnightPrefMarker, overnightPrefDescription, overnightGenderPrefMarker, overnightGenderPrefDescription) where
 
 import Data.List (List(..))
 import Data.Maybe (Maybe(..))
@@ -7,20 +7,20 @@ import Data.DateTime (Date)
 
 import Prelude
 
-type Volunteer = { id :: Int
-                 , name :: String
-                 , intro :: String
-                 , overnightPreference :: Maybe OvernightPreference
-                 , overnightGenderPreference :: Maybe OvernightGenderPreference
-                 , notes :: String
-                 }
+type Vol = { id :: Int
+           , name :: String
+           , intro :: String
+           , overnightPreference :: Maybe OvernightPreference
+           , overnightGenderPreference :: Maybe OvernightGenderPreference
+           , notes :: String
+           }
 
-type VolunteerShift = { volunteer :: Volunteer
-                      , shiftType :: ShiftType
-                      }
+type VolShift = { volunteer :: Vol
+                , shiftType :: ShiftType
+                }
 
 type Shift = { date :: Date
-             , volunteers :: List VolunteerShift
+             , volunteers :: List VolShift
              }
 
 data OvernightPreference =

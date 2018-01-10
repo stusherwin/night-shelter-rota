@@ -101,9 +101,6 @@
           margin-right: 6px;
           margin-bottom: 6px;
           max-width: 100%;
-          &:last-child {
-            margin-right: 0;
-          }
 
           padding-left: 5px;
           padding-right: 5px;
@@ -112,6 +109,15 @@
           border-radius: 2px;
           border: 1px solid #ccc;
 
+          &:last-child {
+            margin-right: 0;
+          }
+
+          &:hover {
+            background: lighten(#ddd, 2%);
+            border-color: lighten(#ccc, 5%);
+          }
+
           .vol-name {
             overflow: hidden;
             white-space: nowrap;
@@ -119,7 +125,6 @@
           }
 
           .sharing-pref {
-            // cursor: help;
             font-weight: bold;
             color: #000;
             margin-left: 1px;

@@ -19,7 +19,7 @@ import Thermite as T
 import App.Common (onlyIf, classNames, dayString1, dayPostfix, sortWith, justIf, toDateString, isWeekday)
 import App.ShiftRules (ShiftRuleConfig, validateShift, canChangeVolunteerShiftType, canAddVolunteer)
 import App.ShiftRules (RuleResult(..)) as SR
-import App.Types (Volunteer, Shift, VolunteerShift, ShiftType(..), OvernightPreference(..), OvernightGenderPreference(..), otherShiftType, overnightPrefMarker, overnightPrefDescription, overnightGenderPrefMarker, overnightGenderPrefDescription)
+import App.Types (Vol, Shift, VolShift, ShiftType(..), OvernightPreference(..), OvernightGenderPreference(..), otherShiftType, overnightPrefMarker, overnightPrefDescription, overnightGenderPrefMarker, overnightGenderPrefDescription)
 import ShiftListState
  
 spec :: T.Spec _ ShiftRowState _ RowAction
@@ -97,7 +97,7 @@ spec = T.simpleSpec performAction render
     statusIcon { status: Info i }    = [ RD.i [ RP.className "icon-info", RP.title i ] [] ]
     statusIcon _ = []
 
-    renderVolMarker :: _ -> VolunteerShift -> ReactElement
+    renderVolMarker :: _ -> VolShift -> ReactElement
     renderVolMarker d s =
       RD.span [ RP.className "vol-marker" ]
               [ RD.span [ RP.className "vol-name"
@@ -109,7 +109,7 @@ spec = T.simpleSpec performAction render
                           <> renderSharingPrefs s.volunteer
               ]
       where
-      renderSharingPrefs :: Volunteer -> Array ReactElement
+      renderSharingPrefs :: Vol -> Array ReactElement
       renderSharingPrefs vol = catMaybes [ map renderOvernight vol.overnightPreference
                                          , map renderGender vol.overnightGenderPreference
                                          , map renderNotes $ justIf vol.notes $ S.length vol.notes > 0
@@ -251,7 +251,7 @@ initialState roster config date =
         concat msg Nothing  = msg
     in firstErrorStatus $ foldl concat "" $ map extractMsg errors
 
-  currentVolState :: Volunteer -> CurrentVolState
+  currentVolState :: Vol -> CurrentVolState
   currentVolState cv = { name: cv.name
                        , shiftType: find (\v -> v.volunteer.id == cv.id) shift.volunteers <#> _.shiftType
                        , canAddOvernight: canAddVolunteer config { shiftType: Overnight, volunteer: cv} shift

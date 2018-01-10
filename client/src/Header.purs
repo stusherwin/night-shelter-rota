@@ -9,24 +9,24 @@ import React (ReactElement, preventDefault) as R
 import React.DOM as RD
 import React.DOM.Props as RP
 import Thermite as T
-import Servant.PureScript.Affjax (AjaxError, errorToString)
+import Servant.PureScript.Affjax (AjaxError, ErrorDescription(..), errorToString, runAjaxError)
 
 import App.Common (unsafeEventSelectedIndex, isJustWith, sortWith, classNames)
-import App.Types (Volunteer)
+import App.Types (Vol)
 
 data VolDetailsState = NotEditing
                      | EditingNewVol
                      | EditingCurrentVol
 
-type State = { vols :: List Volunteer
-             , currentVol :: Maybe Volunteer
+type State = { vols :: List Vol
+             , currentVol :: Maybe Vol
              , reqInProgress :: Boolean
              , errorMessage :: Maybe String
              , volDetailsState :: VolDetailsState
              , initialDataLoaded :: Boolean
              } 
  
-data Action = ChangeCurrentVol (Maybe Volunteer)
+data Action = ChangeCurrentVol (Maybe Vol)
             | EditCurrentVol
             | EditNewVol
 
@@ -134,10 +134,10 @@ spec = T.simpleSpec performAction render
   respond state i | i > 0 = ChangeCurrentVol $ state.vols !! (i - 1)
   respond _ _ = ChangeCurrentVol Nothing
 
-  findVol :: List Volunteer -> Maybe Int -> Maybe Volunteer
+  findVol :: List Vol -> Maybe Int -> Maybe Vol
   findVol vols = (=<<) \id -> find (\v -> v.id == id) vols
 
-  option :: _ -> Maybe Volunteer -> Volunteer -> R.ReactElement
+  option :: _ -> Maybe Vol -> Vol -> R.ReactElement
   option dispatch currentVolId v = RD.option [ RP.selected $ isJustWith (\cv -> cv.id == v.id) currentVolId
                                              , RP.value $ show v.id
                                              ]
@@ -165,13 +165,13 @@ initialState = { vols: Nil
                , initialDataLoaded: false
                }
 
-initialDataLoaded :: List Volunteer -> State -> State
+initialDataLoaded :: List Vol -> State -> State
 initialDataLoaded vols = _ { vols = sortWith (toLower <<< _.name) vols
                            , reqInProgress = false
                            , initialDataLoaded = true
                            }
 
-volDetailsUpdated :: List Volunteer -> Maybe Volunteer -> State -> State
+volDetailsUpdated :: List Vol -> Maybe Vol -> State -> State
 volDetailsUpdated vols currentVol = _ { vols = sortWith (toLower <<< _.name) vols
                                       , currentVol = currentVol
                                       , volDetailsState = NotEditing
@@ -195,5 +195,11 @@ reqSucceeded = _ { reqInProgress = false
 
 reqFailed :: AjaxError -> State -> State
 reqFailed err = _ { reqInProgress = false
-                  , errorMessage = Just $ errorToString err
+                  , errorMessage = Just $ message $ (runAjaxError err).description
                   }
+  where
+  message :: ErrorDescription -> String
+  message (UnexpectedHTTPStatus r) = "Unexpected HTTP status: " <> show r.status
+  message (ParsingError e) = "Parsing error: " <> e
+  message (DecodingError e) = "Decoding error: " <> e
+  message (ConnectionError e) = "Connection error: " <> e
