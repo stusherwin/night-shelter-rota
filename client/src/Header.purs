@@ -24,19 +24,21 @@ type State = { vols :: List Vol
              , errorMessage :: Maybe String
              , volDetailsState :: VolDetailsState
              , initialDataLoaded :: Boolean
+             , showErrorMessage :: Boolean
              } 
  
 data Action = ChangeCurrentVol (Maybe Vol)
             | EditCurrentVol
             | EditNewVol
+            | ToggleErrorMessage
 
 spec :: T.Spec _ State _ Action
 spec = T.simpleSpec performAction render
   where 
   render :: T.Render State _ Action
-  render _ _ state@{ initialDataLoaded: loaded } _ | not loaded =
+  render dispatch _ state@{ initialDataLoaded: false } _ =
     [ RD.div [ RP.className "header initial-data-loading" ]
-           $ statusIcon state
+           $ statusIcon dispatch state
           <> [ RD.h2' [ RD.text "Night Shelter Rota" ]
              ]
     ]
@@ -50,7 +52,7 @@ spec = T.simpleSpec performAction render
                            Just v, NotEditing -> editVolButton v.name
                            _, _ -> []
                ]
-             <> statusIcon state
+             <> statusIcon dispatch state
              <> [ RD.h2' [ RD.text "Night Shelter Rota for " ]
                 , RD.select [ RP.className "vol-select"
                             , RP.onChange $ dispatch <<< respond state <<< unsafeEventSelectedIndex
@@ -114,19 +116,29 @@ spec = T.simpleSpec performAction render
                                  ]
                      ]
 
-  statusIcon :: State -> Array R.ReactElement
-  statusIcon state = [ RD.div [ RP.className "header-status" ]
-                              [ RD.i ([ RP.className iconType
+  statusIcon :: _ -> State -> Array R.ReactElement
+  statusIcon d s = [ RD.div [ RP.className "header-status" ]
+                            $ [ RD.i ([ RP.className iconType
+                                      , RP.onClick \e -> do
+                                          _ <- R.preventDefault e
+                                          d ToggleErrorMessage
                                       ] <> title)
                                       []
                               ]
-                     ]
+                            <> errorMessage s
+                   ]
     where
-      iconType = case state.reqInProgress, state.errorMessage of
+      errorMessage :: State -> Array R.ReactElement
+      errorMessage { errorMessage: Nothing } = [] 
+      errorMessage { showErrorMessage: false } = [] 
+      errorMessage { errorMessage: Just msg } = [ RD.div [ RP.className "header-status-message" ] 
+                                                         [ RD.text msg ]
+                                                ]
+      iconType = case s.reqInProgress, s.errorMessage of
                    true,  _       -> "icon-spin animate-spin"
                    false, Nothing -> "logo" --"icon-ok"
                    _,     _       -> "icon-warning"
-      title = case state.errorMessage of
+      title = case s.errorMessage of
                 Just msg -> [ RP.title msg ]
                 _        -> []
 
@@ -155,6 +167,7 @@ spec = T.simpleSpec performAction render
                                                                   , volDetailsState = EditingNewVol
                                                                   , errorMessage = Nothing
                                                                   }
+  performAction ToggleErrorMessage _ _ = void $ T.modifyState \s -> s { showErrorMessage = not s.showErrorMessage }
 
 initialState :: State
 initialState = { vols: Nil
@@ -163,6 +176,7 @@ initialState = { vols: Nil
                , reqInProgress: true
                , errorMessage: Nothing
                , initialDataLoaded: false
+               , showErrorMessage: false
                }
 
 initialDataLoaded :: List Vol -> State -> State

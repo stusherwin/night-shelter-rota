@@ -4,3 +4,4 @@
 * Error message tooltip: just show message, also mobile popup behaviour
 * When cancelling from "Add new volunteer", should go back to previously selected volunteer?
 * Next/previous 4 weeks should load shifts on demand? (For future if data starts getting too big)
+* Show/dismiss error popup on desktop and mobile
