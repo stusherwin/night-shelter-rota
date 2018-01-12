@@ -1,8 +1,9 @@
-module App.Header (State, VolDetailsState(..), Action(..), MessageBubble, MessageBubbleType, Message, spec, initialState, volDetailsUpdated, editCancelled, reqStarted, reqSucceeded, reqFailed, initialDataLoaded) where
-
+module App.Header (State, VolDetailsState(..), Action(..), spec, initialState, volDetailsUpdated, editCancelled, reqStarted, reqSucceeded, reqFailed, initialDataLoaded) where
+ 
 import Prelude 
 
 import Control.Monad.Trans.Class (lift)
+import Control.Monad.Eff (Eff)
 import Control.Monad.Eff.Class (liftEff)
 import Data.List (List(..), (!!), find, toUnfoldable)
 import Data.Maybe (Maybe(..))
@@ -16,20 +17,11 @@ import Control.Monad.Eff.Console (log, CONSOLE)
 
 import App.Common (unsafeEventSelectedIndex, isJustWith, sortWith, classNames)
 import App.Types (Vol)
+import App.MessageBubble (MessageBubble(..), MessageBubbleType(..), Message, MessageBubbleAction(..), renderMessageBubble, handleMessageBubbleAction)
 
 data VolDetailsState = NotEditing
                      | EditingNewVol
                      | EditingCurrentVol
-
-data MessageBubbleType = Transitory | Fixed
-derive instance eqMessageBubbleType :: Eq MessageBubbleType
-  
-type Message = { header :: String
-               , body :: String
-               }
-
-data MessageBubble = Hidden
-                   | Visible MessageBubbleType Message
 
 type State = { vols :: List Vol
              , currentVol :: Maybe Vol
@@ -43,8 +35,7 @@ type State = { vols :: List Vol
 data Action = ChangeCurrentVol (Maybe Vol)
             | EditCurrentVol
             | EditNewVol
-            | ShowMessageBubble MessageBubbleType
-            | HideMessageBubble MessageBubbleType
+            | MessageBubbleAction MessageBubbleAction
 
 spec :: T.Spec _ State _ Action
 spec = T.simpleSpec performAction render
@@ -130,45 +121,24 @@ spec = T.simpleSpec performAction render
                                  ]
                      ]
 
-  statusIcon :: _ -> State -> Array R.ReactElement
+  statusIcon :: (Action -> T.EventHandler) -> State -> Array R.ReactElement
   statusIcon dispatch s = [ RD.div [ RP.className "header-status" ]
                                    $ [ RD.i [ RP.className iconType
                                             , RP.onClick \e -> do
                                                 _ <- R.preventDefault e
-                                                dispatch $ ShowMessageBubble Fixed
-                                            , RP.onMouseOver \_ -> dispatch $ ShowMessageBubble Transitory
-                                            , RP.onMouseLeave \_ -> dispatch $ HideMessageBubble Transitory
+                                                dispatch $ MessageBubbleAction $ Show Fixed
+                                            , RP.onMouseOver \_ -> dispatch $ MessageBubbleAction $ Show Transitory
+                                            , RP.onMouseLeave \_ -> dispatch $ MessageBubbleAction $ Hide Transitory
                                             ] 
                                             []
                                      ]
-                                     <> messageBubble s.errorMessageBubble
+                                     <> renderMessageBubble (\a -> dispatch $ MessageBubbleAction a) s.errorMessageBubble
                           ]
     where
-      messageBubble :: MessageBubble -> Array R.ReactElement
-      messageBubble Hidden = []
-      messageBubble (Visible t msg) = [ RD.div [ RP.className "header-status-message" ] 
-                                                      $
-                                                      [ RD.h3' [ RD.text msg.header ]
-                                                      , RD.p' [ RD.text msg.body ]
-                                                      ]
-                                                      <> close t
-                                             ]
-        where
-        close :: MessageBubbleType -> Array R.ReactElement
-        close Transitory = []
-        close Fixed = [ RD.a [ RP.href "#"
-                             , RP.onClick \e -> do
-                                _ <- R.preventDefault e
-                                dispatch $ HideMessageBubble Fixed
-                             ]
-                             [ RD.i [ RP.className "icon-cancel"] []
-                             ]
-                      ]
-      iconType = case s.reqInProgress, s.errorMessage of
-                   true,  _       -> "icon-spin animate-spin"
-                   false, Nothing -> "logo" --"icon-ok"
-                   _,     _       -> "icon-warning"
-
+    iconType = case s.reqInProgress, s.errorMessage of
+                 true,  _       -> "icon-spin animate-spin"
+                 false, Nothing -> "logo" --"icon-ok"
+                 _,     _       -> "icon-warning"
   respond :: State -> Int -> Action
   respond state i | i > 0 = ChangeCurrentVol $ state.vols !! (i - 1)
   respond _ _ = ChangeCurrentVol Nothing
@@ -197,16 +167,9 @@ spec = T.simpleSpec performAction render
                                                                   , errorMessage = Nothing
                                                                   , errorMessageBubble = Hidden
                                                                   }
-  performAction (ShowMessageBubble Transitory) _ { errorMessage: Just msg, errorMessageBubble: Hidden } = void $ do
-    lift $ liftEff $ log "show message bubble - trans"
-    T.modifyState _{ errorMessageBubble = Visible Transitory msg }
-  performAction (ShowMessageBubble Fixed) _ { errorMessage: Just msg } = void $ do
-    lift $ liftEff $ log "show message bubble - fixed"
-    T.modifyState _{ errorMessageBubble = Visible Fixed msg }
-  performAction (HideMessageBubble t1) _ { errorMessageBubble: Visible t2 _ } | t1 == t2 = void $ do
-    lift $ liftEff $ log "hide message bubble"
-    T.modifyState _{ errorMessageBubble = Hidden }
-  performAction _ _ _ = pure unit
+  performAction (MessageBubbleAction _) _ { errorMessage: Nothing } = pure unit
+  performAction (MessageBubbleAction a) _ { errorMessage: Just msg, errorMessageBubble } = void $ do
+    T.modifyState _{ errorMessageBubble = handleMessageBubbleAction a msg errorMessageBubble }
 
 initialState :: State
 initialState = { vols: Nil
