@@ -413,20 +413,21 @@ main :: Unit
 main = unsafePerformEff $ void $ launchAff $ do 
   (LocalValue _ currentDate) <- liftEff nowDate
   let { spec } = T.createReactSpec spec $ initialState currentDate
-  let component = R.createClass spec { componentDidMount = \ctx -> void $ launchAff $ do 
-                                          liftEff $ log "ComponentDidMount..."
-                                          state <- liftEff $ R.readState ctx
-                                          (Tuple volsResp shiftsResp) <- sequential $ Tuple 
-                                            <$> (parallel $ apiReq getApiVols)
-                                            <*> (parallel $ apiReq getApiShifts)
-                                          case volsResp, shiftsResp of
-                                            Right apiVols, Right apiShifts -> do
-                                              let vols = fromAPIVols apiVols
-                                              let shifts = fromAPIShifts apiShifts
-                                              let state' = initialDataLoaded vols shifts state
-                                              liftEff $ R.writeState ctx state'
-                                            Left e, _ -> err e ctx state
-                                            _, Left e -> err e ctx state
+  let component = R.createClass spec { componentDidMount = \ctx -> void $ do
+                                          log "ComponentDidMount..."
+                                          launchAff $ do 
+                                            state <- liftEff $ R.readState ctx
+                                            (Tuple volsResp shiftsResp) <- sequential $ Tuple 
+                                              <$> (parallel $ apiReq getApiVols)
+                                              <*> (parallel $ apiReq getApiShifts)
+                                            case volsResp, shiftsResp of
+                                              Right apiVols, Right apiShifts -> do
+                                                let vols = fromAPIVols apiVols
+                                                let shifts = fromAPIShifts apiShifts
+                                                let state' = initialDataLoaded vols shifts state
+                                                liftEff $ R.writeState ctx state'
+                                              Left e, _ -> err e ctx state
+                                              _, Left e -> err e ctx state
                                      }
 
   let appEl = R.createFactory component {}
@@ -445,3 +446,5 @@ foreign import isServerSide :: Boolean
 foreign import getElementById :: forall eff. String -> Eff eff Element
 
 foreign import hot :: forall eff. Eff eff Unit
+
+foreign import documentOnClick :: forall eff1 eff2. Eff eff1 Unit -> Eff eff2 Unit

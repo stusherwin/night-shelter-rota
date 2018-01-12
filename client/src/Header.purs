@@ -1,7 +1,9 @@
-module App.Header (State, VolDetailsState(..), Action(..), spec, initialState, volDetailsUpdated, editCancelled, reqStarted, reqSucceeded, reqFailed, initialDataLoaded) where
+module App.Header (State, VolDetailsState(..), Action(..), MessageBubble, MessageBubbleType, Message, spec, initialState, volDetailsUpdated, editCancelled, reqStarted, reqSucceeded, reqFailed, initialDataLoaded) where
 
 import Prelude 
 
+import Control.Monad.Trans.Class (lift)
+import Control.Monad.Eff.Class (liftEff)
 import Data.List (List(..), (!!), find, toUnfoldable)
 import Data.Maybe (Maybe(..))
 import Data.String (toLower)
@@ -10,6 +12,7 @@ import React.DOM as RD
 import React.DOM.Props as RP
 import Thermite as T
 import Servant.PureScript.Affjax (AjaxError, ErrorDescription(..), errorToString, runAjaxError)
+import Control.Monad.Eff.Console (log, CONSOLE)
 
 import App.Common (unsafeEventSelectedIndex, isJustWith, sortWith, classNames)
 import App.Types (Vol)
@@ -18,19 +21,30 @@ data VolDetailsState = NotEditing
                      | EditingNewVol
                      | EditingCurrentVol
 
+data MessageBubbleType = Transitory | Fixed
+derive instance eqMessageBubbleType :: Eq MessageBubbleType
+  
+type Message = { header :: String
+               , body :: String
+               }
+
+data MessageBubble = Hidden
+                   | Visible MessageBubbleType Message
+
 type State = { vols :: List Vol
              , currentVol :: Maybe Vol
              , reqInProgress :: Boolean
-             , errorMessage :: Maybe String
              , volDetailsState :: VolDetailsState
              , initialDataLoaded :: Boolean
-             , showErrorMessage :: Boolean
-             } 
- 
+             , errorMessage :: Maybe Message
+             , errorMessageBubble :: MessageBubble
+             }
+
 data Action = ChangeCurrentVol (Maybe Vol)
             | EditCurrentVol
             | EditNewVol
-            | ToggleErrorMessage
+            | ShowMessageBubble MessageBubbleType
+            | HideMessageBubble MessageBubbleType
 
 spec :: T.Spec _ State _ Action
 spec = T.simpleSpec performAction render
@@ -117,30 +131,43 @@ spec = T.simpleSpec performAction render
                      ]
 
   statusIcon :: _ -> State -> Array R.ReactElement
-  statusIcon d s = [ RD.div [ RP.className "header-status" ]
-                            $ [ RD.i ([ RP.className iconType
-                                      , RP.onClick \e -> do
-                                          _ <- R.preventDefault e
-                                          d ToggleErrorMessage
-                                      ] <> title)
-                                      []
-                              ]
-                            <> errorMessage s
-                   ]
+  statusIcon dispatch s = [ RD.div [ RP.className "header-status" ]
+                                   $ [ RD.i [ RP.className iconType
+                                            , RP.onClick \e -> do
+                                                _ <- R.preventDefault e
+                                                dispatch $ ShowMessageBubble Fixed
+                                            , RP.onMouseOver \_ -> dispatch $ ShowMessageBubble Transitory
+                                            , RP.onMouseLeave \_ -> dispatch $ HideMessageBubble Transitory
+                                            ] 
+                                            []
+                                     ]
+                                     <> messageBubble s.errorMessageBubble
+                          ]
     where
-      errorMessage :: State -> Array R.ReactElement
-      errorMessage { errorMessage: Nothing } = [] 
-      errorMessage { showErrorMessage: false } = [] 
-      errorMessage { errorMessage: Just msg } = [ RD.div [ RP.className "header-status-message" ] 
-                                                         [ RD.text msg ]
-                                                ]
+      messageBubble :: MessageBubble -> Array R.ReactElement
+      messageBubble Hidden = []
+      messageBubble (Visible t msg) = [ RD.div [ RP.className "header-status-message" ] 
+                                                      $
+                                                      [ RD.h3' [ RD.text msg.header ]
+                                                      , RD.p' [ RD.text msg.body ]
+                                                      ]
+                                                      <> close t
+                                             ]
+        where
+        close :: MessageBubbleType -> Array R.ReactElement
+        close Transitory = []
+        close Fixed = [ RD.a [ RP.href "#"
+                             , RP.onClick \e -> do
+                                _ <- R.preventDefault e
+                                dispatch $ HideMessageBubble Fixed
+                             ]
+                             [ RD.i [ RP.className "icon-cancel"] []
+                             ]
+                      ]
       iconType = case s.reqInProgress, s.errorMessage of
                    true,  _       -> "icon-spin animate-spin"
                    false, Nothing -> "logo" --"icon-ok"
                    _,     _       -> "icon-warning"
-      title = case s.errorMessage of
-                Just msg -> [ RP.title msg ]
-                _        -> []
 
   respond :: State -> Int -> Action
   respond state i | i > 0 = ChangeCurrentVol $ state.vols !! (i - 1)
@@ -159,24 +186,36 @@ spec = T.simpleSpec performAction render
   performAction (ChangeCurrentVol v) _ _ = void $ T.modifyState _ { currentVol = v
                                                                   , volDetailsState = NotEditing
                                                                   , errorMessage = Nothing
+                                                                  , errorMessageBubble = Hidden
                                                                   }
   performAction EditCurrentVol       _ _ = void $ T.modifyState _ { volDetailsState = EditingCurrentVol
                                                                   , errorMessage = Nothing
+                                                                  , errorMessageBubble = Hidden
                                                                   }
   performAction EditNewVol           _ _ = void $ T.modifyState _ { currentVol = Nothing
                                                                   , volDetailsState = EditingNewVol
                                                                   , errorMessage = Nothing
+                                                                  , errorMessageBubble = Hidden
                                                                   }
-  performAction ToggleErrorMessage _ _ = void $ T.modifyState \s -> s { showErrorMessage = not s.showErrorMessage }
+  performAction (ShowMessageBubble Transitory) _ { errorMessage: Just msg, errorMessageBubble: Hidden } = void $ do
+    lift $ liftEff $ log "show message bubble - trans"
+    T.modifyState _{ errorMessageBubble = Visible Transitory msg }
+  performAction (ShowMessageBubble Fixed) _ { errorMessage: Just msg } = void $ do
+    lift $ liftEff $ log "show message bubble - fixed"
+    T.modifyState _{ errorMessageBubble = Visible Fixed msg }
+  performAction (HideMessageBubble t1) _ { errorMessageBubble: Visible t2 _ } | t1 == t2 = void $ do
+    lift $ liftEff $ log "hide message bubble"
+    T.modifyState _{ errorMessageBubble = Hidden }
+  performAction _ _ _ = pure unit
 
 initialState :: State
 initialState = { vols: Nil
                , currentVol: Nothing
                , volDetailsState: NotEditing
                , reqInProgress: true
-               , errorMessage: Nothing
                , initialDataLoaded: false
-               , showErrorMessage: false
+               , errorMessage: Nothing
+               , errorMessageBubble: Hidden
                }
 
 initialDataLoaded :: List Vol -> State -> State
@@ -195,25 +234,37 @@ volDetailsUpdated vols currentVol = _ { vols = sortWith (toLower <<< _.name) vol
 editCancelled :: State -> State
 editCancelled = _ { volDetailsState = NotEditing
                   , errorMessage = Nothing
+                  , errorMessageBubble = Hidden
                   }
 
 reqStarted :: State -> State
 reqStarted = _ { reqInProgress = true
                , errorMessage = Nothing
+               , errorMessageBubble = Hidden
                }
 
 reqSucceeded :: State -> State
 reqSucceeded = _ { reqInProgress = false
                  , errorMessage = Nothing
+                 , errorMessageBubble = Hidden
                  }
 
 reqFailed :: AjaxError -> State -> State
 reqFailed err = _ { reqInProgress = false
-                  , errorMessage = Just $ message $ (runAjaxError err).description
+                  , errorMessage = Just { header: header error
+                                        , body: body error
+                                        }
                   }
   where
-  message :: ErrorDescription -> String
-  message (UnexpectedHTTPStatus r) = "Unexpected HTTP status: " <> show r.status
-  message (ParsingError e) = "Parsing error: " <> e
-  message (DecodingError e) = "Decoding error: " <> e
-  message (ConnectionError e) = "Connection error: " <> e
+  error :: ErrorDescription
+  error = (runAjaxError err).description
+
+  header :: ErrorDescription -> String
+  header (ConnectionError _) = "Can't connect to the server"
+  header _ = "Error from the server"
+
+  body :: ErrorDescription -> String
+  body (UnexpectedHTTPStatus r) = "Received an unexpected response from the server: " <> show r.status <> ": " <> r.response
+  body (ParsingError e) = "There was a problem with the response from the server: " <> e
+  body (DecodingError e) = "There was a problem with the response from the server: " <> e
+  body (ConnectionError _) = "The server seems to be down or busy, please wait a while and try again."

@@ -15,3 +15,9 @@ exports.hot = function() {
     module.hot.accept();
   }
 }
+
+exports.documentOnClick = function(handler) {
+  return function() {
+    document.addEventListener('click', function() { handler(); });
+  }
+}
