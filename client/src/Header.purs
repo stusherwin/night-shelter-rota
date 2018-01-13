@@ -28,8 +28,7 @@ type State = { vols :: List Vol
              , reqInProgress :: Boolean
              , volDetailsState :: VolDetailsState
              , initialDataLoaded :: Boolean
-             , errorMessage :: Maybe Message
-             , errorMessageBubble :: MessageBubble
+             , errorMessage :: MessageBubble
              }
 
 data Action = ChangeCurrentVol (Maybe Vol)
@@ -132,13 +131,13 @@ spec = T.simpleSpec performAction render
                                             ] 
                                             []
                                      ]
-                                     <> renderMessageBubble (\a -> dispatch $ MessageBubbleAction a) s.errorMessageBubble
+                                     <> renderMessageBubble (\a -> dispatch $ MessageBubbleAction a) s.errorMessage
                           ]
     where
     iconType = case s.reqInProgress, s.errorMessage of
-                 true,  _       -> "icon-spin animate-spin"
-                 false, Nothing -> "logo" --"icon-ok"
-                 _,     _       -> "icon-warning"
+                 true,  _              -> "icon-spin animate-spin"
+                 false, Hidden Nothing -> "logo" --"icon-ok"
+                 _,     _              -> "icon-warning"
   respond :: State -> Int -> Action
   respond state i | i > 0 = ChangeCurrentVol $ state.vols !! (i - 1)
   respond _ _ = ChangeCurrentVol Nothing
@@ -155,21 +154,17 @@ spec = T.simpleSpec performAction render
   performAction :: T.PerformAction _ State _ Action
   performAction (ChangeCurrentVol v) _ _ = void $ T.modifyState _ { currentVol = v
                                                                   , volDetailsState = NotEditing
-                                                                  , errorMessage = Nothing
-                                                                  , errorMessageBubble = Hidden
+                                                                  , errorMessage = Hidden Nothing
                                                                   }
   performAction EditCurrentVol       _ _ = void $ T.modifyState _ { volDetailsState = EditingCurrentVol
-                                                                  , errorMessage = Nothing
-                                                                  , errorMessageBubble = Hidden
+                                                                  , errorMessage = Hidden Nothing
                                                                   }
   performAction EditNewVol           _ _ = void $ T.modifyState _ { currentVol = Nothing
                                                                   , volDetailsState = EditingNewVol
-                                                                  , errorMessage = Nothing
-                                                                  , errorMessageBubble = Hidden
+                                                                  , errorMessage = Hidden Nothing
                                                                   }
-  performAction (MessageBubbleAction _) _ { errorMessage: Nothing } = pure unit
-  performAction (MessageBubbleAction a) _ { errorMessage: Just msg, errorMessageBubble } = void $ do
-    T.modifyState _{ errorMessageBubble = handleMessageBubbleAction a msg errorMessageBubble }
+  performAction (MessageBubbleAction a) _ _ = void $ do
+    T.modifyState \s -> s{ errorMessage = handleMessageBubbleAction a s.errorMessage }
 
 initialState :: State
 initialState = { vols: Nil
@@ -177,8 +172,7 @@ initialState = { vols: Nil
                , volDetailsState: NotEditing
                , reqInProgress: true
                , initialDataLoaded: false
-               , errorMessage: Nothing
-               , errorMessageBubble: Hidden
+               , errorMessage: Hidden Nothing
                }
 
 initialDataLoaded :: List Vol -> State -> State
@@ -196,27 +190,24 @@ volDetailsUpdated vols currentVol = _ { vols = sortWith (toLower <<< _.name) vol
 
 editCancelled :: State -> State
 editCancelled = _ { volDetailsState = NotEditing
-                  , errorMessage = Nothing
-                  , errorMessageBubble = Hidden
+                  , errorMessage = Hidden Nothing
                   }
 
 reqStarted :: State -> State
 reqStarted = _ { reqInProgress = true
-               , errorMessage = Nothing
-               , errorMessageBubble = Hidden
+               , errorMessage = Hidden Nothing
                }
 
 reqSucceeded :: State -> State
 reqSucceeded = _ { reqInProgress = false
-                 , errorMessage = Nothing
-                 , errorMessageBubble = Hidden
+                 , errorMessage = Hidden Nothing
                  }
 
 reqFailed :: AjaxError -> State -> State
 reqFailed err = _ { reqInProgress = false
-                  , errorMessage = Just { header: header error
-                                        , body: body error
-                                        }
+                  , errorMessage = Hidden $ Just { header: header error
+                                                       , body: body error
+                                                       }
                   }
   where
   error :: ErrorDescription
