@@ -5,10 +5,12 @@ import Prelude
 import Control.Monad.Trans.Class (lift)
 import Control.Monad.Eff (Eff)
 import Control.Monad.Eff.Class (liftEff)
+import Data.Either (Either(..))
+import Data.Lens (Lens', lens, Prism', prism, over, _Just)
 import Data.List (List(..), (!!), find, toUnfoldable)
 import Data.Maybe (Maybe(..))
 import Data.String (toLower)
-import React (ReactElement, preventDefault) as R
+import React (ReactElement, preventDefault, createFactory) as R
 import React.DOM as RD
 import React.DOM.Props as RP
 import Thermite as T
@@ -17,7 +19,7 @@ import Control.Monad.Eff.Console (log, CONSOLE)
 
 import App.Common (unsafeEventSelectedIndex, isJustWith, sortWith, classNames)
 import App.Types (Vol)
-import App.MessageBubble (MessageBubble(..), MessageBubbleType(..), Message, MessageBubbleAction(..), renderMessageBubble, handleMessageBubbleAction)
+import App.MessageBubble (MessageBubble(..), MessageBubbleType(..), Message, MessageBubbleAction(..), renderMessageBubble, handleMessageBubbleAction, messageBubbleSpec)
 
 data VolDetailsState = NotEditing
                      | EditingNewVol
@@ -35,6 +37,15 @@ data Action = ChangeCurrentVol (Maybe Vol)
             | EditCurrentVol
             | EditNewVol
             | MessageBubbleAction MessageBubbleAction
+
+-- _errorMessage :: Lens' State MessageBubble
+-- _errorMessage = lens _.errorMessage _{ errorMessage = _ }
+
+-- _MessageBubbleAction :: Prism' Action MessageBubbleAction
+-- _MessageBubbleAction = prism MessageBubbleAction unwrap
+--   where 
+--   unwrap (MessageBubbleAction a) = Right a
+--   unwrap a = Left a 
 
 spec :: T.Spec _ State _ Action
 spec = T.simpleSpec performAction render
@@ -71,50 +82,38 @@ spec = T.simpleSpec performAction render
     where
       editVolButton :: String -> Array R.ReactElement
       editVolButton volName = [ RD.button [ RP.className "ui primary button header-button header-button-edit media-large-screen"
-                                          , RP.onClick \e -> do
-                                              _ <- R.preventDefault e
-                                              dispatch EditCurrentVol
+                                          , RP.onClick $ R.preventDefault >=> (const $ dispatch EditCurrentVol)
                                           ]
                                           [ RD.i [ RP.className "icon icon-edit" ] []
                                           , RD.text $ "Edit volunteer details"
                                           ]
                               , RD.button [ RP.className "ui primary button header-button header-button-edit media-larger-screen media-medium-screen"
-                                          , RP.onClick \e -> do
-                                              _ <- R.preventDefault e
-                                              dispatch EditCurrentVol
+                                          , RP.onClick $ R.preventDefault >=> (const $ dispatch EditCurrentVol)
                                           ]
                                           [ RD.i [ RP.className "icon icon-edit" ] []
                                           , RD.text $ "Edit"
                                           ]
                               , RD.button [ RP.className "ui primary mini icon button header-button header-button-edit media-small-screen"
-                                          , RP.onClick \e -> do
-                                              _ <- R.preventDefault e
-                                              dispatch EditCurrentVol
+                                          , RP.onClick $ R.preventDefault >=> (const $ dispatch EditCurrentVol)
                                           ]
                                           [ RD.i [ RP.className "icon icon-edit" ] []
                                           ]
                               ]
       newVolButton :: Array R.ReactElement
       newVolButton = [ RD.button [ RP.className "ui button header-button header-button-new media-large-screen"
-                                 , RP.onClick \e -> do
-                                     _ <- R.preventDefault e
-                                     dispatch EditNewVol
+                                 , RP.onClick $ R.preventDefault >=> (const $ dispatch EditNewVol)
                                  ]
                                  [ RD.i [ RP.className "icon icon-add" ] []
                                  , RD.text "New volunteer"
                                  ]
                      , RD.button [ RP.className "ui button header-button header-button-new media-larger-screen media-medium-screen"
-                                 , RP.onClick \e -> do
-                                     _ <- R.preventDefault e
-                                     dispatch EditNewVol
+                                 , RP.onClick $ R.preventDefault >=> (const $ dispatch EditNewVol)
                                  ]
                                  [ RD.i [ RP.className "icon icon-add" ] []
                                  , RD.text "New"
                                  ]
                      , RD.button [ RP.className "ui mini icon button header-button header-button-new media-small-screen"
-                                 , RP.onClick \e -> do
-                                     _ <- R.preventDefault e
-                                     dispatch EditNewVol
+                                 , RP.onClick $ R.preventDefault >=> (const $ dispatch EditNewVol)
                                  ]
                                  [ RD.i [ RP.className "icon icon-add" ] []
                                  ]
@@ -122,16 +121,17 @@ spec = T.simpleSpec performAction render
 
   statusIcon :: (Action -> T.EventHandler) -> State -> Array R.ReactElement
   statusIcon dispatch s = [ RD.div [ RP.className "header-status" ]
-                                   $ [ RD.i [ RP.className iconType
-                                            , RP.onClick \e -> do
-                                                _ <- R.preventDefault e
-                                                dispatch $ MessageBubbleAction $ Show Fixed
-                                            , RP.onMouseOver \_ -> dispatch $ MessageBubbleAction $ Show Transitory
-                                            , RP.onMouseLeave \_ -> dispatch $ MessageBubbleAction $ Hide Transitory
-                                            ] 
-                                            []
-                                     ]
-                                     <> renderMessageBubble (\a -> dispatch $ MessageBubbleAction a) s.errorMessage
+                                   $ 
+                                   [ RD.i [ RP.className iconType
+                                          , RP.onClick $ R.preventDefault >=> (const $ dispatch $ MessageBubbleAction $ Toggle Fixed)
+                                          , RP.onMouseOver $ const $ dispatch $ MessageBubbleAction $ Show Transitory
+                                          , RP.onMouseLeave $ const $ dispatch $ MessageBubbleAction $ Hide Transitory
+                                          ] 
+                                          []
+                                   --, R.createFactory (T.createClass (T.focus _errorMessage _MessageBubbleAction messageBubbleSpec) s) {}
+                                   ]
+                                   <>
+                                   renderMessageBubble (dispatch <<< MessageBubbleAction) s.errorMessage
                           ]
     where
     iconType = case s.reqInProgress, s.errorMessage of
@@ -165,7 +165,8 @@ spec = T.simpleSpec performAction render
                                                                   }
   performAction (MessageBubbleAction a) _ _ = void $ do
     T.modifyState \s -> s{ errorMessage = handleMessageBubbleAction a s.errorMessage }
-
+  performAction _ _ _ = pure unit
+  
 initialState :: State
 initialState = { vols: Nil
                , currentVol: Nothing
@@ -206,8 +207,8 @@ reqSucceeded = _ { reqInProgress = false
 reqFailed :: AjaxError -> State -> State
 reqFailed err = _ { reqInProgress = false
                   , errorMessage = Hidden $ Just { header: header error
-                                                       , body: body error
-                                                       }
+                                                 , body: body error
+                                                 }
                   }
   where
   error :: ErrorDescription

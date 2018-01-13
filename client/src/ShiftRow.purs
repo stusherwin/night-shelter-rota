@@ -98,10 +98,10 @@ spec = T.simpleSpec performAction render
     statusIcon _ = []
 
     renderVolMarker :: _ -> VolShift -> ReactElement
-    renderVolMarker d s =
+    renderVolMarker dispatch s =
       RD.span [ RP.className "vol-marker" ]
               [ RD.span [ RP.className "vol-name"
-                        , RP.onClick \_ -> d $ ShowVolInfo s.volunteer
+                        , RP.onClick $ const $ dispatch $ ShowVolInfo s.volunteer
                         ]
                         $ [ renderIcon s.shiftType
                           , RD.text $ s.volunteer.name
@@ -149,7 +149,7 @@ spec = T.simpleSpec performAction render
                                       , RP._type "checkbox"
                                       , RP._id $ "shift-type-" <> toDateString state.date
                                       , RP.checked $ st == Overnight
-                                      , RP.onChange \_ -> dispatch $ ChangeCurrentVolShiftType state.date $ otherShiftType st
+                                      , RP.onChange $ const $ dispatch $ ChangeCurrentVolShiftType state.date $ otherShiftType st
                                       ]
                                       []
                            , RD.label [ RP.htmlFor $ "shift-type-" <> toDateString state.date ]
@@ -167,7 +167,7 @@ spec = T.simpleSpec performAction render
                                , RP._id $ "shift-type-" <> toDateString state.date <> "-" <> code shiftType
                                , RP.name $ "shift-type-" <> toDateString state.date
                                , RP.checked $ currentShiftType == shiftType
-                               , RP.onChange \_ -> dispatch $ ChangeCurrentVolShiftType state.date shiftType
+                               , RP.onChange $ const $ dispatch $ ChangeCurrentVolShiftType state.date shiftType
                                ]
                                [ ]
                     , RD.label [ RP.className "action-label"
@@ -192,7 +192,7 @@ spec = T.simpleSpec performAction render
                   [ RD.input [ RP._type "checkbox"
                              , RP.disabled $ state.loading || (not s.canAddOvernight && not s.canAddEvening)
                              , RP.checked false
-                             , RP.onChange \_ -> dispatch $ AddCurrentVol state.date $ if s.canAddOvernight then Overnight else Evening
+                             , RP.onChange $ const $ dispatch $ AddCurrentVol state.date $ if s.canAddOvernight then Overnight else Evening
                              ]
                              []
                   , RD.label' []
@@ -203,7 +203,7 @@ spec = T.simpleSpec performAction render
                   [ RD.input [ RP._type "checkbox"
                              , RP.disabled $ state.loading
                              , RP.checked true
-                             , RP.onChange \_ -> dispatch $ RemoveCurrentVol state.date
+                             , RP.onChange $ const $ dispatch $ RemoveCurrentVol state.date
                              ]
                              []
                   , RD.label' []

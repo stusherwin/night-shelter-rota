@@ -4,7 +4,7 @@ import Prelude
 
 import Data.Maybe (Maybe(..), maybe, isNothing)
 import Data.String (length)
-import React (ReactElement, preventDefault)
+import React (ReactElement, preventDefault) as R
 import React.DOM as RD
 import React.DOM.Props as RP
 import Thermite as T
@@ -198,9 +198,7 @@ spec = T.simpleSpec performAction render
               , RD.div [ RP.className "buttons" ]
                        [ RD.button [ RP.className "ui button"
                                    , RP.disabled formError
-                                   , RP.onClick \e -> do
-                                       _ <- preventDefault e
-                                       dispatch $ Cancel
+                                   , RP.onClick $ R.preventDefault >=> (const $ dispatch $ Cancel)
                                    , RP.disabled state.readOnly
                                    ]
                                    [ RD.i [ RP.className "icon icon-cancel" ] []
@@ -208,9 +206,7 @@ spec = T.simpleSpec performAction render
                        , RD.button [ RP.className "ui primary button"
                                    , RP._type "submit"
                                    , RP.disabled formError
-                                   , RP.onClick \e -> do
-                                       _ <- preventDefault e
-                                       dispatch $ if state.formValid then Save state.details else SetSubmitted
+                                   , RP.onClick $ R.preventDefault >=> (const $ dispatch $ if state.formValid then Save state.details else SetSubmitted)
                                    , RP.disabled state.readOnly
                                    ]
                                    [ RD.i [ RP.className "icon icon-ok" ] []
@@ -283,12 +279,12 @@ isValid :: VolunteerDetails -> Boolean
 isValid { name } | length name == 0 = false
 isValid _ = true
 
-renderPref :: OvernightPreference -> ReactElement
+renderPref :: OvernightPreference -> R.ReactElement
 renderPref p = RD.span [ RP.className "sharing-pref alone" 
                        ] 
                        [ RD.span' [ RD.text $ overnightPrefMarker p ] ]
 
-renderGenderPref :: OvernightGenderPreference -> ReactElement
+renderGenderPref :: OvernightGenderPreference -> R.ReactElement
 renderGenderPref p = RD.span [ RP.className "sharing-pref gender" 
                              ] 
                              [ RD.span' [ RD.text $ overnightGenderPrefMarker p ] ]

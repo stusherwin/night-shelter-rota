@@ -43,9 +43,7 @@ spec = T.split _HeaderRow headerRowSpec
                          $ if state.showPrev then
                              [ RD.a [ RP.href "#"
                                     , RP.className "action"
-                                    , RP.onClick \e -> do
-                                       _ <- R.preventDefault e
-                                       dispatch PrevPeriod
+                                    , RP.onClick $ R.preventDefault >=> (const $ dispatch PrevPeriod)
                                     ]
                                     [ RD.i [ RP.className "icon-up-open"] []
                                     , RD.span' [ RD.text "previous 4 weeks" ]
@@ -55,9 +53,7 @@ spec = T.split _HeaderRow headerRowSpec
                          <> if state.showNext then 
                              [ RD.a [ RP.href "#"
                                     , RP.className "action"
-                                    , RP.onClick \e -> do
-                                       _ <- R.preventDefault e
-                                       dispatch NextPeriod
+                                    , RP.onClick $ R.preventDefault >=> (const $ dispatch NextPeriod)
                                     ]
                                     [ RD.i [ RP.className "icon-down-open"] []
                                     , RD.span' [ RD.text "next 4 weeks" ]

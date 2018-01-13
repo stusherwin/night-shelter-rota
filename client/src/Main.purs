@@ -153,9 +153,7 @@ spec = T.focus _header _HeaderAction H.spec
                                             [ RD.div [ RP.className "vol-info" ]
                                                      [ RD.h2' [ RD.text v.name ]
                                                      , RD.a [ RP.href "#"
-                                                            , RP.onClick \e -> do
-                                                               _ <- R.preventDefault e
-                                                               dispatch Close
+                                                            , RP.onClick $ R.preventDefault >=> (const $ dispatch Close)
                                                             ]
                                                             [ RD.i [ RP.className "icon-cancel"] []
                                                             ]

@@ -19,6 +19,7 @@ data MessageBubble = Hidden (Maybe Message)
 
 data MessageBubbleAction = Show MessageBubbleType
                          | Hide MessageBubbleType
+                         | Toggle MessageBubbleType
 
 renderMessageBubble :: (MessageBubbleAction -> T.EventHandler) -> MessageBubble -> Array R.ReactElement
 renderMessageBubble _ (Hidden _) = []
@@ -33,9 +34,7 @@ renderMessageBubble dispatch (Visible t msg) = [ RD.div [ RP.className "header-s
   close :: MessageBubbleType -> Array R.ReactElement
   close Transitory = []
   close Fixed = [ RD.a [ RP.href "#"
-                       , RP.onClick \e -> do
-                          _ <- R.preventDefault e
-                          dispatch $ Hide Fixed
+                       , RP.onClick $ R.preventDefault >=> (const $ dispatch $ Hide Fixed)
                        ]
                        [ RD.i [ RP.className "icon-cancel"] []
                        ]
@@ -45,11 +44,14 @@ handleMessageBubbleAction :: MessageBubbleAction -> MessageBubble -> MessageBubb
 handleMessageBubbleAction (Show Transitory) (Hidden (Just msg))         = Visible Transitory msg
 handleMessageBubbleAction (Show Fixed)      (Hidden (Just msg))         = Visible Fixed msg
 handleMessageBubbleAction (Show Fixed)      (Visible Transitory msg)    = Visible Fixed msg
+handleMessageBubbleAction (Toggle Fixed)    (Hidden (Just msg))         = Visible Fixed msg
+handleMessageBubbleAction (Toggle Fixed)    (Visible Fixed msg)         = Hidden (Just msg)
+handleMessageBubbleAction (Toggle Fixed)    (Visible Transitory msg)    = Visible Fixed msg
 handleMessageBubbleAction (Hide t1)         (Visible t2 msg) | t1 == t2 = Hidden (Just msg)
 handleMessageBubbleAction _ b = b
 
-spec :: T.Spec _ MessageBubble _ MessageBubbleAction
-spec = T.simpleSpec performAction render
+messageBubbleSpec :: T.Spec _ MessageBubble _ MessageBubbleAction
+messageBubbleSpec = T.simpleSpec performAction render
   where
   render :: T.Render MessageBubble _ MessageBubbleAction
   render dispatch _ state _ =
