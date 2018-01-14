@@ -34,9 +34,23 @@
       }
       
       .message-bubble {
+        cursor: default;
         color: #333;
         top: 38px;
-        left: 8px;
+        left: 0px;
+
+        &::before {
+          left: 12px;
+        }
+
+        &::after {
+          left: 14px;
+        }
+
+        &.inverted {
+          top: auto;
+          bottom: 38px;
+        }
       }
     }
 
@@ -398,6 +412,18 @@
         .message-bubble {
           top: 55px;
           left: 4px;
+
+          &::before {
+            left: 3px;
+          }
+
+          &::after {
+            left: 5px;
+          }
+
+          &.inverted {
+            bottom: 51px;
+          }
         }
       }
 

@@ -19,7 +19,7 @@ import Control.Monad.Eff.Console (log, CONSOLE)
 
 import App.Common (unsafeEventSelectedIndex, isJustWith, sortWith, classNames)
 import App.Types (Vol)
-import App.MessageBubble (MessageBubble(..), MessageBubbleType(..), Message, MessageBubbleAction(..), renderMessageBubble, handleMessageBubbleAction, messageBubbleSpec)
+import App.MessageBubble (MessageBubble(..), MessageBubbleType(..), Message, MessageBubbleAction(..), MessageBubblePosition(..), renderMessageBubble, handleMessageBubbleAction, messageBubbleSpec)
 
 data VolDetailsState = NotEditing
                      | EditingNewVol
@@ -135,9 +135,9 @@ spec = T.simpleSpec performAction render
                           ]
     where
     iconType = case s.reqInProgress, s.errorMessage of
-                 true,  _              -> "icon-spin animate-spin"
-                 false, Hidden Nothing -> "logo" --"icon-ok"
-                 _,     _              -> "icon-warning"
+                 true,  _                -> "icon-spin animate-spin"
+                 false, Hidden Nothing _ -> "logo" --"icon-ok"
+                 _,     _                -> "icon-warning"
   respond :: State -> Int -> Action
   respond state i | i > 0 = ChangeCurrentVol $ state.vols !! (i - 1)
   respond _ _ = ChangeCurrentVol Nothing
@@ -154,16 +154,16 @@ spec = T.simpleSpec performAction render
   performAction :: T.PerformAction _ State _ Action
   performAction (ChangeCurrentVol v) _ _ = void $ T.modifyState _ { currentVol = v
                                                                   , volDetailsState = NotEditing
-                                                                  , errorMessage = Hidden Nothing
+                                                                  , errorMessage = Hidden Nothing Under
                                                                   }
   performAction EditCurrentVol       _ _ = void $ T.modifyState _ { volDetailsState = EditingCurrentVol
-                                                                  , errorMessage = Hidden Nothing
+                                                                  , errorMessage = Hidden Nothing Under
                                                                   }
   performAction EditNewVol           _ _ = void $ T.modifyState _ { currentVol = Nothing
                                                                   , volDetailsState = EditingNewVol
-                                                                  , errorMessage = Hidden Nothing
+                                                                  , errorMessage = Hidden Nothing Under
                                                                   }
-  performAction (MessageBubbleAction a) _ _ = void $ do
+  performAction (MessageBubbleAction a) _ s = void $ do
     T.modifyState \s -> s{ errorMessage = handleMessageBubbleAction a s.errorMessage }
   performAction _ _ _ = pure unit
   
@@ -173,7 +173,7 @@ initialState = { vols: Nil
                , volDetailsState: NotEditing
                , reqInProgress: true
                , initialDataLoaded: false
-               , errorMessage: Hidden Nothing
+               , errorMessage: Hidden Nothing Under
                }
 
 initialDataLoaded :: List Vol -> State -> State
@@ -191,24 +191,24 @@ volDetailsUpdated vols currentVol = _ { vols = sortWith (toLower <<< _.name) vol
 
 editCancelled :: State -> State
 editCancelled = _ { volDetailsState = NotEditing
-                  , errorMessage = Hidden Nothing
+                  , errorMessage = Hidden Nothing Under
                   }
 
 reqStarted :: State -> State
 reqStarted = _ { reqInProgress = true
-               , errorMessage = Hidden Nothing
+               , errorMessage = Hidden Nothing Under
                }
 
 reqSucceeded :: State -> State
 reqSucceeded = _ { reqInProgress = false
-                 , errorMessage = Hidden Nothing
+                 , errorMessage = Hidden Nothing Under
                  }
 
 reqFailed :: AjaxError -> State -> State
 reqFailed err = _ { reqInProgress = false
-                  , errorMessage = Hidden $ Just { header: header error
-                                                 , body: body error
-                                                 }
+                  , errorMessage = Hidden (Just { header: header error
+                                                , body: body error
+                                                }) Under
                   }
   where
   error :: ErrorDescription

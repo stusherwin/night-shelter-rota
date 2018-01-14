@@ -1,4 +1,5 @@
 @import "Variables.less";
+@header-z-index: 10;
 
 .header {
   position: fixed;
@@ -9,7 +10,7 @@
   height: 56px;
   background: #ffe6a8;
   padding: 10px 10px 8px 10px;
-  z-index: 1;
+  z-index: @header-z-index;
   box-shadow: 5px 0px 10px 0px #000;
 
   .header-status {
@@ -48,7 +49,12 @@
     }
 
     .message-bubble {
-
+      z-index: @header-z-index + 1;
+      
+      &.inverted {
+        top: auto;
+        bottom: 28px;
+      }
     }
   }
 
@@ -131,6 +137,23 @@
       margin-top: 8px;
       margin-left: 5px;
       margin-right: 8px;
+
+      .message-bubble {
+        left: -2px;
+        top: 32px;
+
+        &::before {
+          left: 5px;
+        }
+
+        &::after {
+          left: 7px;
+        }
+        
+        // &.inverted {
+        //   bottom: 32px;
+        // }
+      }
     }
 
     h2 {

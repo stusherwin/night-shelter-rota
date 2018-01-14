@@ -20,7 +20,7 @@ import App.Common (onlyIf, classNames, dayString1, dayPostfix, sortWith, justIf,
 import App.ShiftRules (ShiftRuleConfig, validateShift, canChangeVolunteerShiftType, canAddVolunteer)
 import App.ShiftRules (RuleResult(..)) as SR
 import App.Types (Vol, Shift, VolShift, ShiftType(..), OvernightPreference(..), OvernightGenderPreference(..), otherShiftType, overnightPrefMarker, overnightPrefDescription, overnightGenderPrefMarker, overnightGenderPrefDescription)
-import App.MessageBubble (MessageBubble(..), MessageBubbleAction(..), MessageBubbleType(..), Message, handleMessageBubbleAction, renderMessageBubble)
+import App.MessageBubble (MessageBubble(..), MessageBubbleAction(..), MessageBubbleType(..), MessageBubblePosition(..), Message, handleMessageBubbleAction, renderMessageBubble)
 import ShiftListState
  
 spec :: T.Spec _ ShiftRowState _ RowAction
@@ -44,11 +44,13 @@ spec = T.simpleSpec performAction render
                             <> todayClass state
              , RP._id $ "shift-row-" <> toDateString state.date
              ]
-             [ RD.div [ classNames $ [ "shift-info" ] <> hasMessage state.status ]
+             [ RD.div [ classNames $ [ "shift-info" ] <> hasMessage state.status
+                      , RP.onClick $ R.preventDefault >=> (const $ dispatch $ MessageBubbleAction $ Toggle Fixed)
+                      , RP.onMouseOver $ const $ dispatch $ MessageBubbleAction $ Show Transitory
+                      , RP.onMouseLeave $ const $ dispatch $ MessageBubbleAction $ Hide Transitory
+                      ]
                       $
-                      [ RD.div [ classNames [ "row-item shift-date" ]
-                               , RP.onClick $ R.preventDefault >=> (const $ dispatch $ MessageBubbleAction $ Toggle Fixed)
-                               ]
+                      [ RD.div [ classNames [ "row-item shift-date" ] ]
                                [ RD.div [ classNames [ "shift-date-part shift-date-day collapsing" ] ]
                                         [ RD.text $ S.toUpper $ S.take 3 $ show $ weekday state.date ]
                                , RD.div [ classNames [ "shift-date-part shift-date-month collapsing" ] ]
@@ -59,9 +61,7 @@ spec = T.simpleSpec performAction render
                                                   [ RD.text $ dayPostfix state.date ] 
                                         ]
                                ]
-                      , RD.div [ classNames [ "row-item shift-status" ]
-                               , RP.onClick $ R.preventDefault >=> (const $ dispatch $ MessageBubbleAction $ Toggle Fixed)
-                               ]
+                      , RD.div [ classNames [ "row-item shift-status" ] ]
                                [ RD.div [ classNames [ "shift-status-part shift-status-vol-count collapsing" ] ]
                                         [ RD.text $ "" <> show state.noOfVols <> "/" <> show state.maxVols ]
                                , RD.div [ classNames [ "shift-status-part shift-status-icon collapsing" ] ]
@@ -242,7 +242,7 @@ initialState roster config date =
   , loading: false
   , currentVol: map currentVolState roster.currentVol
   , volMarkers: sortWith (S.toLower <<< _.volunteer.name) $ shift.volunteers
-  , errorMessage: Hidden errorMessage
+  , errorMessage: Hidden errorMessage Over
   }
   where
   shift = maybe { date: date, volunteers: Nil } id
