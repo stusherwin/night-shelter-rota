@@ -7,7 +7,7 @@ import React (ReactElement, preventDefault) as R
 import React.DOM as RD
 import React.DOM.Props as RP
 
-type Message = { header :: String
+type Message = { header :: Maybe String
                , body :: String
                }
 
@@ -23,12 +23,15 @@ data MessageBubbleAction = Show MessageBubbleType
 
 renderMessageBubble :: (MessageBubbleAction -> T.EventHandler) -> MessageBubble -> Array R.ReactElement
 renderMessageBubble _ (Hidden _) = []
-renderMessageBubble dispatch (Visible t msg) = [ RD.div [ RP.className "header-status-message" ] 
+renderMessageBubble dispatch (Visible t msg) = [ RD.div [ RP.className "message-bubble" ] 
                                                         $
-                                                        [ RD.h3' [ RD.text msg.header ]
-                                                        , RD.p' [ RD.text msg.body ]
-                                                        ]
-                                                        <> close t
+                                                        case msg.header of
+                                                          Just h -> [ RD.h3' [ RD.text h ] ]
+                                                          _ -> []
+                                                        <>
+                                                        [ RD.p' [ RD.text msg.body ] ]
+                                                        <>
+                                                        close t
                                                ]
   where
   close :: MessageBubbleType -> Array R.ReactElement

@@ -11,7 +11,7 @@ import Data.List (List(..), find, head, foldl, length)
 import Data.Maybe (Maybe(..), maybe)
 import Data.String (take, toUpper, toLower, length) as S
 import Data.Tuple (Tuple(..), uncurry)
-import React (ReactElement)
+import React (ReactElement, preventDefault) as R
 import React.DOM as RD
 import React.DOM.Props as RP
 import Thermite as T
@@ -20,6 +20,7 @@ import App.Common (onlyIf, classNames, dayString1, dayPostfix, sortWith, justIf,
 import App.ShiftRules (ShiftRuleConfig, validateShift, canChangeVolunteerShiftType, canAddVolunteer)
 import App.ShiftRules (RuleResult(..)) as SR
 import App.Types (Vol, Shift, VolShift, ShiftType(..), OvernightPreference(..), OvernightGenderPreference(..), otherShiftType, overnightPrefMarker, overnightPrefDescription, overnightGenderPrefMarker, overnightGenderPrefDescription)
+import App.MessageBubble (MessageBubble(..), MessageBubbleAction(..), MessageBubbleType(..), Message, handleMessageBubbleAction, renderMessageBubble)
 import ShiftListState
  
 spec :: T.Spec _ ShiftRowState _ RowAction
@@ -29,6 +30,8 @@ spec = T.simpleSpec performAction render
   performAction (AddCurrentVol _ _)           _ _ = void $ T.modifyState \state -> state { loading = true }
   performAction (RemoveCurrentVol _)          _ _ = void $ T.modifyState \state -> state { loading = true }
   performAction (ChangeCurrentVolShiftType _ _) _ _ = void $ T.modifyState \state -> state { loading = true }
+  performAction (MessageBubbleAction a) _ _ = void $ do
+    T.modifyState \s -> s{ errorMessage = handleMessageBubbleAction a s.errorMessage }
   performAction _ _ _ = pure unit
 
   render :: T.Render ShiftRowState _ RowAction
@@ -41,29 +44,36 @@ spec = T.simpleSpec performAction render
                             <> todayClass state
              , RP._id $ "shift-row-" <> toDateString state.date
              ]
-             [ RD.div [ classNames [ "row-item shift-date" ] ]
-                      [ RD.div [ classNames [ "shift-date-part shift-date-day collapsing" ] ]
-                               [ RD.text $ S.toUpper $ S.take 3 $ show $ weekday state.date ]
-                      , RD.div [ classNames [ "shift-date-part shift-date-month collapsing" ] ]
-                               [ RD.text $ S.toUpper $ S.take 3 $ show $ month state.date ]
-                      , RD.div [ classNames [ "shift-date-part shift-date-date collapsing" ] ]
-                               [ RD.text $ dayString1 state.date
-                               , RD.span [ RP.className "shift-date-postfix" ]
-                                         [ RD.text $ dayPostfix state.date ] 
+             [ RD.div [ classNames $ [ "shift-info" ] <> hasMessage state.status ]
+                      $
+                      [ RD.div [ classNames [ "row-item shift-date" ]
+                               , RP.onClick $ R.preventDefault >=> (const $ dispatch $ MessageBubbleAction $ Toggle Fixed)
+                               ]
+                               [ RD.div [ classNames [ "shift-date-part shift-date-day collapsing" ] ]
+                                        [ RD.text $ S.toUpper $ S.take 3 $ show $ weekday state.date ]
+                               , RD.div [ classNames [ "shift-date-part shift-date-month collapsing" ] ]
+                                        [ RD.text $ S.toUpper $ S.take 3 $ show $ month state.date ]
+                               , RD.div [ classNames [ "shift-date-part shift-date-date collapsing" ] ]
+                                        [ RD.text $ dayString1 state.date
+                                        , RD.span [ RP.className "shift-date-postfix" ]
+                                                  [ RD.text $ dayPostfix state.date ] 
+                                        ]
+                               ]
+                      , RD.div [ classNames [ "row-item shift-status" ]
+                               , RP.onClick $ R.preventDefault >=> (const $ dispatch $ MessageBubbleAction $ Toggle Fixed)
+                               ]
+                               [ RD.div [ classNames [ "shift-status-part shift-status-vol-count collapsing" ] ]
+                                        [ RD.text $ "" <> show state.noOfVols <> "/" <> show state.maxVols ]
+                               , RD.div [ classNames [ "shift-status-part shift-status-icon collapsing" ] ]
+                                      $ statusIcon state
                                ]
                       ]
-             , RD.div [ classNames [ "row-item shift-status" ] ]
-                      [ RD.div [ classNames [ "shift-status-part shift-status-vol-count collapsing" ] ]
-                               [ RD.text $ "" <> show state.noOfVols <> "/" <> show state.maxVols ]
-                      , RD.div [ classNames [ "shift-status-part shift-status-icon collapsing" ] ]
-                             $ statusIcon state
-                      ]
+                      <>
+                      renderMessageBubble (dispatch <<< MessageBubbleAction) state.errorMessage
              , RD.div [ classNames [ "row-item current-vol collapsing right aligned" ] ] 
                     $ renderCurrentVol state.currentVol
              , RD.div [ classNames [ "row-item vol-markers collapsing" ] ]
                     $ fromFoldable $ map (renderVolMarker dispatch) state.volMarkers
-            --  , RD.div [ classNames [ "row-item" ] ]
-            --           []
              ]
     ]
     where
@@ -72,7 +82,7 @@ spec = T.simpleSpec performAction render
     weekendClass _ = []
 
     loadingClass :: ShiftRowState -> Array String
-    loadingClass { loading } | loading = [ "loading" ]
+    loadingClass { loading: true } = [ "loading" ]
     loadingClass _ = []
 
     pastClass :: ShiftRowState -> Array String
@@ -84,20 +94,25 @@ spec = T.simpleSpec performAction render
     todayClass _ = [] 
 
     statusClass :: ShiftRowState -> Array String
-    -- statusClass Good        = [ "positive1" ]
-    statusClass { status: Error _ }   = [ "negative1" ]
-    statusClass { status: Warning _ } = [ "warning1" ]
+    statusClass { status: Error }   = [ "negative1" ]
+    statusClass { status: Warning } = [ "warning1" ]
     statusClass _ = []
 
-    statusIcon :: ShiftRowState -> Array ReactElement
-    statusIcon { date, currentDate } | date < currentDate = [ RD.i [ RP.className "icon-clock", RP.title "This shift is in the past" ] [] ]
-    -- statusIcon Good        = [ RD.i [ RP.className "icon-ok" ] [] ]
-    statusIcon { status: Error e }   = [ RD.i [ RP.className "icon-warning", RP.title e ] [] ]
-    statusIcon { status: Warning w } = [ RD.i [ RP.className "icon-info", RP.title w ] [] ]
-    statusIcon { status: Info i }    = [ RD.i [ RP.className "icon-info", RP.title i ] [] ]
+    statusIcon :: ShiftRowState -> Array R.ReactElement
+    statusIcon { status: Past } = [ RD.i [ RP.className "icon-clock" ] [] ]
+    statusIcon { status: Error } = [ RD.i [ RP.className "icon-warning" ] [] ]
+    statusIcon { status: Warning } = [ RD.i [ RP.className "icon-info" ] [] ]
+    statusIcon { status: Info } = [ RD.i [ RP.className "icon-info" ] [] ]
     statusIcon _ = []
 
-    renderVolMarker :: _ -> VolShift -> ReactElement
+    hasMessage :: ShiftStatus -> Array String
+    hasMessage Past    = [ "has-message" ]
+    hasMessage Error   = [ "has-message" ]
+    hasMessage Warning = [ "has-message" ]
+    hasMessage Info    = [ "has-message" ]
+    hasMessage _ = []
+
+    renderVolMarker :: _ -> VolShift -> R.ReactElement
     renderVolMarker dispatch s =
       RD.span [ RP.className "vol-marker" ]
               [ RD.span [ RP.className "vol-name"
@@ -109,34 +124,34 @@ spec = T.simpleSpec performAction render
                           <> renderSharingPrefs s.volunteer
               ]
       where
-      renderSharingPrefs :: Vol -> Array ReactElement
+      renderSharingPrefs :: Vol -> Array R.ReactElement
       renderSharingPrefs vol = catMaybes [ map renderOvernight vol.overnightPreference
                                          , map renderGender vol.overnightGenderPreference
                                          , map renderNotes $ justIf vol.notes $ S.length vol.notes > 0
                                          ]
 
-      renderOvernight :: OvernightPreference -> ReactElement
+      renderOvernight :: OvernightPreference -> R.ReactElement
       renderOvernight p = RD.span [ RP.className "sharing-pref alone" 
                                   ] 
                                   [ RD.span' [ RD.text $ overnightPrefMarker p ] ]
 
-      renderGender :: OvernightGenderPreference -> ReactElement
+      renderGender :: OvernightGenderPreference -> R.ReactElement
       renderGender p = RD.span [ RP.className "sharing-pref gender" 
                                ] 
                                [ RD.span' [ RD.text $ overnightGenderPrefMarker p ] ]
 
-      renderNotes :: String -> ReactElement
+      renderNotes :: String -> R.ReactElement
       renderNotes n = RD.span [ RP.className "sharing-pref icon" 
                               , RP.dangerouslySetInnerHTML { __html: "<i class=\"icon-info\"></i>&nbsp;" }
                               ] 
                               []
 
-    renderCurrentVol :: Maybe CurrentVolState -> Array ReactElement
+    renderCurrentVol :: Maybe CurrentVolState -> Array R.ReactElement
     renderCurrentVol Nothing = []
     renderCurrentVol (Just currentVol) = renderSelected currentVol
                                       <> renderShiftType currentVol
       where
-      renderShiftType :: CurrentVolState -> Array ReactElement
+      renderShiftType :: CurrentVolState -> Array R.ReactElement
       renderShiftType s@{ shiftType: Just st } | s.canChangeShiftType =
         [ RD.span [ RP.className "current-vol-shift-type radio media-large-screen media-larger-screen" ]
                   ( renderShiftTypeRadio Overnight st
@@ -160,7 +175,7 @@ spec = T.simpleSpec performAction render
                   ]
         ]
         where
-        renderShiftTypeRadio :: ShiftType -> ShiftType -> Array ReactElement
+        renderShiftTypeRadio :: ShiftType -> ShiftType -> Array R.ReactElement
         renderShiftTypeRadio shiftType currentShiftType = 
           [ RD.span [ RP.className "current-vol-shift-type-option" ]
                     [ RD.input [ RP._type "radio"
@@ -186,7 +201,7 @@ spec = T.simpleSpec performAction render
         code Overnight = "overnight"
       renderShiftType _ = []
 
-      renderSelected :: CurrentVolState -> Array ReactElement
+      renderSelected :: CurrentVolState -> Array R.ReactElement
       renderSelected s@{ shiftType: Nothing } | not state.loading =
         [ RD.span [ RP.className "current-vol-selected ui fitted checkbox" ]
                   [ RD.input [ RP._type "checkbox"
@@ -213,7 +228,7 @@ spec = T.simpleSpec performAction render
         [ RD.i [ RP.className "icon-spin animate-spin loading" ] [] ]
       renderSelected _ = []
     
-    renderIcon :: ShiftType -> ReactElement
+    renderIcon :: ShiftType -> R.ReactElement
     renderIcon Evening   = RD.i [ RP.className "vol-icon icon-no-bed" ] []
     renderIcon Overnight = RD.i [ RP.className "vol-icon icon-bed" ]    []
 
@@ -227,29 +242,39 @@ initialState roster config date =
   , loading: false
   , currentVol: map currentVolState roster.currentVol
   , volMarkers: sortWith (S.toLower <<< _.volunteer.name) $ shift.volunteers
+  , errorMessage: Hidden errorMessage
   }
   where
   shift = maybe { date: date, volunteers: Nil } id
               $ find (\s -> s.date == date) roster.shifts
-  status :: ShiftStatus
-  status =
-    let errors = validateShift config shift
-        firstErrorStatus = case head errors of
-          Just (SR.Error e)   -> Error
-          Just (SR.Warning w) -> Warning
-          Just (SR.Info i)    -> Info
-          Just (SR.Neutral)   -> const OK
-          _ -> const Good
-        
-        extractMsg (SR.Error e)   = Just e
-        extractMsg (SR.Warning w) = Just w
-        extractMsg (SR.Info i)    = Just i
-        extractMsg _ = Nothing
+  errors = validateShift config shift
 
-        concat ""  (Just m) = "This shift " <> m
-        concat msg (Just m) = msg <> ", and also " <> m
-        concat msg Nothing  = msg
-    in firstErrorStatus $ foldl concat "" $ map extractMsg errors
+  status :: ShiftStatus
+  status | date < config.currentDate = Past
+  status = case head errors of
+             Just (SR.Error e)   -> Error
+             Just (SR.Warning w) -> Warning
+             Just (SR.Info i)    -> Info
+             _ -> Good
+  
+  errorMessage :: Maybe Message
+  errorMessage = case status of
+                   Past    -> Just { header: Nothing, body: "This shift is in the past" }
+                   Error   -> Just { header: Nothing, body: body }
+                   Warning -> Just { header: Nothing, body: body }
+                   Info    -> Just { header: Nothing, body: body }
+                   _ -> Nothing
+    where
+      extractMsg (SR.Error e)   = Just e
+      extractMsg (SR.Warning w) = Just w
+      extractMsg (SR.Info i)    = Just i
+      extractMsg _ = Nothing
+
+      concat ""  (Just m) = "This shift " <> m
+      concat msg (Just m) = msg <> ", and also " <> m
+      concat msg Nothing  = msg
+
+      body = foldl concat "" $ map extractMsg errors
 
   currentVolState :: Vol -> CurrentVolState
   currentVolState cv = { name: cv.name

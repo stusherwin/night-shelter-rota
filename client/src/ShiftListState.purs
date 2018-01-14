@@ -6,6 +6,7 @@ import Data.DateTime (Date, Weekday(..), weekday)
 import App.ShiftRules(ShiftRuleConfig(..))
 
 import App.Types (Vol, Shift, VolShift, ShiftType(..), OvernightPreference(..), OvernightGenderPreference(..))
+import App.MessageBubble (MessageBubbleAction(..), MessageBubble)
 
 data RowAction = PrevPeriod
                | NextPeriod
@@ -13,6 +14,7 @@ data RowAction = PrevPeriod
                | RemoveCurrentVol Date
                | ChangeCurrentVolShiftType Date ShiftType
                | ShowVolInfo Vol
+               | MessageBubbleAction MessageBubbleAction
 
 data Action = RowAction Int RowAction
 
@@ -44,6 +46,7 @@ type ShiftRowState = { date :: Date
                      , maxVols :: Int
                      , volMarkers :: List VolShift
                      , loading :: Boolean
+                     , errorMessage :: MessageBubble
                      }
 
 type CurrentVolState = { name :: String
@@ -54,7 +57,8 @@ type CurrentVolState = { name :: String
                        }  
 
 data ShiftStatus = Good
-                 | Warning String
-                 | Error String
-                 | Info String
-                 | OK
+                 | Warning
+                 | Error
+                 | Info
+                 | Past
+                --  | OK

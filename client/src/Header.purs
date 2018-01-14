@@ -214,9 +214,9 @@ reqFailed err = _ { reqInProgress = false
   error :: ErrorDescription
   error = (runAjaxError err).description
 
-  header :: ErrorDescription -> String
-  header (ConnectionError _) = "Can't connect to the server"
-  header _ = "Error from the server"
+  header :: ErrorDescription -> Maybe String
+  header (ConnectionError _) = Just "Can't connect to the server"
+  header _ = Just "Error from the server"
 
   body :: ErrorDescription -> String
   body (UnexpectedHTTPStatus r) = "Received an unexpected response from the server: " <> show r.status <> ": " <> r.response
