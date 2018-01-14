@@ -259,10 +259,10 @@ initialState roster config date =
   
   errorMessage :: Maybe Message
   errorMessage = case status of
-                   Past    -> Just { header: Nothing, body: "This shift is in the past", position: Over }
-                   Error   -> Just { header: Nothing, body: body, position: Over }
-                   Warning -> Just { header: Nothing, body: body, position: Over }
-                   Info    -> Just { header: Nothing, body: body, position: Over }
+                   Past    -> Just { header: Nothing, body: "This shift is in the past", position: Over, icon: Just "clock" }
+                   Error   -> Just { header: Nothing, body: body, position: Over, icon: Just "warning" }
+                   Warning -> Just { header: Nothing, body: body, position: Over, icon: Just "info" }
+                   Info    -> Just { header: Nothing, body: body, position: Over, icon: Just "info" }
                    _ -> Nothing
     where
       extractMsg (SR.Error e)   = Just e

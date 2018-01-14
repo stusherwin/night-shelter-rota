@@ -445,4 +445,4 @@ foreign import getElementById :: forall eff. String -> Eff eff Element
 
 foreign import hot :: forall eff. Eff eff Unit
 
-foreign import documentOnClick :: forall eff1 eff2. Eff eff1 Unit -> Eff eff2 Unit
+foreign import documentOnClick :: forall eff1 eff2. Eff eff1 Unit -> Eff eff2 Unit 

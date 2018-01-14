@@ -11,6 +11,7 @@
   padding: 10px 10px 8px 10px;
   z-index: @header-z-index;
   box-shadow: 5px 0px 10px 0px #000;
+  @warnColor: #000; //rgba(255, 0, 0, 0.788);
 
   .header-status {
     float: left;
@@ -25,7 +26,6 @@
       float: left;
 
       &.icon-warning {
-        @warnColor: #000; //rgba(255, 0, 0, 0.788);
         color: @warnColor;
         cursor: pointer;
         margin-left: 1px;
@@ -49,6 +49,19 @@
 
     .message-bubble {
       z-index: @header-z-index + 1;
+
+      h3 {
+        i {
+          margin-left: -3px;
+          margin-right: 4px;
+          margin-top: 0px;
+          cursor: auto;
+
+          &.icon-warning:hover {
+            color: @warnColor;
+          }
+        }
+      }
       
       &.inverted {
         top: auto;

@@ -10,6 +10,7 @@ import App.Common (classNames, onlyIf)
 
 type Message = { header :: Maybe String
                , body :: String
+               , icon :: Maybe String
                , position :: MessageBubblePosition
                }
 
@@ -37,21 +38,32 @@ renderMessageBubble dispatch mb =
                                            ]
                               ] 
                               $
-                              case msg.header of
-                                Just h -> [ RD.h3' [ RD.text h ] ]
-                                _ -> []
-                              <>
-                              [ RD.p' [ RD.text msg.body ]
-                              ]
-                              <>
-                              if close
+                              (if close
                                 then [ RD.a [ RP.href "#"
                                             , RP.onClick $ R.preventDefault >=> (const $ dispatch $ ToggleFixed)
                                             ]
                                             [ RD.i [ RP.className "icon-cancel"] []
                                             ]
                                      ]
-                                else []
+                                else [])
+                              <>
+                              case msg.header of
+                                Just h -> [ RD.h3' $
+                                                   case msg.icon of
+                                                     Just i -> [ RD.i [ RP.className $ "icon-" <> i ] [] ]
+                                                     _ -> []
+                                                   <>
+                                                   [ RD.text h ]
+                                          ]
+                                _ -> []
+                              <>
+                              [ RD.p' $
+                                      case msg.header, msg.icon of
+                                        Nothing, Just i -> [ RD.i [ RP.className $ "icon-" <> i ] [] ]
+                                        _, _ -> []
+                                      <>
+                                      [ RD.text msg.body ]
+                              ]
                      ]
 
 handleMessageBubbleAction :: MessageBubbleAction -> MessageBubble -> MessageBubble

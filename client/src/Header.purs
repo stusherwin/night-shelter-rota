@@ -209,6 +209,7 @@ reqFailed err = _ { reqInProgress = false
                   , errorMessage = Hidden $ Just { header: header error
                                                  , body: body error
                                                  , position: Under
+                                                 , icon: Just "warning"
                                                  } 
                   }
   where
