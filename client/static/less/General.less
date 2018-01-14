@@ -113,7 +113,6 @@ a.action {
   cursor: default;
 }
 
-@vol-info-z-index: 100;
 .vol-info-fadeout {
   position: fixed;
   top: 0;
@@ -228,7 +227,7 @@ a.action {
 }
 
 .message-bubble {
-  z-index: 5;
+  z-index: @base-z-index + 1;
   position: absolute;
   background: #fff;
   padding: 10px;

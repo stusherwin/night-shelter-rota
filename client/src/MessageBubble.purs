@@ -10,54 +10,56 @@ import App.Common (classNames, onlyIf)
 
 type Message = { header :: Maybe String
                , body :: String
+               , position :: MessageBubblePosition
                }
 
-data MessageBubbleType = Transitory | Fixed
 data MessageBubblePosition = Under | Over
-derive instance eqMessageBubbleType :: Eq MessageBubbleType
 
-data MessageBubble = Hidden (Maybe Message) MessageBubblePosition
-                   | Visible MessageBubbleType Message MessageBubblePosition
+data MessageBubble = Hidden (Maybe Message)
+                   | Transitory Message
+                   | Fixed Message
 
-data MessageBubbleAction = Show MessageBubbleType
-                         | Hide MessageBubbleType
-                         | Toggle MessageBubbleType
+data MessageBubbleAction = ShowTransitory
+                         | HideTransitory
+                         | ToggleFixed
 
 renderMessageBubble :: (MessageBubbleAction -> T.EventHandler) -> MessageBubble -> Array R.ReactElement
-renderMessageBubble _ (Hidden _ _) = []
-renderMessageBubble dispatch (Visible t msg p) = [ RD.div [ classNames [ "message-bubble"
-                                                                       , case p of
-                                                                           Over -> "inverted"
-                                                                           _ -> ""
-                                                                       ]
-                                                          ] 
-                                                          $
-                                                          case msg.header of
-                                                            Just h -> [ RD.h3' [ RD.text h ] ]
-                                                            _ -> []
-                                                          <>
-                                                          [ RD.p' [ RD.text msg.body ] ]
-                                                          <>
-                                                          close t
-                                                 ]
+renderMessageBubble dispatch mb =
+  case mb of
+    Hidden _ -> []
+    Transitory msg -> render msg false
+    Fixed msg      -> render msg true
   where
-  close :: MessageBubbleType -> Array R.ReactElement
-  close Transitory = []
-  close Fixed = [ RD.a [ RP.href "#"
-                       , RP.onClick $ R.preventDefault >=> (const $ dispatch $ Hide Fixed)
-                       ]
-                       [ RD.i [ RP.className "icon-cancel"] []
-                       ]
-                ]
+  render msg close = [ RD.div [ classNames [ "message-bubble"
+                                           , case msg.position of
+                                               Over -> "inverted"
+                                               _ -> ""
+                                           ]
+                              ] 
+                              $
+                              case msg.header of
+                                Just h -> [ RD.h3' [ RD.text h ] ]
+                                _ -> []
+                              <>
+                              [ RD.p' [ RD.text msg.body ]
+                              ]
+                              <>
+                              if close
+                                then [ RD.a [ RP.href "#"
+                                            , RP.onClick $ R.preventDefault >=> (const $ dispatch $ ToggleFixed)
+                                            ]
+                                            [ RD.i [ RP.className "icon-cancel"] []
+                                            ]
+                                     ]
+                                else []
+                     ]
 
 handleMessageBubbleAction :: MessageBubbleAction -> MessageBubble -> MessageBubble
-handleMessageBubbleAction (Show Transitory) (Hidden (Just msg) p)         = Visible Transitory msg p
-handleMessageBubbleAction (Show Fixed)      (Hidden (Just msg) p)         = Visible Fixed msg p
-handleMessageBubbleAction (Show Fixed)      (Visible Transitory msg p)    = Visible Fixed msg p
-handleMessageBubbleAction (Toggle Fixed)    (Hidden (Just msg) p)         = Visible Fixed msg p
-handleMessageBubbleAction (Toggle Fixed)    (Visible Fixed msg p)         = Hidden (Just msg) p
-handleMessageBubbleAction (Toggle Fixed)    (Visible Transitory msg p)    = Visible Fixed msg p
-handleMessageBubbleAction (Hide t1)         (Visible t2 msg p) | t1 == t2 = Hidden (Just msg) p
+handleMessageBubbleAction ShowTransitory (Hidden (Just msg)) = Transitory msg
+handleMessageBubbleAction HideTransitory (Transitory msg)    = Hidden (Just msg)
+handleMessageBubbleAction ToggleFixed    (Hidden (Just msg)) = Fixed msg
+handleMessageBubbleAction ToggleFixed    (Transitory msg)    = Fixed msg
+handleMessageBubbleAction ToggleFixed    (Fixed msg)         = Hidden (Just msg)
 handleMessageBubbleAction _ b = b
 
 messageBubbleSpec :: T.Spec _ MessageBubble _ MessageBubbleAction

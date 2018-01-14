@@ -19,7 +19,7 @@ import Control.Monad.Eff.Console (log, CONSOLE)
 
 import App.Common (unsafeEventSelectedIndex, isJustWith, sortWith, classNames)
 import App.Types (Vol)
-import App.MessageBubble (MessageBubble(..), MessageBubbleType(..), Message, MessageBubbleAction(..), MessageBubblePosition(..), renderMessageBubble, handleMessageBubbleAction, messageBubbleSpec)
+import App.MessageBubble (MessageBubble(..), Message, MessageBubbleAction(..), MessageBubblePosition(..), renderMessageBubble, handleMessageBubbleAction, messageBubbleSpec)
 
 data VolDetailsState = NotEditing
                      | EditingNewVol
@@ -123,9 +123,9 @@ spec = T.simpleSpec performAction render
   statusIcon dispatch s = [ RD.div [ RP.className "header-status" ]
                                    $ 
                                    [ RD.i [ RP.className iconType
-                                          , RP.onClick $ R.preventDefault >=> (const $ dispatch $ MessageBubbleAction $ Toggle Fixed)
-                                          , RP.onMouseOver $ const $ dispatch $ MessageBubbleAction $ Show Transitory
-                                          , RP.onMouseLeave $ const $ dispatch $ MessageBubbleAction $ Hide Transitory
+                                          , RP.onClick $ R.preventDefault >=> (const $ dispatch $ MessageBubbleAction ToggleFixed)
+                                          , RP.onMouseOver $ const $ dispatch $ MessageBubbleAction ShowTransitory
+                                          , RP.onMouseLeave $ const $ dispatch $ MessageBubbleAction HideTransitory
                                           ] 
                                           []
                                    --, R.createFactory (T.createClass (T.focus _errorMessage _MessageBubbleAction messageBubbleSpec) s) {}
@@ -135,9 +135,9 @@ spec = T.simpleSpec performAction render
                           ]
     where
     iconType = case s.reqInProgress, s.errorMessage of
-                 true,  _                -> "icon-spin animate-spin"
-                 false, Hidden Nothing _ -> "logo" --"icon-ok"
-                 _,     _                -> "icon-warning"
+                 true,  _              -> "icon-spin animate-spin"
+                 false, Hidden Nothing -> "logo" --"icon-ok"
+                 _,     _              -> "icon-warning"
   respond :: State -> Int -> Action
   respond state i | i > 0 = ChangeCurrentVol $ state.vols !! (i - 1)
   respond _ _ = ChangeCurrentVol Nothing
@@ -154,14 +154,14 @@ spec = T.simpleSpec performAction render
   performAction :: T.PerformAction _ State _ Action
   performAction (ChangeCurrentVol v) _ _ = void $ T.modifyState _ { currentVol = v
                                                                   , volDetailsState = NotEditing
-                                                                  , errorMessage = Hidden Nothing Under
+                                                                  , errorMessage = Hidden Nothing
                                                                   }
   performAction EditCurrentVol       _ _ = void $ T.modifyState _ { volDetailsState = EditingCurrentVol
-                                                                  , errorMessage = Hidden Nothing Under
+                                                                  , errorMessage = Hidden Nothing
                                                                   }
   performAction EditNewVol           _ _ = void $ T.modifyState _ { currentVol = Nothing
                                                                   , volDetailsState = EditingNewVol
-                                                                  , errorMessage = Hidden Nothing Under
+                                                                  , errorMessage = Hidden Nothing
                                                                   }
   performAction (MessageBubbleAction a) _ s = void $ do
     T.modifyState \s -> s{ errorMessage = handleMessageBubbleAction a s.errorMessage }
@@ -173,7 +173,7 @@ initialState = { vols: Nil
                , volDetailsState: NotEditing
                , reqInProgress: true
                , initialDataLoaded: false
-               , errorMessage: Hidden Nothing Under
+               , errorMessage: Hidden Nothing
                }
 
 initialDataLoaded :: List Vol -> State -> State
@@ -191,24 +191,25 @@ volDetailsUpdated vols currentVol = _ { vols = sortWith (toLower <<< _.name) vol
 
 editCancelled :: State -> State
 editCancelled = _ { volDetailsState = NotEditing
-                  , errorMessage = Hidden Nothing Under
+                  , errorMessage = Hidden Nothing
                   }
 
 reqStarted :: State -> State
 reqStarted = _ { reqInProgress = true
-               , errorMessage = Hidden Nothing Under
+               , errorMessage = Hidden Nothing
                }
 
 reqSucceeded :: State -> State
 reqSucceeded = _ { reqInProgress = false
-                 , errorMessage = Hidden Nothing Under
+                 , errorMessage = Hidden Nothing
                  }
 
 reqFailed :: AjaxError -> State -> State
 reqFailed err = _ { reqInProgress = false
-                  , errorMessage = Hidden (Just { header: header error
-                                                , body: body error
-                                                }) Under
+                  , errorMessage = Hidden $ Just { header: header error
+                                                 , body: body error
+                                                 , position: Under
+                                                 } 
                   }
   where
   error :: ErrorDescription

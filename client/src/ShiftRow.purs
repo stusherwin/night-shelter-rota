@@ -20,7 +20,7 @@ import App.Common (onlyIf, classNames, dayString1, dayPostfix, sortWith, justIf,
 import App.ShiftRules (ShiftRuleConfig, validateShift, canChangeVolunteerShiftType, canAddVolunteer)
 import App.ShiftRules (RuleResult(..)) as SR
 import App.Types (Vol, Shift, VolShift, ShiftType(..), OvernightPreference(..), OvernightGenderPreference(..), otherShiftType, overnightPrefMarker, overnightPrefDescription, overnightGenderPrefMarker, overnightGenderPrefDescription)
-import App.MessageBubble (MessageBubble(..), MessageBubbleAction(..), MessageBubbleType(..), MessageBubblePosition(..), Message, handleMessageBubbleAction, renderMessageBubble)
+import App.MessageBubble (MessageBubble(..), MessageBubbleAction(..), MessageBubblePosition(..), Message, handleMessageBubbleAction, renderMessageBubble)
 import ShiftListState
  
 spec :: T.Spec _ ShiftRowState _ RowAction
@@ -45,9 +45,9 @@ spec = T.simpleSpec performAction render
              , RP._id $ "shift-row-" <> toDateString state.date
              ]
              [ RD.div [ classNames $ [ "shift-info" ] <> hasMessage state.status
-                      , RP.onClick $ R.preventDefault >=> (const $ dispatch $ MessageBubbleAction $ Toggle Fixed)
-                      , RP.onMouseOver $ const $ dispatch $ MessageBubbleAction $ Show Transitory
-                      , RP.onMouseLeave $ const $ dispatch $ MessageBubbleAction $ Hide Transitory
+                      , RP.onClick $ R.preventDefault >=> (const $ dispatch $ MessageBubbleAction ToggleFixed)
+                      , RP.onMouseOver $ const $ dispatch $ MessageBubbleAction ShowTransitory
+                      , RP.onMouseLeave $ const $ dispatch $ MessageBubbleAction HideTransitory
                       ]
                       $
                       [ RD.div [ classNames [ "row-item shift-date" ] ]
@@ -242,7 +242,7 @@ initialState roster config date =
   , loading: false
   , currentVol: map currentVolState roster.currentVol
   , volMarkers: sortWith (S.toLower <<< _.volunteer.name) $ shift.volunteers
-  , errorMessage: Hidden errorMessage Over
+  , errorMessage: Hidden errorMessage
   }
   where
   shift = maybe { date: date, volunteers: Nil } id
@@ -259,10 +259,10 @@ initialState roster config date =
   
   errorMessage :: Maybe Message
   errorMessage = case status of
-                   Past    -> Just { header: Nothing, body: "This shift is in the past" }
-                   Error   -> Just { header: Nothing, body: body }
-                   Warning -> Just { header: Nothing, body: body }
-                   Info    -> Just { header: Nothing, body: body }
+                   Past    -> Just { header: Nothing, body: "This shift is in the past", position: Over }
+                   Error   -> Just { header: Nothing, body: body, position: Over }
+                   Warning -> Just { header: Nothing, body: body, position: Over }
+                   Info    -> Just { header: Nothing, body: body, position: Over }
                    _ -> Nothing
     where
       extractMsg (SR.Error e)   = Just e
@@ -275,6 +275,7 @@ initialState roster config date =
       concat msg Nothing  = msg
 
       body = foldl concat "" $ map extractMsg errors
+                
 
   currentVolState :: Vol -> CurrentVolState
   currentVolState cv = { name: cv.name
