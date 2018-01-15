@@ -84,3 +84,8 @@ messageBubbleSpec = T.simpleSpec performAction render
   performAction :: T.PerformAction _ MessageBubble _ MessageBubbleAction
   performAction action _ _ = void $ do
     T.modifyState \s -> handleMessageBubbleAction action s
+
+hideMessageBubble :: MessageBubble -> MessageBubble
+hideMessageBubble (Transitory msg)    = Hidden (Just msg)
+hideMessageBubble (Fixed msg)         = Hidden (Just msg)
+hideMessageBubble b = b

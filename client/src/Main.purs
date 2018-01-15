@@ -43,8 +43,9 @@ import Thermite as T
 import App.Common (updateWhere, sortWith, nextWeekday)
 import App.Header (State, Action(..), spec, initialState, volDetailsUpdated, editCancelled, reqStarted, reqSucceeded, reqFailed, initialDataLoaded) as H
 import App.ShiftRules (ShiftRuleConfig)
-import App.ShiftList (State, Action(..), RowAction(..), spec, initialState, changeCurrentVol, shiftUpdated) as SL
+import App.ShiftList (State, Action(..), RowAction(..), spec, initialState, changeCurrentVol, shiftUpdated, hideAllMessagesExcept) as SL
 import App.VolDetails (State, Action(..), spec, initialState, disable, enable) as VD
+import App.MessageBubble (MessageBubbleAction(..)) as MB
 import App.Types (OvernightPreference(..), OvernightGenderPreference(..), Vol, VolShift, Shift, VolunteerDetails, ShiftType(..), overnightPrefMarker, overnightPrefDescription, overnightGenderPrefMarker, overnightGenderPrefDescription)
 import App.ServerTypeConversion
 import ServerTypes as API
@@ -143,6 +144,16 @@ spec = T.focus _header _HeaderAction H.spec
       showVolInfo v
     performAction (VolInfoAction Close) _ _ =
       hideVolInfo
+    performAction (ShiftListAction (SL.RowAction i (SL.MessageBubbleAction MB.ToggleFixed))) _ _ = do
+      lift $ liftEff $ log $ show i
+      void $ T.modifyState \s -> case s.shiftList of 
+                                   Just sl -> s { shiftList = Just $ SL.hideAllMessagesExcept i sl }
+                                   Nothing -> s
+    performAction (ShiftListAction (SL.RowAction i (SL.MessageBubbleAction MB.ShowTransitory))) _ _ = do
+          lift $ liftEff $ log $ show i
+          void $ T.modifyState \s -> case s.shiftList of 
+                                       Just sl -> s { shiftList = Just $ SL.hideAllMessagesExcept i sl }
+                                       Nothing -> s
     performAction _ _ _ = pure unit
   volInfo :: T.Spec _ (Maybe Vol) _ VolInfoAction
   volInfo = T.simpleSpec T.defaultPerformAction render

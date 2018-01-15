@@ -1,4 +1,4 @@
-module App.ShiftList (spec, initialState, changeCurrentVol, shiftUpdated, module ShiftListState) where
+module App.ShiftList (spec, initialState, changeCurrentVol, shiftUpdated, hideAllMessagesExcept, module ShiftListState) where
    
 import Prelude 
 
@@ -9,9 +9,10 @@ import Control.Monad.Eff (Eff)
 import Control.Monad.Trans.Class (lift)
 import Data.DateTime (Date, Weekday(..))
 import Data.Either (Either(..))
+import Data.FunctorWithIndex (mapWithIndex)
 import Data.Lens (Lens', lens, Prism', prism, over)
-import Data.List (List(..), zipWith, length)
-import Data.Maybe (Maybe(..), maybe, isJust)
+import Data.List (List(..), zipWith, length, updateAt, (!!), zip, range)
+import Data.Maybe (Maybe(..), maybe, isJust, fromMaybe)
 import Data.Time.Duration (Milliseconds(..))
 import Data.Tuple (Tuple(..), uncurry, snd)
 import React.DOM as RD 
@@ -23,7 +24,7 @@ import Control.Monad.Eff.Console (log, CONSOLE)
 import App.Common (tomorrow, modifyWhere, toMonthYearString, isFirstDayOfMonth, addDays, previousWeekday, classNames, onlyIf)
 import App.ShiftRules (ShiftRuleConfig)
 import App.Types (Shift, Vol, VolShift)
-import App.ShiftRow (initialState) as SR
+import App.ShiftRow (initialState, hideMessage) as SR
 import App.Row (spec) as R
 import ShiftListState
  
@@ -170,6 +171,13 @@ shiftUpdated shifts date state =
   in state { roster = roster'
            , rows = modifyWhere isShiftOnDate cancelLoading $ preserveLoading state.rows $ rows roster' state.config
            }
+
+hideAllMessagesExcept :: Int -> State -> State
+hideAllMessagesExcept i state =
+     state { rows = map (\(Tuple ri row) -> case row of
+                                            ShiftRow s | ri == i -> ShiftRow s
+                                            ShiftRow s -> ShiftRow $ SR.hideMessage s
+                                            r -> r) $ zip (range 0 ((length state.rows) - 1)) state.rows } -- fromMaybe state.rows rows' }
 
 foreign import scrollTop :: forall eff. Eff eff Number
 

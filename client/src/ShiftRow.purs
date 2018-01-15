@@ -1,4 +1,4 @@
-module App.ShiftRow (spec, initialState) where
+module App.ShiftRow (spec, initialState, hideMessage) where
  
 import Prelude
  
@@ -20,7 +20,7 @@ import App.Common (onlyIf, classNames, dayString1, dayPostfix, sortWith, justIf,
 import App.ShiftRules (ShiftRuleConfig, validateShift, canChangeVolunteerShiftType, canAddVolunteer)
 import App.ShiftRules (RuleResult(..)) as SR
 import App.Types (Vol, Shift, VolShift, ShiftType(..), OvernightPreference(..), OvernightGenderPreference(..), otherShiftType, overnightPrefMarker, overnightPrefDescription, overnightGenderPrefMarker, overnightGenderPrefDescription)
-import App.MessageBubble (MessageBubble(..), MessageBubbleAction(..), MessageBubblePosition(..), Message, handleMessageBubbleAction, renderMessageBubble)
+import App.MessageBubble (MessageBubble(..), MessageBubbleAction(..), MessageBubblePosition(..), Message, handleMessageBubbleAction, renderMessageBubble, hideMessageBubble)
 import ShiftListState
  
 spec :: T.Spec _ ShiftRowState _ RowAction
@@ -284,3 +284,6 @@ initialState roster config date =
                        , canAddEvening: canAddVolunteer config { shiftType: Evening, volunteer: cv} shift
                        , canChangeShiftType: canChangeVolunteerShiftType config cv shift
                        } 
+
+hideMessage :: ShiftRowState -> ShiftRowState
+hideMessage s = s { errorMessage = hideMessageBubble s.errorMessage }
