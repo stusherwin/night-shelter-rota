@@ -1,4 +1,4 @@
-module App.ShiftList (spec, initialState, changeCurrentVol, shiftUpdated, hideAllMessagesExcept, module ShiftListState) where
+module App.ShiftList (spec, initialState, changeCurrentVol, shiftUpdated, module ShiftListState) where
    
 import Prelude 
 
@@ -24,8 +24,9 @@ import Control.Monad.Eff.Console (log, CONSOLE)
 import App.Common (tomorrow, modifyWhere, toMonthYearString, isFirstDayOfMonth, addDays, previousWeekday, classNames, onlyIf)
 import App.ShiftRules (ShiftRuleConfig)
 import App.Types (Shift, Vol, VolShift)
-import App.ShiftRow (initialState, hideMessage) as SR
+import App.ShiftRow (initialState, otherFixedMessage, noOtherFixedMessage, hasFixedMessage) as SR
 import App.Row (spec) as R
+import App.MessageBubble (MessageBubbleAction(..)) as MB
 import ShiftListState
  
 shiftCount :: Int
@@ -76,6 +77,8 @@ spec =
       ot' <- lift $ liftEff $ elementOffsetTopById id
       let st' = ot' - pos
       lift $ liftEff $ scrollTo st'
+    performAction (RowAction i (MessageBubbleAction MB.ToggleFixed)) _ _ = do
+      void $ T.modifyState \s -> handleToggledFixedMessage i s
     performAction _ _ _ = pure unit
     
 initialState :: forall c. Maybe Vol -> List Shift -> ShiftRuleConfig -> State
@@ -172,12 +175,22 @@ shiftUpdated shifts date state =
            , rows = modifyWhere isShiftOnDate cancelLoading $ preserveLoading state.rows $ rows roster' state.config
            }
 
-hideAllMessagesExcept :: Int -> State -> State
-hideAllMessagesExcept i state =
-     state { rows = map (\(Tuple ri row) -> case row of
-                                            ShiftRow s | ri == i -> ShiftRow s
-                                            ShiftRow s -> ShiftRow $ SR.hideMessage s
-                                            r -> r) $ zip (range 0 ((length state.rows) - 1)) state.rows } -- fromMaybe state.rows rows' }
+handleToggledFixedMessage :: Int -> State -> State
+handleToggledFixedMessage i state =
+  state { rows = map (\(Tuple ri row) -> handleRow ri row) $ rowsWithIndex }
+  where
+    toggledRowNowFixed = fromMaybe false $ do
+      row <- state.rows !! i
+      shiftRow <- case row of
+                    ShiftRow s -> Just $ s
+                    _ -> Nothing
+      Just $ SR.hasFixedMessage shiftRow
+    rowsWithIndex = zip (range 0 ((length state.rows) - 1)) state.rows
+    handleRow :: Int -> RowState -> RowState
+    handleRow ri (ShiftRow s) | ri == i = ShiftRow s
+    handleRow ri (ShiftRow s) | toggledRowNowFixed = ShiftRow $ SR.otherFixedMessage s
+    handleRow ri (ShiftRow s) = ShiftRow $ SR.noOtherFixedMessage s
+    handleRow _ r = r
 
 foreign import scrollTop :: forall eff. Eff eff Number
 

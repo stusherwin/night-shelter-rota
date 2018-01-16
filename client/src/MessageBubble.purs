@@ -17,6 +17,7 @@ type Message = { header :: Maybe String
 data MessageBubblePosition = Under | Over
 
 data MessageBubble = Hidden (Maybe Message)
+                   | OtherFixedMessage (Maybe Message)
                    | Transitory Message
                    | Fixed Message
 
@@ -27,9 +28,9 @@ data MessageBubbleAction = ShowTransitory
 renderMessageBubble :: (MessageBubbleAction -> T.EventHandler) -> MessageBubble -> Array R.ReactElement
 renderMessageBubble dispatch mb =
   case mb of
-    Hidden _ -> []
     Transitory msg -> render msg false
     Fixed msg      -> render msg true
+    _ -> []
   where
   render msg close = [ RD.div [ classNames [ "message-bubble"
                                            , case msg.position of
@@ -67,11 +68,12 @@ renderMessageBubble dispatch mb =
                      ]
 
 handleMessageBubbleAction :: MessageBubbleAction -> MessageBubble -> MessageBubble
-handleMessageBubbleAction ShowTransitory (Hidden (Just msg)) = Transitory msg
-handleMessageBubbleAction HideTransitory (Transitory msg)    = Hidden (Just msg)
-handleMessageBubbleAction ToggleFixed    (Hidden (Just msg)) = Fixed msg
-handleMessageBubbleAction ToggleFixed    (Transitory msg)    = Fixed msg
-handleMessageBubbleAction ToggleFixed    (Fixed msg)         = Hidden (Just msg)
+handleMessageBubbleAction ShowTransitory (Hidden (Just m)) = Transitory m
+handleMessageBubbleAction HideTransitory (Transitory m)    = Hidden (Just m)
+handleMessageBubbleAction ToggleFixed    (Hidden (Just m)) = Fixed m
+handleMessageBubbleAction ToggleFixed    (Transitory m)    = Fixed m
+handleMessageBubbleAction ToggleFixed    (Fixed m)         = Hidden (Just m)
+handleMessageBubbleAction ToggleFixed    (OtherFixedMessage (Just m)) = Fixed m
 handleMessageBubbleAction _ b = b
 
 messageBubbleSpec :: T.Spec _ MessageBubble _ MessageBubbleAction
@@ -85,7 +87,16 @@ messageBubbleSpec = T.simpleSpec performAction render
   performAction action _ _ = void $ do
     T.modifyState \s -> handleMessageBubbleAction action s
 
-hideMessageBubble :: MessageBubble -> MessageBubble
-hideMessageBubble (Transitory msg)    = Hidden (Just msg)
-hideMessageBubble (Fixed msg)         = Hidden (Just msg)
-hideMessageBubble b = b
+otherFixedMessageBubble :: MessageBubble -> MessageBubble
+otherFixedMessageBubble (Transitory m) = OtherFixedMessage (Just m)
+otherFixedMessageBubble (Fixed m)      = OtherFixedMessage (Just m)
+otherFixedMessageBubble (Hidden maybeM)     = OtherFixedMessage maybeM
+otherFixedMessageBubble b = b
+
+noOtherFixedMessageBubble :: MessageBubble -> MessageBubble
+noOtherFixedMessageBubble (OtherFixedMessage maybeM) = Hidden maybeM
+-- noOtherFixedMessageBubble (Fixed msg)             = Hidden (Just msg)
+noOtherFixedMessageBubble b = b
+
+clearMessageBubble :: MessageBubble
+clearMessageBubble = Hidden Nothing

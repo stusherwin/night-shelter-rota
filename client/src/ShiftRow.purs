@@ -1,4 +1,4 @@
-module App.ShiftRow (spec, initialState, hideMessage) where
+module App.ShiftRow (spec, initialState, otherFixedMessage, noOtherFixedMessage, hasFixedMessage) where
  
 import Prelude
  
@@ -20,7 +20,7 @@ import App.Common (onlyIf, classNames, dayString1, dayPostfix, sortWith, justIf,
 import App.ShiftRules (ShiftRuleConfig, validateShift, canChangeVolunteerShiftType, canAddVolunteer)
 import App.ShiftRules (RuleResult(..)) as SR
 import App.Types (Vol, Shift, VolShift, ShiftType(..), OvernightPreference(..), OvernightGenderPreference(..), otherShiftType, overnightPrefMarker, overnightPrefDescription, overnightGenderPrefMarker, overnightGenderPrefDescription)
-import App.MessageBubble (MessageBubble(..), MessageBubbleAction(..), MessageBubblePosition(..), Message, handleMessageBubbleAction, renderMessageBubble, hideMessageBubble)
+import App.MessageBubble (MessageBubble(..), MessageBubbleAction(..), MessageBubblePosition(..), Message, handleMessageBubbleAction, renderMessageBubble, otherFixedMessageBubble, noOtherFixedMessageBubble)
 import ShiftListState
  
 spec :: T.Spec _ ShiftRowState _ RowAction
@@ -47,7 +47,7 @@ spec = T.simpleSpec performAction render
              [ RD.div [ classNames $ [ "shift-info" ] <> hasMessage state.status
                       , RP.onClick $ R.preventDefault >=> (const $ dispatch $ MessageBubbleAction ToggleFixed)
                       , RP.onMouseOver $ const $ dispatch $ MessageBubbleAction ShowTransitory
-                      , RP.onMouseLeave $ const $ dispatch $ MessageBubbleAction HideTransitory
+                      , RP.onMouseOut $ const $ dispatch $ MessageBubbleAction HideTransitory
                       ]
                       $
                       [ RD.div [ classNames [ "row-item shift-date" ] ]
@@ -285,5 +285,12 @@ initialState roster config date =
                        , canChangeShiftType: canChangeVolunteerShiftType config cv shift
                        } 
 
-hideMessage :: ShiftRowState -> ShiftRowState
-hideMessage s = s { errorMessage = hideMessageBubble s.errorMessage }
+otherFixedMessage :: ShiftRowState -> ShiftRowState
+otherFixedMessage s = s { errorMessage = otherFixedMessageBubble s.errorMessage }
+
+noOtherFixedMessage :: ShiftRowState -> ShiftRowState
+noOtherFixedMessage s = s { errorMessage = noOtherFixedMessageBubble s.errorMessage }
+
+hasFixedMessage :: ShiftRowState -> Boolean
+hasFixedMessage { errorMessage: Fixed _ } = true
+hasFixedMessage _ = false
