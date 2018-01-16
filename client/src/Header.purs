@@ -38,15 +38,6 @@ data Action = ChangeCurrentVol (Maybe Vol)
             | EditNewVol
             | MessageBubbleAction MessageBubbleAction
 
--- _errorMessage :: Lens' State MessageBubble
--- _errorMessage = lens _.errorMessage _{ errorMessage = _ }
-
--- _MessageBubbleAction :: Prism' Action MessageBubbleAction
--- _MessageBubbleAction = prism MessageBubbleAction unwrap
---   where 
---   unwrap (MessageBubbleAction a) = Right a
---   unwrap a = Left a 
-
 spec :: T.Spec _ State _ Action
 spec = T.simpleSpec performAction render
   where 
@@ -128,7 +119,6 @@ spec = T.simpleSpec performAction render
                                           , RP.onMouseLeave $ const $ dispatch $ MessageBubbleAction HideTransitory
                                           ] 
                                           []
-                                   --, R.createFactory (T.createClass (T.focus _errorMessage _MessageBubbleAction messageBubbleSpec) s) {}
                                    ]
                                    <>
                                    renderMessageBubble (dispatch <<< MessageBubbleAction) s.errorMessage
@@ -136,7 +126,7 @@ spec = T.simpleSpec performAction render
     where
     iconType = case s.reqInProgress, s.errorMessage of
                  true,  _              -> "icon-spin animate-spin"
-                 false, Hidden Nothing -> "logo" --"icon-ok"
+                 false, Hidden Nothing -> "logo"
                  _,     _              -> "icon-warning"
   respond :: State -> Int -> Action
   respond state i | i > 0 = ChangeCurrentVol $ state.vols !! (i - 1)
