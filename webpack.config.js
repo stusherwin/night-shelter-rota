@@ -19,6 +19,8 @@ var plugins =
   ]
 ;
 
+var jsOutputFilename = isWebpackDevServer ? './js/bundle.js' : './client/static/js/bundle.js'
+
 var lessUse = [];
 if(isWebpackDevServer) {
   lessUse = [
@@ -27,7 +29,7 @@ if(isWebpackDevServer) {
     { loader: "less-loader" }
   ];
 } else {
-  plugins.push(new ExtractTextPlugin("css/bundle.css"));
+  plugins.push(new ExtractTextPlugin("./client/static/css/bundle.css"));
   lessUse = ExtractTextPlugin.extract({
     fallback: "style-loader",
     use: [ "css-loader", "less-loader" ]
@@ -40,7 +42,10 @@ module.exports = {
   devServer: {
     contentBase: './client/static',
     port: 5022,
-    stats: 'errors-only'
+    stats: 'errors-only',
+    proxy: {
+      '/api/**': 'http://localhost:8081/'
+    }
   },
 
   entry: './client/src/Main.purs',
@@ -48,7 +53,7 @@ module.exports = {
   output: {
     path: __dirname,
     pathinfo: true,
-    filename: 'js/bundle.js'
+    filename: jsOutputFilename
   },
 
   module: {

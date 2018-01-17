@@ -11,15 +11,21 @@
   },
   "files": [],
   "scripts": {
-    "webpack": "webpack --progress --bail --output-path client/static --output-filename js/bundle.js",
+    "webpack": "webpack --progress --bail",
     "webpack:watch": "PATH=$PATH:../releases/psc-package DEBUG=purs-loader DEBUG_DEPTH=100 webpack --progress --display-error-details --watch",
     "webpack:server": "webpack-dev-server --progress --inline --hot",
     "webpack:server:debug": "DEBUG=purs-loader* DEBUG_DEPTH=100 webpack-dev-server --progress --inline --hot",
-    "purs:compile": "purs compile bower_components/purescript-*/src/**/*.purs client/src/**/*.purs",
-    "purs:bundle": "purs bundle output/**/*.js client/src/Main.js -o client/content/js/purs-bundle.js",
-    "start": "node client/content/js/purs-bundle.js"
+    "heroku-postbuild": "bower install && webpack"
   },
   "dependencies": {
+    "bower": "latest",
+    "css-loader": "^0.28.7",
+    "extract-text-webpack-plugin": "^2.1.2",
+    "file-loader": "^1.1.6",
+    "less": "^2.7.3",
+    "less-loader": "^4.0.5",
+    "style-loader": "^0.19.1",
+    "url-loader": "^0.6.2",
     "lodash.difference": "^4.5.0",
     "purescript": "^0.11.0",
     "purescript-psa": "^0.5.0",
@@ -31,12 +37,5 @@
     "wrappy": "^1.0.2"
   },
   "devDependencies": {
-    "css-loader": "^0.28.7",
-    "extract-text-webpack-plugin": "^2.1.2",
-    "file-loader": "^1.1.6",
-    "less-loader": "^4.0.5",
-    "purs-loader": "^3.1.1",
-    "style-loader": "^0.19.1",
-    "url-loader": "^0.6.2"
   }
 }

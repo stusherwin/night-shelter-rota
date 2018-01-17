@@ -55,6 +55,6 @@ insert into volunteer_shift (shiftDate, volunteerId, shiftType) values ('2018-01
 insert into volunteer_shift (shiftDate, volunteerId, shiftType) values ('2018-01-08', v3Id, 'O');
 insert into volunteer_shift (shiftDate, volunteerId, shiftType) values ('2018-01-08', v4Id, 'E');
 
-grant all on all tables in schema public to shelter_rota_user;
-grant all on all sequences in schema public to shelter_rota_user;
+-- grant all on all tables in schema public to shelter_rota_user;
+-- grant all on all sequences in schema public to shelter_rota_user;
 end $$

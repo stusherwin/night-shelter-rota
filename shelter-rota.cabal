@@ -39,6 +39,7 @@ executable shelter-rota
                      , warp
                      , wai
                      , wai-cors
+                     , wai-extra
                      , aeson
                      , transformers
                      , time

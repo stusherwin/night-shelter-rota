@@ -389,9 +389,9 @@ updateVolunteer v' = map updateShift
   updateVol vs = vs
 
 type MySettings = SPSettings_ SPParams_
-
+ 
 settings :: MySettings
-settings = defaultSettings $ SPParams_ { baseURL: "http://localhost:8081/" }
+settings = defaultSettings $ SPParams_ { baseURL: "/" }
 
 type APIEffect eff = ReaderT MySettings (ExceptT AjaxError (Aff (ajax :: AJAX, err :: EXCEPTION | eff)))
 

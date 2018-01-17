@@ -12,32 +12,30 @@ module Main where
   import Data.IORef (IORef, newIORef, readIORef, atomicModifyIORef')
   import Data.Time.Clock (getCurrentTime, utctDay)
   import Data.Time.Calendar (toGregorian)
+  import Data.ByteString.Char8 (pack)
   import Servant
   import Data.ByteString (ByteString)
   import Network.Wai.Middleware.Cors (cors, simpleCorsResourcePolicy, corsRequestHeaders, corsMethods, simpleMethods, corsOrigins)
   import Network.Wai.Middleware.Servant.Options (provideOptions)
+  import Network.Wai.Middleware.RequestLogger (logStdoutDev)
+  import System.Environment (getEnv, getArgs)
   
   import Types 
   import Api
   import Database
 
-  connectionString :: ByteString
-  connectionString = "postgres://shelter_rota_user:password@localhost:5432/shelter_rota"
-  
-  localHostOrigin :: ByteString
-  localHostOrigin = "http://localhost:5022"
-  
   main :: IO ()
   main = do
-    run 8081 $ app connectionString
+    connectionString <- getEnv "DATABASE_URL"
+    putStrLn $ "connection string: " ++ connectionString
+    args <- getArgs
+    let portStr = head args
+    putStrLn $ "port: " ++ portStr
+    run (read portStr) $ app $ pack connectionString
 
   app :: ByteString -> Application
-  app conn = cors (const $ Just policy)
-           $ provideOptions appAPI
-           $ serve fullAPI (server conn)
-    where policy = simpleCorsResourcePolicy { corsRequestHeaders = [ "content-type" ]
-                                            , corsMethods = simpleMethods ++ ["DELETE", "PUT"]
-                                            , corsOrigins = Just ([localHostOrigin], False) }
+  app conn = logStdoutDev
+             $ serve fullAPI (server conn)
            
   server :: ByteString -> Server FullAPI
   server conn = appServer conn
