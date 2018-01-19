@@ -1,6 +1,6 @@
 module App.VolDetails (State, Action(..), spec, initialState, disable, enable) where
  
-import Prelude
+import Prelude 
 
 import Data.Maybe (Maybe(..), maybe, isNothing)
 import Data.String (length)

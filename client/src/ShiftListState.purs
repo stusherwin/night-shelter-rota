@@ -1,12 +1,12 @@
 module ShiftListState where
 
-import Data.List (List(..))
-import Data.Maybe (Maybe(..))
-import Data.DateTime (Date, Weekday(..), weekday)
-import App.ShiftRules(ShiftRuleConfig(..))
+import Data.List (List) 
+import Data.Maybe (Maybe)
+import Data.DateTime (Date)
+import App.ShiftRules(ShiftRuleConfig)
 
-import App.Types (Vol, Shift, VolShift, ShiftType(..), OvernightPreference(..), OvernightGenderPreference(..))
-import App.MessageBubble (MessageBubbleAction(..), MessageBubble)
+import App.Types (Vol, Shift, VolShift, ShiftType)
+import App.MessageBubble (MessageBubbleAction, MessageBubble)
 
 data RowAction = PrevPeriod
                | NextPeriod

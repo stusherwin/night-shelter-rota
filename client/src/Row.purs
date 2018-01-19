@@ -1,6 +1,6 @@
 module App.Row (spec) where
 
-import Prelude
+import Prelude (const, ($), (<>), (>=>))
  
 import Data.Lens (Prism', prism)
 import Data.Either (Either(..))
@@ -10,7 +10,7 @@ import Thermite as T
 import React as R
 
 import App.ShiftRow (spec) as SR
-import ShiftListState
+import ShiftListState (HeaderRowState, RowAction(..), RowState(..), ShiftRowState)
 
 
 _HeaderRow :: Prism' RowState HeaderRowState

@@ -1,18 +1,17 @@
 module App.ShiftRules (RuleResult(..), ShiftRuleConfig, canAddVolunteer, validateShift, filterOut, canChangeVolunteerShiftType) where
 
-import Prelude
+import Prelude 
 
 import Data.Array (toUnfoldable)  
-import App.Common (justIf, sortWith, mkDate)
-import Data.List (List(..), findIndex, find, modifyAt, snoc, deleteAt, length, all, nubBy, filter, catMaybes, any, singleton, length, filter, nubBy, any, findIndex, deleteAt, modifyAt, snoc)
-import Data.Date (diff, year, month, day)
+import App.Common (justIf, sortWith)
+import Data.List (List(Cons), all, any, catMaybes, filter, find, length, nubBy)
+import Data.Date (diff)
 import Data.DateTime (Date)
-import Data.Enum (fromEnum)
-import Data.Int (fromString, toNumber)
-import Data.Maybe (Maybe(..), fromMaybe, isJust)
+import Data.Int (toNumber)
+import Data.Maybe (Maybe(..), isJust)
 import Data.Time.Duration (Days(..))
 
-import App.Types (Shift, Vol, OvernightPreference(..), OvernightGenderPreference(..), VolShift, ShiftType(..), otherShiftType)
+import App.Types (Shift, Vol, OvernightPreference(..), VolShift, ShiftType(..), otherShiftType)
 
 type ShiftRuleConfig = { currentDate :: Date
                        , maxVolsPerShift :: Int

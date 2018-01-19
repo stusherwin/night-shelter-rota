@@ -1,27 +1,23 @@
 module App.ShiftRow (spec, initialState, otherFixedMessage, noOtherFixedMessage, hasFixedMessage) where
  
-import Prelude
+import Prelude (const, id, map, not, pure, show, unit, void, ($), (&&), (<), (<#>), (<<<), (<>), (==), (>), (>=>), (||))
  
-import Data.Array (catMaybes, fromFoldable, reverse)
-import Data.DateTime (Date, Weekday(..), weekday, month)
-import Data.Either (Either(..))
-import Data.Foldable (fold)
-import Data.Lens (Lens', lens, Prism', prism, over, _Just)
+import Data.Array (catMaybes, fromFoldable)
+import Data.DateTime (Date, weekday, month)
 import Data.List (List(..), find, head, foldl, length)
 import Data.Maybe (Maybe(..), maybe)
 import Data.String (take, toUpper, toLower, length) as S
-import Data.Tuple (Tuple(..), uncurry)
 import React (ReactElement, preventDefault) as R
 import React.DOM as RD
 import React.DOM.Props as RP
 import Thermite as T
    
-import App.Common (onlyIf, classNames, dayString1, dayPostfix, sortWith, justIf, toDateString, isWeekday)
+import App.Common (classNames, dayString1, dayPostfix, sortWith, justIf, toDateString, isWeekday)
 import App.ShiftRules (ShiftRuleConfig, validateShift, canChangeVolunteerShiftType, canAddVolunteer)
 import App.ShiftRules (RuleResult(..)) as SR
-import App.Types (Vol, Shift, VolShift, ShiftType(..), OvernightPreference(..), OvernightGenderPreference(..), otherShiftType, overnightPrefMarker, overnightPrefDescription, overnightGenderPrefMarker, overnightGenderPrefDescription)
+import App.Types (Vol, VolShift, ShiftType(..), OvernightPreference, OvernightGenderPreference, otherShiftType, overnightPrefMarker, overnightGenderPrefMarker)
 import App.MessageBubble (MessageBubble(..), MessageBubbleAction(..), MessageBubblePosition(..), Message, handleMessageBubbleAction, renderMessageBubble, otherFixedMessageBubble, noOtherFixedMessageBubble)
-import ShiftListState
+import ShiftListState (CurrentVolState, RosterState, RowAction(..), ShiftRowState, ShiftStatus(..))
  
 spec :: T.Spec _ ShiftRowState _ RowAction
 spec = T.simpleSpec performAction render 

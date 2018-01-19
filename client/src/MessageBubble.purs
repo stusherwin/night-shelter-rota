@@ -1,12 +1,12 @@
 module App.MessageBubble where
 
-import Prelude 
+import Prelude  
 import Data.Maybe(Maybe(..))
 import Thermite as T
 import React (ReactElement, preventDefault) as R
 import React.DOM as RD
 import React.DOM.Props as RP
-import App.Common (classNames, onlyIf)
+import App.Common (classNames)
 
 type Message = { header :: Maybe String
                , body :: String

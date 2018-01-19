@@ -1,25 +1,19 @@
 module App.Header (State, VolDetailsState(..), Action(..), spec, initialState, volDetailsUpdated, editCancelled, reqStarted, reqSucceeded, reqFailed, initialDataLoaded) where
  
-import Prelude 
+import Prelude
 
-import Control.Monad.Trans.Class (lift)
-import Control.Monad.Eff (Eff)
-import Control.Monad.Eff.Class (liftEff)
-import Data.Either (Either(..))
-import Data.Lens (Lens', lens, Prism', prism, over, _Just)
 import Data.List (List(..), (!!), find, toUnfoldable)
 import Data.Maybe (Maybe(..))
 import Data.String (toLower)
-import React (ReactElement, preventDefault, createFactory) as R
+import React (ReactElement, preventDefault) as R
 import React.DOM as RD
 import React.DOM.Props as RP
 import Thermite as T
-import Servant.PureScript.Affjax (AjaxError, ErrorDescription(..), errorToString, runAjaxError)
-import Control.Monad.Eff.Console (log, CONSOLE)
+import Servant.PureScript.Affjax (AjaxError, ErrorDescription(..), runAjaxError)
 
-import App.Common (unsafeEventSelectedIndex, isJustWith, sortWith, classNames)
+import App.Common (unsafeEventSelectedIndex, isJustWith, sortWith)
 import App.Types (Vol)
-import App.MessageBubble (MessageBubble(..), Message, MessageBubbleAction(..), MessageBubblePosition(..), renderMessageBubble, handleMessageBubbleAction, messageBubbleSpec)
+import App.MessageBubble (MessageBubble(..), MessageBubbleAction(..), MessageBubblePosition(..), renderMessageBubble, handleMessageBubbleAction)
 
 data VolDetailsState = NotEditing
                      | EditingNewVol

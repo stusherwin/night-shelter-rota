@@ -1,11 +1,11 @@
 module App.Types (Vol, VolShift, Shift, ShiftType(..), OvernightPreference(..), OvernightGenderPreference(..), VolunteerDetails, otherShiftType, overnightPrefMarker, overnightPrefDescription, overnightGenderPrefMarker, overnightGenderPrefDescription) where
 
-import Data.List (List(..))
-import Data.Maybe (Maybe(..))
+import Data.List (List)
+import Data.Maybe (Maybe)
 import Prim (Array, Int, String)
 import Data.DateTime (Date)
 
-import Prelude
+import Prelude 
 
 type Vol = { id :: Int
            , name :: String

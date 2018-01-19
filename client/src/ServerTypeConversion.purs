@@ -2,12 +2,12 @@ module App.ServerTypeConversion (fromAPIShiftDate, toAPIShiftDate, fromAPIShiftT
 
 import Data.DateTime (Date)
 import Data.Date (year, month, day)
-import Data.List (List(..), fromFoldable)
+import Data.List (List, fromFoldable)
 import App.Common (mkDate)
 import Data.Enum (fromEnum)
 import ServerTypes as API
 import App.Types (Vol, VolShift, Shift, ShiftType(..), OvernightPreference(..), OvernightGenderPreference(..), VolunteerDetails)
-import Prelude
+import Prelude 
 
 fromAPIShiftDate :: API.ShiftDate -> Date
 fromAPIShiftDate (API.ShiftDate { year: y, month: m, day: d }) = mkDate d m y

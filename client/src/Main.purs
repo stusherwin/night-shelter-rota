@@ -1,52 +1,45 @@
 module App.Main where 
      
-import Control.Monad.Except.Trans
-import Control.Monad.Reader.Trans
-import Data.Argonaut.Generic.Aeson
-import Data.Generic
-import Data.Tuple
-import Prelude
-import Servant.PureScript.Settings
-import ServerAPI
+import Control.Monad.Except.Trans (ExceptT, runExceptT)
+import Control.Monad.Reader.Trans (ReaderT, lift, runReaderT)
+import Data.Generic (class Generic, gShow)
+import Data.Tuple (Tuple(..))
+import Prelude (Unit, bind, const, discard, flip, id, map, pure, unit, void, ($), (<#>), (<$>), (<*>), (<>), (==), (>=>), (>>=))
+import Servant.PureScript.Settings (SPSettings_, defaultSettings)
+import ServerAPI (SPParams_(..), deleteApiShiftsByYearByMonthByDayByVolId, getApiShifts, getApiVols, postApiShiftsByYearByMonthByDayByVolId, postApiVolsById, putApiShiftsByYearByMonthByDayByVolId, putApiVols)
 import Servant.PureScript.Affjax (AjaxError, errorToString)
-import Control.Monad.Aff
-import Control.Monad.Aff.Console
-import Control.Monad.Aff.Class (liftAff)
+import Control.Monad.Aff (Aff, launchAff, parallel, sequential)
 import Control.Monad.Eff.Class (liftEff)
-import Network.HTTP.Affjax (AJAX, get)
+import Network.HTTP.Affjax (AJAX)
 import Control.Monad.Eff.Exception (EXCEPTION)
-import DOM (DOM)
 
 import Control.Monad.Eff (Eff)
-import Control.Monad.Eff.Console (log, CONSOLE)
-import Control.Monad.Eff.Now (nowDate, NOW)
+import Control.Monad.Eff.Console (log)
+import Control.Monad.Eff.Now (nowDate)
 import Control.Monad.Eff.Unsafe (unsafePerformEff)
 import DOM.Node.Types (Element)
-import Data.DateTime (Date, Weekday(..))
+import Data.DateTime (Date)
 import Data.DateTime.Locale (LocalValue(..))
-import Data.Date (year, month, day)
 import Data.Either (Either(..), either)
 import Data.Foldable (fold)
 import Data.Lens (Lens', lens, Prism', prism, over, _Just)
-import Data.List (List(..), snoc, last, fromFoldable, findIndex)
-import Data.List (List(..), findIndex, find, modifyAt, snoc, deleteAt, length, all, nubBy, filter, catMaybes, any, singleton, length, filter, nubBy, any, findIndex, deleteAt, modifyAt, snoc)
-import Data.Maybe (Maybe(..), maybe, fromMaybe)
+import Data.List (List(Nil), findIndex, modifyAt, snoc)
+import Data.Maybe (Maybe(..), fromMaybe)
 import Data.String.Regex (regex, split)
 import Data.String.Regex.Flags (multiline)
 import React as R
-import React.DOM (s)
 import React.DOM as RD
 import React.DOM.Props as RP
 import ReactDOM as RDOM
 import Thermite as T
  
-import App.Common (updateWhere, sortWith, nextWeekday)
+import App.Common (updateWhere)
 import App.Header (State, Action(..), spec, initialState, volDetailsUpdated, editCancelled, reqStarted, reqSucceeded, reqFailed, initialDataLoaded) as H
 import App.ShiftRules (ShiftRuleConfig)
 import App.ShiftList (State, Action(..), RowAction(..), spec, initialState, changeCurrentVol, shiftUpdated) as SL
 import App.VolDetails (State, Action(..), spec, initialState, disable, enable) as VD
-import App.Types (OvernightPreference(..), OvernightGenderPreference(..), Vol, VolShift, Shift, VolunteerDetails, ShiftType(..), overnightPrefMarker, overnightPrefDescription, overnightGenderPrefMarker, overnightGenderPrefDescription)
-import App.ServerTypeConversion
+import App.Types (OvernightPreference(..), OvernightGenderPreference(..), Vol, VolShift, Shift, ShiftType, VolunteerDetails, overnightPrefMarker, overnightPrefDescription, overnightGenderPrefMarker, overnightGenderPrefDescription)
+import App.ServerTypeConversion (fromAPIShifts, fromAPIVol, fromAPIVolShifts, fromAPIVols, toAPIShiftDate, toAPIShiftType, toAPIVolDetails)
 import ServerTypes as API
 
 data Action = ShiftListAction SL.Action

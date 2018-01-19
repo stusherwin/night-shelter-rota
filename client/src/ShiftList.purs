@@ -1,33 +1,26 @@
 module App.ShiftList (spec, initialState, changeCurrentVol, shiftUpdated, module ShiftListState) where
    
-import Prelude 
+import Prelude (Unit, bind, map, negate, pure, unit, void, ($), (+), (-), (<>), (==), (>))
 
-import Control.Monad.Aff (delay)
-import Control.Monad.Aff.Class (liftAff)
 import Control.Monad.Eff.Class (liftEff)
 import Control.Monad.Eff (Eff)
 import Control.Monad.Trans.Class (lift)
 import Data.DateTime (Date, Weekday(..))
 import Data.Either (Either(..))
-import Data.FunctorWithIndex (mapWithIndex)
 import Data.Lens (Lens', lens, Prism', prism, over)
-import Data.List (List(..), zipWith, length, updateAt, (!!), zip, range)
-import Data.Maybe (Maybe(..), maybe, isJust, fromMaybe)
-import Data.Time.Duration (Milliseconds(..))
-import Data.Tuple (Tuple(..), uncurry, snd)
+import Data.List (List(..), zipWith, length, (!!), zip, range)
+import Data.Maybe (Maybe(..), isJust, fromMaybe)
+import Data.Tuple (Tuple(..), uncurry)
 import React.DOM as RD 
-import React.DOM.Props as RP
 import Thermite as T
-import React as R
-import Control.Monad.Eff.Console (log, CONSOLE)
 
 import App.Common (tomorrow, modifyWhere, toMonthYearString, isFirstDayOfMonth, addDays, previousWeekday, classNames, onlyIf)
 import App.ShiftRules (ShiftRuleConfig)
-import App.Types (Shift, Vol, VolShift)
+import App.Types (Shift, Vol)
 import App.ShiftRow (initialState, otherFixedMessage, noOtherFixedMessage, hasFixedMessage) as SR
 import App.Row (spec) as R
 import App.MessageBubble (MessageBubbleAction(..)) as MB
-import ShiftListState
+import ShiftListState (Action(..), CurrentVolState, HeaderRowState, RosterState, RowAction(..), RowState(..), ShiftRowState, ShiftStatus(..), State)
  
 shiftCount :: Int
 shiftCount = 28
