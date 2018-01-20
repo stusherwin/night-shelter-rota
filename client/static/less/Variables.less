@@ -1,9 +1,17 @@
-@small-screen-max-width: 400px;
-@small-screen: ~"only screen and (max-width: " @small-screen-max-width ~")";
-@medium-screen-max-width:722px;
-@medium-screen: ~"only screen and (max-width: " @medium-screen-max-width ~")";
-@larger-screen-max-width: 884px;
-@larger-screen: ~"only screen and (max-width: " @larger-screen-max-width ~")";
+// @small-screen-max-width: 400px;
+// @small-screen: ~"only screen and (max-width: " @small-screen-max-width ~")";
+// @medium-screen-max-width:722px;
+// @medium-screen: ~"only screen and (max-width: " @medium-screen-max-width ~")";
+// @larger-screen-max-width: 884px;
+// @larger-screen: ~"only screen and (max-width: " @larger-screen-max-width ~")";
+@small-screen-min-width: 0px;
+@small-screen: ~"only screen and (min-width: " @small-screen-min-width ~")";
+@medium-screen-min-width:401px;
+@medium-screen: ~"only screen and (min-width: " @medium-screen-min-width ~")";
+@larger-screen-min-width: 723px;
+@larger-screen: ~"only screen and (min-width: " @larger-screen-min-width ~")";
+@large-screen-min-width: 885px;
+@large-screen: ~"only screen and (min-width: " @large-screen-min-width ~")";
 
 @header-z-index: 10;
 @vol-info-z-index: 100;

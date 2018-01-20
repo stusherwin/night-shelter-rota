@@ -1,26 +1,49 @@
 @import "Variables.less";
 
 .header {
-  position: fixed;
   min-width: 320px;
   top: 0;
   left: 0;
   right: 0;
-  height: 56px;
   background: #ffe6a8;
   padding: 10px 10px 8px 10px;
   z-index: @header-z-index;
   box-shadow: 5px 0px 10px 0px #000;
   @warnColor: #000; //rgba(255, 0, 0, 0.788);
+  height: 84px;
+  position: relative;
+
+  &.initial-data-loading {
+    height: 52px;
+  }
+
+  .header-status {
+    // margin-top: 8px;
+    // margin-right: 8px;
+
+    .message-bubble {
+      left: -2px;
+      top: 32px;
+
+      &::before {
+        left: 5px;
+      }
+
+      &::after {
+        left: 7px;
+      }
+    }
+  }
 
   .header-status {
     float: left;
     font-size: 20px;
     width: 29px;
     height: 15px;
-    margin-top: 9px;
-    margin-right: 8px;
     position: relative;
+    margin-top: 5px;
+    margin-left: 5px;
+    margin-right: 7px;
 
     i {
       float: left;
@@ -101,6 +124,10 @@
     margin-top: 4px;
   }
 
+  h2, select {
+    font-size: 20px;
+  }
+
   .header-buttons {
     float: right;
 
@@ -116,30 +143,59 @@
     position: absolute;
     left: 5px;
     bottom: -23px;
-    content: 'full';
     background: #fff;
+    content: 'small-screen';
   }
 
-  @media @larger-screen {
-    &:after {
-      content: 'larger-screen';
-    }
+  @media @small-screen {
+    // &.initial-data-loading {
+    //   height: 52px;
+    // }
+
+    // &:after {
+    //   content: 'small-screen';
+    // }
+
+    // .header-status {
+    //   margin-top: 5px;
+    //   margin-right: 7px;
+
+    //   .header-status-message {
+    //   }
+    // }
+
+    // h2, select {
+    //   font-size: 20px;
+    // }
+
+    // h2 {
+    //   margin-top: 3px;
+    // }
 
     select {
-      min-width: 200px;
-      max-width: calc(~"100% - 470px");
+      margin-top: -1px;
+      margin-left: 2px;
+      min-width: 235px;
+      max-width: calc(~"100% - 46px");
+      clear: left;
+    }
+
+    .header-buttons {
+      .header-button {
+        width: auto;
+        max-width: auto;
+      }
     }
   }
 
   @media @medium-screen {
     height: 94px;
+    padding: 10px;
+    padding-left: 7px;
+
     &.initial-data-loading {
       height: 56px;
     }
-
-    padding: 10px;
-    padding-left: 7px;
-    position: relative;
 
     &:after {
       content: 'medium-screen';
@@ -147,25 +203,21 @@
 
     .header-status {
       margin-top: 8px;
-      margin-left: 5px;
+      // margin-left: 5px;
       margin-right: 8px;
 
-      .message-bubble {
-        left: -2px;
-        top: 32px;
+      // .message-bubble {
+      //   left: -2px;
+      //   top: 32px;
 
-        &::before {
-          left: 5px;
-        }
+      //   &::before {
+      //     left: 5px;
+      //   }
 
-        &::after {
-          left: 7px;
-        }
-        
-        // &.inverted {
-        //   bottom: 32px;
-        // }
-      }
+      //   &::after {
+      //     left: 7px;
+      //   }
+      // }
     }
 
     h2 {
@@ -178,6 +230,10 @@
       margin-top: 4px;
       margin-left: 3px;
       clear: left;
+    }
+
+    h2, select {
+      font-size: 24px;
     }
 
     .header-buttons {
@@ -196,46 +252,32 @@
     }
   }
 
-  @media @small-screen {
-    height: 84px;
+  @media @larger-screen {
+    height: 56px;
+    position: fixed;
 
-    &.initial-data-loading {
-      height: 52px;
-    }
+    // &.initial-data-loading {
+    //   height: 56px;
+    // }
 
     &:after {
-      content: 'small-screen';
+      content: 'larger-screen';
     }
 
     .header-status {
-      margin-top: 5px;
-      margin-right: 7px;
-
-      .header-status-message {
-      }
-    }
-
-    h2, select {
-      font-size: 20px;
-    }
-
-    h2 {
-      margin-top: 3px;
+      margin-top: 9px;
+      margin-right: 8px;
     }
 
     select {
-      margin-top: -1px;
-      margin-left: 2px;
-      min-width: 235px;
-      max-width: calc(~"100% - 46px");
-      clear: left;
+      min-width: 200px;
+      max-width: calc(~"100% - 470px");
     }
+  }
 
-    .header-buttons {
-      .header-button {
-        width: auto;
-        max-width: auto;
-      }
+  @media @large-screen {
+    &:after {
+      content: 'full';
     }
   }
 }
