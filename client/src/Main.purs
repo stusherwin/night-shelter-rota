@@ -8,7 +8,7 @@ import Prelude (Unit, bind, const, discard, flip, id, map, pure, unit, void, ($)
 import Servant.PureScript.Settings (SPSettings_, defaultSettings)
 import ServerAPI (SPParams_(..), deleteApiShiftsByYearByMonthByDayByVolId, getApiShifts, getApiVols, postApiShiftsByYearByMonthByDayByVolId, postApiVolsById, putApiShiftsByYearByMonthByDayByVolId, putApiVols)
 import Servant.PureScript.Affjax (AjaxError, errorToString)
-import Control.Monad.Aff (Aff, launchAff, parallel, sequential)
+import Control.Monad.Aff (Aff, launchAff, parallel, sequential, delay)
 import Control.Monad.Eff.Class (liftEff)
 import Network.HTTP.Affjax (AJAX)
 import Control.Monad.Eff.Exception (EXCEPTION)
@@ -19,6 +19,7 @@ import Control.Monad.Eff.Now (nowDate)
 import Control.Monad.Eff.Unsafe (unsafePerformEff)
 import DOM.Node.Types (Element)
 import Data.DateTime (Date)
+import Data.Time.Duration (Milliseconds(..))
 import Data.DateTime.Locale (LocalValue(..))
 import Data.Either (Either(..), either)
 import Data.Foldable (fold)
@@ -390,7 +391,7 @@ type APIEffect eff = ReaderT MySettings (ExceptT AjaxError (Aff (ajax :: AJAX, e
 
 apiReq :: forall a. Generic a => APIEffect _ a -> Aff _ (Either AjaxError a)
 apiReq m = do
-  -- delay $ Milliseconds 0.0
+  -- delay $ Milliseconds 100000.0
   response <- runExceptT $ runReaderT m settings
   case response of
     Left err -> do
