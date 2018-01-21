@@ -4,6 +4,18 @@
   box-sizing: border-box;
 }
 
+html {
+  font-size: 100vw * (@root-font-size/320);
+
+  @media @medium-screen {
+    font-size: 100vw * (@root-font-size/586);
+  }
+
+  @media @larger-screen {
+    font-size: @root-font-size;
+  }
+}
+
 body {
   min-width: 320px;
 }

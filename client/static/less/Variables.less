@@ -7,6 +7,13 @@
 @large-screen-min-width: 885px;
 @large-screen: ~"only screen and (min-width: " @large-screen-min-width ~")";
 
+@small-screen: ~"only screen and (min-aspect-ratio: 2/3)";
+@medium-screen: ~"only screen and (min-aspect-ratio: 3/4)";
+@larger-screen: ~"only screen and (min-aspect-ratio: 705/604)";
+@large-screen: ~"only screen and (min-aspect-ratio: 875/604)";
+
 @header-z-index: 10;
 @vol-info-z-index: 100;
 @base-z-index: 0;
+@root-font-size: 14px; //((14/320)*100)*1vw;
+@px: 1rem/14; // @root-font-size/14;
