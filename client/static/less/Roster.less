@@ -115,8 +115,6 @@
       &.vol-markers {
         float: left;
         margin-left: 16px;
-        // padding-top: 6px;
-        // padding-bottom: 6px;
         padding: 0;
         padding-top: 7px;
         width: ~"calc(100% - 500px)";        
@@ -552,7 +550,7 @@
         &.shift-status {
           display: none;
         }
-        
+
         &.current-vol {
           display: block;
         }
@@ -590,7 +588,6 @@
       }
 
       &.row-header {
-        // padding: 10px;
         padding-bottom: 12px;
 
         position: static;
@@ -600,7 +597,6 @@
       .shift-info {
         .message-bubble {
           z-index: @base-z-index + 1;
-          // z-index: @header-z-index + 1;
           top: 38px;
           left: 0px;
 
@@ -622,26 +618,21 @@
         padding: 10px 0px 10px 10px;
 
         &.shift-date {
-          
-          // float: none;
           width: auto;
           position: static;
 
           .shift-date-part {
             float: left;
-            // display: block;
             position: static;
 
             &.shift-date-day {
               font-size: @root-font-size;
-              // margin: 0;
-              top: auto;//-1px;
+              top: auto;
               width: 3.5em;
               text-align: left;
             }
 
             &.shift-date-date {
-              // margin: 0;
               top: auto;
               left: auto;
               font-weight: 100;
@@ -653,36 +644,23 @@
                 display: inline;
               }
             }
-
-            // &.shift-date-month {
-              // display: none;
-              // bottom: 1px;
-              // margin: 0;
-              // width: auto;
-              // font-size: 10px;
-              // text-align: center;
-            // }
           }
         }
 
         &.shift-status {
-          // float: none;
           width: auto;
           position: static;
           margin-right: 0px;
           
           .shift-status-part {
             float: left;
-            // display: block;
             position: static;
 
             &.shift-status-vol-count {
-              // top: 23px;
               text-align: left;
             }
 
             &.shift-status-icon {
-              // top: -18px;
               text-align: left;
               margin-top: 3px;
               margin-left: 10px;
@@ -711,7 +689,6 @@
         }
 
         &.vol-markers {
-          // float: left;
           padding: 0px;
           padding-top: 7px;
           margin: 0;
@@ -730,12 +707,6 @@
             padding-right: 5px;
             padding-top: 2px;
             padding-bottom: 2px;
-            // white-space: nowrap;
-            // max-width: 100%;
-            // .vol-name {
-              // max-width:none;
-              // float: none;
-            // }
 
             &:first-child {
               &:last-child {
@@ -749,10 +720,6 @@
       &.today {
         &:before {
           top: 14px;
-          // border-top-width: 6px;
-          // border-bottom-width: 6px;
-          // border-left-width: 6px;
-          // border-left-color: #555;
         }
       }
     }
@@ -766,7 +733,6 @@
 
           &.vol-markers {
             width: ~"calc(100% - 500px)";        
-            // width: ~"calc(100% - 196px)";
           }
         }
       }
@@ -812,5 +778,4 @@
       }
     }
   }
-
 }
