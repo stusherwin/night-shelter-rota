@@ -184,28 +184,31 @@
             overflow: hidden;
             white-space: nowrap;
             text-overflow: ellipsis;
+            display: block;
           }
 
           .sharing-pref {
+            float: right;
             font-weight: bold;
             color: #000;
-            margin-left: 1px;
-
-            &:first-of-type {
-              margin-left: 5px;
-            }
+            margin-right: 2px;
 
             &.icon {
               width: 14px;
               padding: 0;
               margin: 0;
-              margin-left: 5px;
+              margin-right: 0px;
+              margin-left: 3px;
               
               i {
                 &:before {
                   margin: 0;
                 }
               }
+            }
+
+            &:nth-last-child(2) {
+              margin-left: 5px;
             }
           }
         }
@@ -542,7 +545,7 @@
 
           .current-vol-shift-type {
             float: none;
-            
+
             &.toggle {
               margin-top: 0px;
             }
@@ -564,7 +567,7 @@
           padding-top: 7px;
           margin: 0;
           margin-left: 16px;
-          width: ~"calc(100% - 365px)";
+          width: ~"calc(100% - 385px)";
 
           .vol-marker {
             float: none;
@@ -605,7 +608,7 @@
           }
 
           &.vol-markers {
-            width: ~"calc(100% - 500px)";        
+            width: ~"calc(100% - 385px)";
           }
         }
       }
@@ -616,17 +619,32 @@
     .row {
       .row-item {
         &.vol-markers {
-          width: ~"calc(100% - 500px)";
+          width: ~"calc(100% - 490px)";
         }
 
         &.current-vol {
           width: 280px;
+
           .current-vol-selected.ui.checkbox {
             margin-left: 0px;
           }
 
           .current-vol-shift-type {
             float: left;
+          }
+        }
+      }
+    }
+    
+    &.has-current-vol {
+      .row {
+        .row-item {
+          &.current-vol {
+            display: block;
+          }
+
+          &.vol-markers {
+            width: ~"calc(100% - 490px)";        
           }
         }
       }

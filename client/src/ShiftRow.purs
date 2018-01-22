@@ -2,7 +2,7 @@ module App.ShiftRow (spec, initialState, otherFixedMessage, noOtherFixedMessage,
  
 import Prelude (const, id, map, not, pure, show, unit, void, ($), (&&), (<), (<#>), (<<<), (<>), (==), (>), (>=>), (||))
  
-import Data.Array (catMaybes, fromFoldable)
+import Data.Array (catMaybes, fromFoldable, reverse)
 import Data.DateTime (Date, weekday, month)
 import Data.List (List(..), find, head, foldl, length)
 import Data.Maybe (Maybe(..), maybe)
@@ -111,13 +111,15 @@ spec = T.simpleSpec performAction render
     renderVolMarker :: _ -> VolShift -> R.ReactElement
     renderVolMarker dispatch s =
       RD.span [ RP.className "vol-marker" ]
+              $
+              (reverse $ renderSharingPrefs s.volunteer)
+              <>
               [ RD.span [ RP.className "vol-name"
                         , RP.onClick $ const $ dispatch $ ShowVolInfo s.volunteer
                         ]
-                        $ [ renderIcon s.shiftType
-                          , RD.text $ s.volunteer.name
-                          ]
-                          <> renderSharingPrefs s.volunteer
+                        [ renderIcon s.shiftType
+                        , RD.text $ s.volunteer.name
+                        ]
               ]
       where
       renderSharingPrefs :: Vol -> Array R.ReactElement
