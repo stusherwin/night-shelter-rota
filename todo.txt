@@ -2,3 +2,7 @@
 * When cancelling from "Add new volunteer", should go back to previously selected volunteer?
 * Next/previous 4 weeks should load shifts on demand? (For future if data starts getting too big)
 * Figure out how to get message bubble width to adapt to size of content (+ still position absolute)
+* Fix vol-marker/dropdown width on large vol name
+* Shift type toggle: centre vertically?
+* Fix toggle font-size problems
+* Make checkbox larger on small screen?

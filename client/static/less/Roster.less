@@ -115,8 +115,8 @@
       &.vol-markers {
         float: left;
         margin-left: 16px;
-        padding-top: 6px;
-        padding-bottom: 6px;
+        // padding-top: 6px;
+        // padding-bottom: 6px;
         padding: 0;
         padding-top: 7px;
         width: ~"calc(100% - 500px)";        
@@ -287,6 +287,7 @@
           }
         }
 
+        //i.icon-loading?
         i.icon-spin {
           float: right;
           margin-top: 2px;
@@ -372,7 +373,405 @@
     }
   }
 
+  ///////
+
+  margin-bottom: -10px;
+
+  .row {
+    min-height: 55px;
+    position: relative;
+    padding-left: 5px;
+    padding-right: 5px;
+
+    &:nth-child(2) {
+      border-top: none;
+    }
+
+    &.row-header {
+      padding: 10px;
+      padding-bottom: 12px;
+
+      position: relative;
+      min-height: 43px;
+    }
+
+    .shift-info {
+      .message-bubble {
+        z-index: @header-z-index + 1;
+        top: 55px;
+        left: 4px;
+
+        &::before {
+          left: 3px;
+        }
+
+        &::after {
+          left: 5px;
+        }
+
+        &.inverted {
+          bottom: 51px;
+        }
+      }
+    }
+
+    .row-item {
+      padding: 5px;
+      &.shift-date {
+        
+        float: left;
+        width: 40px;
+        position: relative;
+
+        .shift-date-part {
+          float: none;
+          display: block;
+          position: relative;
+
+          &.shift-date-day {
+            font-size: 10px;
+            margin: 0;
+            top: -1px;
+            width: auto;
+            text-align: center;
+          }
+
+          &.shift-date-date {
+            margin: 0;
+            top: -1px;
+            left: -1px;
+            font-weight: 300;
+            width: auto;
+            text-align: center;
+            font-size: 25px;
+
+            .shift-date-postfix {
+              display: none;
+            }
+          }
+
+          &.shift-date-month {
+            display: none;
+            bottom: 1px;
+            margin: 0;
+            width: auto;
+            font-size: 10px;
+            text-align: center;
+          }
+        }
+      }
+
+      &.shift-status {
+        float: left;
+        width: 30px;
+        position: relative;
+        margin-right: 15px;
+        
+        .shift-status-part {
+          float: none;
+          display: block;
+          position: relative;
+
+          &.shift-status-vol-count {
+            top: 23px;
+            text-align: center;
+          }
+
+          &.shift-status-icon {
+            top: -18px;
+            text-align: center;
+          }
+        }
+      }
+
+      &.current-vol {
+        width: 103px;
+        display: none;
+
+        .current-vol-shift-type {
+          &.toggle {
+            margin-top: 9px;
+          }
+        }
+
+        .current-vol-selected.ui.checkbox {
+          margin-top: 9px;
+        }
+
+        i.loading {
+          margin-top: 10px;
+        }
+      }
+
+      &.vol-markers {
+        float: left;
+        padding: 0px;
+        margin: 0;
+        margin-left: 6px;
+        width: ~"calc(100% - 98px)";
+
+        .vol-marker {
+          float: left;
+          clear: left;
+          margin-top: 4px;
+          margin-bottom: 0;
+          &:last-child {
+            margin-bottom: 4px;
+          }
+          padding: 0px 3px;
+          white-space: nowrap;
+          max-width: 100%;
+          .vol-name {
+            max-width:none;
+            float: none;
+          }
+
+          &:first-child {
+            &:last-child {
+              margin-top: 17px;
+            }
+          }
+        }
+      }
+    }
+
+    &.today {
+      &:before {
+        top: 22px;
+        border-top-width: 6px;
+        border-bottom-width: 6px;
+        border-left-width: 6px;
+        border-left-color: #555;
+      }
+    }
+  }
+
+  &.has-current-vol {
+    .row {
+      .row-item {
+        &.shift-status {
+          display: none;
+        }
+        
+        &.current-vol {
+          display: block;
+        }
+
+        &.vol-markers {
+          width: ~"calc(100% - 196px)";
+        }
+      }
+    }
+  }
+
+  @media @medium-screen {
+    &.has-current-vol {
+      .row {
+        .row-item {
+          &.shift-status {
+            display: block;
+          }
+        }
+      }
+    }
+  }
+
   @media @larger-screen {
+    margin-bottom: 0px;
+
+    .row {
+      min-height: unset;
+      position: static;
+      padding-left: 0px;
+      padding-right: 0px;
+
+      &:nth-child(2) {
+        border-top: 1px solid rgba(34, 36, 38, 0.1);
+      }
+
+      &.row-header {
+        // padding: 10px;
+        padding-bottom: 12px;
+
+        position: static;
+        min-height: unset;
+      }
+
+      .shift-info {
+        .message-bubble {
+          z-index: @base-z-index + 1;
+          // z-index: @header-z-index + 1;
+          top: 38px;
+          left: 0px;
+
+          &::before {
+            left: 12px;
+          }
+
+          &::after {
+            left: 14px;
+          }
+
+          &.inverted {
+            bottom: 38px;
+          }
+        }
+      }
+
+      .row-item {
+        padding: 10px 0px 10px 10px;
+
+        &.shift-date {
+          
+          // float: none;
+          width: auto;
+          position: static;
+
+          .shift-date-part {
+            float: left;
+            // display: block;
+            position: static;
+
+            &.shift-date-day {
+              font-size: @root-font-size;
+              // margin: 0;
+              top: auto;//-1px;
+              width: 3.5em;
+              text-align: left;
+            }
+
+            &.shift-date-date {
+              // margin: 0;
+              top: auto;
+              left: auto;
+              font-weight: 100;
+              width: 2.5em;
+              text-align: left;
+              font-size: @root-font-size;
+
+              .shift-date-postfix {
+                display: inline;
+              }
+            }
+
+            // &.shift-date-month {
+              // display: none;
+              // bottom: 1px;
+              // margin: 0;
+              // width: auto;
+              // font-size: 10px;
+              // text-align: center;
+            // }
+          }
+        }
+
+        &.shift-status {
+          // float: none;
+          width: auto;
+          position: static;
+          margin-right: 0px;
+          
+          .shift-status-part {
+            float: left;
+            // display: block;
+            position: static;
+
+            &.shift-status-vol-count {
+              // top: 23px;
+              text-align: left;
+            }
+
+            &.shift-status-icon {
+              // top: -18px;
+              text-align: left;
+              margin-top: 3px;
+              margin-left: 10px;
+            }
+          }
+        }
+
+        &.current-vol {
+          width: 280px;
+          display: block;
+
+          .current-vol-shift-type {
+            &.toggle {
+              margin-top: 0px;
+            }
+          }
+
+          .current-vol-selected.ui.checkbox {
+            margin-top: 1px;
+          }
+
+          //i.icon-spin?
+          i.loading {
+            margin-top: 2px;
+          }
+        }
+
+        &.vol-markers {
+          // float: left;
+          padding: 0px;
+          padding-top: 7px;
+          margin: 0;
+          margin-left: 16px;
+          width: ~"calc(100% - 500px)";
+
+          .vol-marker {
+            float: none;
+            clear: none;
+            margin-top: 0px;
+            margin-bottom: 6px;
+            &:last-child {
+              margin-bottom: 0px;
+            }
+            padding-left: 5px;
+            padding-right: 5px;
+            padding-top: 2px;
+            padding-bottom: 2px;
+            // white-space: nowrap;
+            // max-width: 100%;
+            // .vol-name {
+              // max-width:none;
+              // float: none;
+            // }
+
+            &:first-child {
+              &:last-child {
+                margin-top: 0px;
+              }
+            }
+          }
+        }
+      }
+
+      &.today {
+        &:before {
+          top: 14px;
+          // border-top-width: 6px;
+          // border-bottom-width: 6px;
+          // border-left-width: 6px;
+          // border-left-color: #555;
+        }
+      }
+    }
+
+    &.has-current-vol {
+      .row {
+        .row-item {
+          &.current-vol {
+            display: block;
+          }
+
+          &.vol-markers {
+            width: ~"calc(100% - 500px)";        
+            // width: ~"calc(100% - 196px)";
+          }
+        }
+      }
+    }
+
     .row {
       .row-item {
         &.vol-markers {
@@ -393,219 +792,25 @@
     }
   }
 
-  @media @medium-screen {
-    margin-bottom: -10px;
-
+  @media @large-screen {
     .row {
-      min-height: 55px;
-      position: relative;
-      padding-left: 5px;
-      padding-right: 5px;
-
-      &:nth-child(2) {
-        border-top: none;
-      }
-
-      &.row-header {
-        padding: 10px;
-        padding-bottom: 12px;
-
-        position: relative;
-        min-height: 43px;
-      }
-
-      .shift-info {
-        .message-bubble {
-          z-index: @header-z-index + 1;
-          top: 55px;
-          left: 4px;
-
-          &::before {
-            left: 3px;
-          }
-
-          &::after {
-            left: 5px;
-          }
-
-          &.inverted {
-            bottom: 51px;
-          }
-        }
-      }
-
       .row-item {
-        padding: 5px;
-        &.shift-date {
-          
-          float: left;
-          width: 40px;
-          position: relative;
-
-          .shift-date-part {
-            float: none;
-            display: block;
-            position: relative;
-
-            &.shift-date-day {
-              font-size: 10px;
-              margin: 0;
-              top: -1px;
-              width: auto;
-              text-align: center;
-            }
-
-            &.shift-date-date {
-              margin: 0;
-              top: -1px;
-              left: -1px;
-              font-weight: 300;
-              width: auto;
-              text-align: center;
-              font-size: 25px;
-
-              .shift-date-postfix {
-                display: none;
-              }
-            }
-
-            &.shift-date-month {
-              display: none;
-              bottom: 1px;
-              margin: 0;
-              width: auto;
-              font-size: 10px;
-              text-align: center;
-            }
-          }
-        }
-
-        &.shift-status {
-          float: left;
-          width: 30px;
-          position: relative;
-          margin-right: 15px;
-          
-          .shift-status-part {
-            float: none;
-            display: block;
-            position: relative;
-
-            &.shift-status-vol-count {
-              top: 23px;
-              text-align: center;
-            }
-
-            &.shift-status-icon {
-              top: -18px;
-              text-align: center;
-            }
-          }
+        &.vol-markers {
+          width: ~"calc(100% - 500px)";
         }
 
         &.current-vol {
-          width: 103px;
-          display: none;
+          width: 280px;
+          .current-vol-selected.ui.checkbox {
+            margin-left: 0px;
+          }
 
           .current-vol-shift-type {
-            &.toggle {
-              margin-top: 9px;
-            }
-          }
-
-          .current-vol-selected.ui.checkbox {
-            margin-top: 9px;
-          }
-
-          i.loading {
-            margin-top: 10px;
-          }
-        }
-
-        &.vol-markers {
-          float: left;
-          padding: 0px;
-          margin: 0;
-          margin-left: 6px;
-          width: ~"calc(100% - 98px)";
-
-          .vol-marker {
             float: left;
-            clear: left;
-            margin-top: 4px;
-            margin-bottom: 0;
-            &:last-child {
-              margin-bottom: 4px;
-            }
-            padding: 0px 3px;
-            white-space: nowrap;
-            max-width: 100%;
-            .vol-name {
-              max-width:none;
-              float: none;
-            }
-
-            &:first-child {
-              &:last-child {
-                margin-top: 17px;
-              }
-            }
-          }
-        }
-      }
-
-      &.today {
-        &:before {
-          top: 22px;
-          border-top-width: 6px;
-          border-bottom-width: 6px;
-          border-left-width: 6px;
-          border-left-color: #555;
-        }
-      }
-    }
-
-    &.has-current-vol {
-      .row {
-        .row-item {
-          &.current-vol {
-            display: block;
-          }
-
-          &.vol-markers {
-            width: ~"calc(100% - 196px)";
-          }
-        }
-      }
-    }      
-  }
-
-  @media @small-screen {
-    .row {
-      .row-item {
-        &.current-vol {
-          display: none;
-        }
-      }
-    }
-
-    &.has-current-vol {
-      .row {
-        .row-item {
-          &.shift-status {
-            display: none;
-          }
-
-          &.vol-markers {
-            width: ~"calc(100% - 153px)";        
-            padding-left: 2px;
-          }
-
-          &.current-vol {
-            display: block;
           }
         }
       }
     }
   }
+
 }
