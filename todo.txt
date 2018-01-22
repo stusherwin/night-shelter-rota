@@ -6,3 +6,6 @@
 * Shift type toggle: centre vertically?
 * Fix toggle font-size problems
 * Make checkbox larger on small screen?
+* vol info popup doesn't show on click sometimes (small screen)
+* vol info popup header should wrap/truncate long vol name
+* Better button icons
