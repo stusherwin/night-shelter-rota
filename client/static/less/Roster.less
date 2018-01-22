@@ -219,7 +219,7 @@
         float: right;
         color: #555;
         padding: 10*@px;
-        width: 103*@px;
+        width: 100*@px;
         display: none;
 
         .current-vol-shift-type {
@@ -246,7 +246,7 @@
           &.toggle {
             margin-right: 0*@px;
             position: relative;
-            margin-top: 9*@px;
+            margin-top: 5*@px;
 
             .ui.toggle.checkbox {
               input[type="checkbox"].hidden {
@@ -301,30 +301,49 @@
             .current-vol-shift-type-toggle-description {
               // display: none;
               font-size: 8*@px;
+              line-height: 8*@px;
               text-transform: uppercase;
               position: absolute;
-              bottom: -14*@px;
-              left: -2;
+              bottom: -8*@px;
+              left: -1*@px;
               right: 0;
               text-align: center;
-              color: fadeout(#555, 50%);
-              // letter-spacing: 0.5*@px;
+              color: fadeout(#555, 10%);
+              letter-spacing: 0.2*@px;
               font-weight: 0;
-              // text-shadow: 0.5*@px 0.5*@px 0.5*@px fadeout(#fff, 20%);
+              text-shadow: 0.5*@px 0.5*@px 0.5*@px fadeout(#fff, 20%);
             }
           }
         }
 
         .current-vol-selected.ui.checkbox {
-          // margin-top: 1*@px;
           float: right;
           margin-top: 9*@px;
+          width: 17*@px;
+          height: 17*@px;
 
-          label:before {
-            border-color: #aaa;
-            border-radius: 2*@px;
-            box-shadow: 0*@px 0*@px 5*@px 1*@px rgba(100,100,100,0.1);
+          input[type="checkbox"] {
+              width: 17*@px;
+              height: 17*@px;
           }
+
+          label {
+            &:before {
+              border-color: #aaa;
+              border-radius: 2*@px;
+              box-shadow: 0*@px 0*@px 5*@px 1*@px rgba(100,100,100,0.1);
+              width: 17*@px;
+              height: 17*@px;
+            }
+
+            &:after {
+              width: 17*@px;
+              height: 17*@px;
+              font-size: 14*@px;
+              top: 0*@px;
+              line-height: 17*@px;
+            }      
+          }    
         }
 
         //i.icon-loading?
@@ -427,7 +446,7 @@
         }
 
         &.vol-markers {
-          width: ~"calc(100% - " 196*@px ~")";
+          width: ~"calc(100% - " 150*@px ~")";
         }
       }
     }
@@ -439,6 +458,10 @@
         .row-item {
           &.shift-status {
             display: block;
+          }
+
+          &.vol-markers {
+            width: ~"calc(100% - " 198*@px ~")";
           }
         }
       }
@@ -497,7 +520,7 @@
             position: static;
 
             &.shift-date-day {
-              font-size: @root-font-size;
+              font-size: inherit;
               top: auto;
               width: 3.5em;
               text-align: left;
@@ -509,7 +532,7 @@
               font-weight: 100;
               width: 2.5em;
               text-align: left;
-              font-size: @root-font-size;
+              font-size: inherit;
 
               .shift-date-postfix {
                 display: inline;
@@ -554,6 +577,10 @@
           .current-vol-selected.ui.checkbox {
             margin-top: 1*@px;
             margin-left: 10*@px;
+
+            label:after {
+              top: 0*@px;
+            }
           }
 
           //i.icon-spin?
