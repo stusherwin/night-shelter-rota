@@ -1,15 +1,15 @@
 @import "Variables.less";
 
 .roster {
-  margin-bottom: -10px;
+  margin-bottom: -10*@px;
 
   .row {
     .group;
     display: block;
-    border-top: 1px solid rgba(34, 36, 38, 0.1);
-    min-height: 55px;
+    border-top: 1*@px solid rgba(34, 36, 38, 0.1);
+    min-height: 55*@px;
     position: relative;
-    padding: 0 5px;
+    padding: 0 5*@px;
 
     &.negative1 {
       .shift-date-part, .shift-status-part {
@@ -46,20 +46,20 @@
         cursor: default;
         color: #333;
         z-index: @header-z-index + 1;
-        top: 55px;
-        left: 4px;
+        top: 55*@px;
+        left: 4*@px;
 
         &::before {
-          left: 3px;
+          left: 3*@px;
         }
 
         &::after {
-          left: 5px;
+          left: 5*@px;
         }
 
         &.inverted {
           top: auto;
-          bottom: 51px;
+          bottom: 51*@px;
         }
       }
     }
@@ -67,13 +67,13 @@
     .row-item {
       .group;
       float: left;
-      padding: 5px;
+      padding: 5*@px;
 
 
       &.shift-date {
         .group;
         float: left;
-        width: 40px;
+        width: 40*@px;
         position: relative;
 
         .shift-date-part {
@@ -82,17 +82,17 @@
           position: relative;
 
           &.shift-date-day {
-            top: -1px;
+            top: -1*@px;
             text-align: center;
-            font-size: 10px;
+            font-size: 10*@px;
           }
 
           &.shift-date-date {
-            top: -1px;
-            left: -1px;
+            top: -1*@px;
+            left: -1*@px;
             text-align: center;
             font-weight: 300;
-            font-size: 25px;
+            font-size: 25*@px;
 
             .shift-date-postfix {
               display: none;
@@ -107,11 +107,11 @@
 
       &.shift-status {
         .group;
-        padding-right: 10px;
+        padding-right: 10*@px;
         float: left;
-        width: 30px;
+        width: 30*@px;
         position: relative;
-        margin-right: 15px;
+        margin-right: 15*@px;
 
         .shift-status-part {
           .group;
@@ -119,18 +119,18 @@
           position: relative;
 
           &.shift-status-vol-count {
-            margin-left: 5px;
+            margin-left: 5*@px;
             width: 1.5em;
-            top: 23px;
+            top: 23*@px;
             text-align: center;
           }
 
           &.shift-status-icon {
             width: 1.5em;
 
-            margin-left: 5px;
-            margin-top: 3px;
-            top: -18px;
+            margin-left: 5*@px;
+            margin-top: 3*@px;
+            top: -18*@px;
             text-align: center;
 
             i {
@@ -147,31 +147,31 @@
       &.vol-markers {
         float: left;
         padding: 0;
-        margin: 0 0 0 6px;
-        width: ~"calc(100% - 98px)";
+        margin: 0 0 0 6*@px;
+        width: ~"calc(100% - " 98*@px ~")";
 
         .vol-marker {
           cursor: pointer;
           display: inline-block;
           background: #ddd;
           color: #555;
-          margin: 4px 6px 0 0;
-          padding: 0px 3px;
+          margin: 4*@px 6*@px 0 0;
+          padding: 0*@px 3*@px;
           max-width: 100%;
-          border-radius: 2px;
-          border: 1px solid #ccc;
+          border-radius: 2*@px;
+          border: 1*@px solid #ccc;
           float: left;
           clear: left;
           white-space: nowrap;
 
           &:last-child {
             margin-right: 0;
-            margin-bottom: 4px;
+            margin-bottom: 4*@px;
           }
 
           &:first-child {
             &:last-child {
-              margin-top: 17px;
+              margin-top: 17*@px;
             }
           }
 
@@ -191,14 +191,14 @@
             float: right;
             font-weight: bold;
             color: #000;
-            margin-right: 2px;
+            margin-right: 2*@px;
 
             &.icon {
-              width: 14px;
+              width: 14*@px;
               padding: 0;
               margin: 0;
-              margin-right: 0px;
-              margin-left: 3px;
+              margin-right: 0*@px;
+              margin-left: 3*@px;
               
               i {
                 &:before {
@@ -208,85 +208,85 @@
             }
 
             &:nth-last-child(2) {
-              margin-left: 5px;
+              margin-left: 5*@px;
             }
           }
         }
       }
 
       &.current-vol {
-        min-width: 80px;
+        min-width: 80*@px;
         float: right;
         color: #555;
-        padding: 10px;
-        width: 103px;
+        padding: 10*@px;
+        width: 103*@px;
         display: none;
 
         .current-vol-shift-type {
           float: left;
           vertical-align: bottom;
-          margin-top: 0px;
+          margin-top: 0*@px;
 
           &.radio {
             .current-vol-shift-type-option {
               float: left;
               white-space: nowrap;
-              margin-right: 20px;
+              margin-right: 20*@px;
 
               label {
                 white-space: nowrap;
               }
 
               input[type="radio"] {
-                margin-right: 5px;
+                margin-right: 5*@px;
               }
             }
           }
 
           &.toggle {
-            margin-right: 0px;
+            margin-right: 0*@px;
             position: relative;
-            margin-top: 9px;
+            margin-top: 9*@px;
 
             .ui.toggle.checkbox {
               input[type="checkbox"].hidden {
 
                 & + label {
                   position: relative;
-                  padding-left: 51px;
+                  padding-left: 51*@px;
 
                   &::before {
                     .fontello;
                     margin: 0;
-                    top: -2px;
-                    height: 20px;
+                    top: -2*@px;
+                    height: 20*@px;
                     content: '\e806';
 
-                    padding: 3px;
-                    padding-left: 25px;
-                    box-shadow: inset 0 0 1px 0 rgba(0, 0, 0, 0.25);
+                    padding: 3*@px;
+                    padding-left: 25*@px;
+                    box-shadow: inset 0 0 1*@px 0 rgba(0, 0, 0, 0.25);
                   }
 
                   &::after {
-                    top: -2px;
-                    height: 20px;
-                    width: 20px;
+                    top: -2*@px;
+                    height: 20*@px;
+                    width: 20*@px;
                     background: #fff;
-                    box-shadow: inset 0 0 1px 0 #000;
+                    box-shadow: inset 0 0 1*@px 0 #000;
                   }
                 }
 
                 &:checked + label {
                   &::before {
                     color: #fff;
-                    padding: 3px 9px;
+                    padding: 3*@px 9*@px;
                     content: '\f236';
                   }
 
                   &::after {
-                    height: 20px;
-                    width: 20px;
-                    box-shadow: inset 0 0 1px 0 darken(#2185d0, 40%);
+                    height: 20*@px;
+                    width: 20*@px;
+                    box-shadow: inset 0 0 1*@px 0 darken(#2185d0, 40%);
                   }
 
                   &:hover {
@@ -300,38 +300,38 @@
 
             .current-vol-shift-type-toggle-description {
               // display: none;
-              font-size: 8px;
+              font-size: 8*@px;
               text-transform: uppercase;
               position: absolute;
-              bottom: -14px;
+              bottom: -14*@px;
               left: -2;
               right: 0;
               text-align: center;
               color: fadeout(#555, 50%);
-              // letter-spacing: 0.5px;
+              // letter-spacing: 0.5*@px;
               font-weight: 0;
-              // text-shadow: 0.5px 0.5px 0.5px fadeout(#fff, 20%);
+              // text-shadow: 0.5*@px 0.5*@px 0.5*@px fadeout(#fff, 20%);
             }
           }
         }
 
         .current-vol-selected.ui.checkbox {
-          // margin-top: 1px;
+          // margin-top: 1*@px;
           float: right;
-          margin-top: 9px;
+          margin-top: 9*@px;
 
           label:before {
             border-color: #aaa;
-            border-radius: 2px;
-            box-shadow: 0px 0px 5px 1px rgba(100,100,100,0.1);
+            border-radius: 2*@px;
+            box-shadow: 0*@px 0*@px 5*@px 1*@px rgba(100,100,100,0.1);
           }
         }
 
         //i.icon-loading?
         i.icon-spin {
           float: right;
-          margin-left: -3px;
-          margin-top: 10px;
+          margin-left: -3*@px;
+          margin-top: 10*@px;
         }
       }
     }
@@ -363,11 +363,11 @@
     }
 
     &.row-header {
-      padding: 10px 10px 12px 10px;
+      padding: 10*@px 10*@px 12*@px 10*@px;
       background-color: #555;
       color: white;
       position: relative;
-      min-height: 43px;
+      min-height: 43*@px;
 
       .row-header-actions {
         float: right;
@@ -382,17 +382,17 @@
         }
 
         span {
-          border-bottom: 1px dashed #aaa;
+          border-bottom: 1*@px dashed #aaa;
           vertical-align: bottom;
         }
 
         &:hover span {
-          border-bottom: 1px dashed #ddd;
+          border-bottom: 1*@px dashed #ddd;
         }
 
         i {
           position: relative;
-          top: -3px;
+          top: -3*@px;
         }
       }
     }
@@ -403,13 +403,13 @@
 
       &:before {
         position: absolute;
-        left: 0px;
-        top: 22px;
+        left: 0*@px;
+        top: 22*@px;
         width: 0;
         height: 0;
-        border-top: 6px solid transparent;
-        border-bottom: 6px solid transparent;
-        border-left: 6px solid #555;
+        border-top: 6*@px solid transparent;
+        border-bottom: 6*@px solid transparent;
+        border-left: 6*@px solid #555;
         content: " ";
       }
     }
@@ -427,7 +427,7 @@
         }
 
         &.vol-markers {
-          width: ~"calc(100% - 196px)";
+          width: ~"calc(100% - " 196*@px ~")";
         }
       }
     }
@@ -446,20 +446,20 @@
   }
 
   @media @larger-screen {
-    margin-bottom: 0px;
+    margin-bottom: 0*@px;
 
     .row {
       min-height: unset;
       position: static;
-      padding-left: 0px;
-      padding-right: 0px;
+      padding-left: 0*@px;
+      padding-right: 0*@px;
 
       &:nth-child(2) {
-        border-top: 1px solid rgba(34, 36, 38, 0.1);
+        border-top: 1*@px solid rgba(34, 36, 38, 0.1);
       }
 
       &.row-header {
-        padding-bottom: 12px;
+        padding-bottom: 12*@px;
 
         position: static;
         min-height: unset;
@@ -468,25 +468,25 @@
       .shift-info {
         .message-bubble {
           z-index: @base-z-index + 1;
-          top: 38px;
-          left: 0px;
+          top: 38*@px;
+          left: 0*@px;
 
           &::before {
-            left: 12px;
+            left: 12*@px;
           }
 
           &::after {
-            left: 14px;
+            left: 14*@px;
           }
 
           &.inverted {
-            bottom: 38px;
+            bottom: 38*@px;
           }
         }
       }
 
       .row-item {
-        padding: 10px 0px 10px 10px;
+        padding: 10*@px 0*@px 10*@px 10*@px;
 
         &.shift-date {
           width: auto;
@@ -521,7 +521,7 @@
         &.shift-status {
           width: auto;
           position: static;
-          margin-right: 0px;
+          margin-right: 0*@px;
           
           .shift-status-part {
             float: left;
@@ -533,60 +533,60 @@
 
             &.shift-status-icon {
               text-align: left;
-              margin-top: 3px;
-              margin-left: 10px;
+              margin-top: 3*@px;
+              margin-left: 10*@px;
             }
           }
         }
 
         &.current-vol {
-          width: 175px;
+          width: 175*@px;
           display: block;
 
           .current-vol-shift-type {
             float: none;
 
             &.toggle {
-              margin-top: 0px;
+              margin-top: 0*@px;
             }
           }
 
           .current-vol-selected.ui.checkbox {
-            margin-top: 1px;
-            margin-left: 10px;
+            margin-top: 1*@px;
+            margin-left: 10*@px;
           }
 
           //i.icon-spin?
           i.loading {
-            margin-top: 2px;
+            margin-top: 2*@px;
           }
         }
 
         &.vol-markers {
-          padding: 0px;
-          padding-top: 7px;
+          padding: 0*@px;
+          padding-top: 7*@px;
           margin: 0;
-          margin-left: 16px;
-          width: ~"calc(100% - 385px)";
+          margin-left: 16*@px;
+          width: ~"calc(100% - " 385*@px ~")";
 
           .vol-marker {
             float: none;
             clear: none;
-            margin-top: 0px;
-            margin-bottom: 6px;
+            margin-top: 0*@px;
+            margin-bottom: 6*@px;
             
-            padding-left: 5px;
-            padding-right: 5px;
-            padding-top: 2px;
-            padding-bottom: 2px;
+            padding-left: 5*@px;
+            padding-right: 5*@px;
+            padding-top: 2*@px;
+            padding-bottom: 2*@px;
 
             &:last-child {
-              margin-bottom: 6px;
+              margin-bottom: 6*@px;
             }
 
             &:first-child {
               &:last-child {
-                margin-top: 0px;
+                margin-top: 0*@px;
               }
             }
           }
@@ -595,7 +595,7 @@
 
       &.today {
         &:before {
-          top: 14px;
+          top: 14*@px;
         }
       }
     }
@@ -608,7 +608,7 @@
           }
 
           &.vol-markers {
-            width: ~"calc(100% - 385px)";
+            width: ~"calc(100% - " 385*@px ~")";
           }
         }
       }
@@ -619,14 +619,14 @@
     .row {
       .row-item {
         &.vol-markers {
-          width: ~"calc(100% - 490px)";
+          width: ~"calc(100% - " 490*@px ~")";
         }
 
         &.current-vol {
-          width: 280px;
+          width: 280*@px;
 
           .current-vol-selected.ui.checkbox {
-            margin-left: 0px;
+            margin-left: 0*@px;
           }
 
           .current-vol-shift-type {
@@ -644,7 +644,7 @@
           }
 
           &.vol-markers {
-            width: ~"calc(100% - 490px)";        
+            width: ~"calc(100% - " 490*@px ~")";        
           }
         }
       }
