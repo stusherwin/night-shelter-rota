@@ -2,16 +2,17 @@ form.details {
   .group;
 
   background: #f2f2f2;
-  padding: 10px;
-  margin-top: 0px;
-  margin-bottom: 0px;
-  border: 1px solid #ddd;
-  border-radius: 3px;
+  padding: 10*@px;
+  padding-top: 15*@px;
+  margin-top: 0*@px;
+  margin-bottom: -10*@px;
+  border-bottom: 1*@px solid #ddd;
 
   .field {
     .ui.radio.checkbox {
-      margin-right: 20px;
-      margin-top: 10px;
+      display: block;
+      margin-right: 0*@px;
+      margin-top: 10*@px;
     }
   }
 
@@ -27,13 +28,13 @@ form.details {
   label .sharing-pref {
     font-weight: bold;
     color: #000;
-    margin-left: 1px;
-    margin-right: 1px;
+    margin-left: 1*@px;
+    margin-right: 1*@px;
 
     span {
       position: relative;
-      top: 0px;
-      left: 0px;
+      top: 0*@px;
+      left: 0*@px;
     }
   }
 
@@ -41,26 +42,29 @@ form.details {
     float: right;
   }
 
-  @media @medium-screen {
-    margin-top: 0px;
-    margin-bottom: -10px;
-    padding-top: 15px;
-    border: none;
-    border-radius: 0px;
-    border-bottom: 1px solid #ddd;
+  @media @larger-screen {
+    margin-bottom: 0*@px;
+    padding-top: 10*@px;
+    border: 1*@px solid #ddd;
+    border-radius: 3*@px;
     
     .field .ui.radio.checkbox {
-      display: block;
-      margin-right: 0px;
+      display: inline-block;
+      margin-right: 20*@px;
     }
-
   }
 }
 
-@media @medium-screen {
+.ui.form {
+  textarea:not([rows]) {
+    height: 50*@px;
+  }
+}
+
+@media @larger-screen {
   .ui.form {
     textarea:not([rows]) {
-      height: 50px;
+      height: 8em;
     }
   }
 }
