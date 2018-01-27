@@ -144,17 +144,21 @@ spec = T.focus _header _HeaderAction H.spec
     render :: T.Render (Maybe Vol) _ VolInfoAction
     render dispatch _ Nothing _ = []
     render dispatch _ (Just v) _ = [ RD.div [ RP.className "vol-info-fadeout" ]
-                                            [ RD.div [ RP.className "vol-info" ]
-                                                     [ RD.h2' [ RD.text v.name ]
+                                            [ RD.div [ RP.className "vol-info"
+                                                     , RP.onClick $ R.preventDefault >=> (const $ dispatch Close)
+                                                     ]
+                                                     [ RD.div [ RP.className "vol-info-wrapper" ]
+                                                              [ RD.h2' [ RD.text v.name ]
+                                                              , RD.div [ RP.className "vol-info-content" ]
+                                                                       $ renderIntro v
+                                                                         <> renderPreferences v
+                                                                         <> renderNotes v
+                                                              ]
                                                      , RD.a [ RP.href "#"
                                                             , RP.onClick $ R.preventDefault >=> (const $ dispatch Close)
                                                             ]
                                                             [ RD.i [ RP.className "icon-cancel"] []
                                                             ]
-                                                     , RD.div [ RP.className "vol-info-content" ]
-                                                              $ renderIntro v
-                                                                <> renderPreferences v
-                                                                <> renderNotes v
                                                      ]
                                             ]
                                    ]
@@ -178,28 +182,34 @@ spec = T.focus _header _HeaderAction H.spec
         where
         renderOvernight :: Maybe OvernightPreference -> Array R.ReactElement
         renderOvernight Nothing = []
-        renderOvernight (Just p) = [ RD.div' [ RD.span [ RP.className "vol-info-pref-marker" ]
-                                                       [ RD.text $ overnightPrefMarker p ]
-                                             , RD.span' [ RD.text $ overnightPrefDescription p ]
-                                             ] 
+        renderOvernight (Just p) = [ RD.div [ RP.className "vol-info-pref" ]
+                                            [ RD.div [ RP.className "vol-info-pref-marker" ]
+                                                     [ RD.text $ overnightPrefMarker p ]
+                                            , RD.div [ RP.className "vol-info-pref-description" ]
+                                                     [ RD.text $ overnightPrefDescription p ]
+                                            ] 
                                    ]
     
         renderGender :: Maybe OvernightGenderPreference -> Array R.ReactElement
         renderGender Nothing = []
-        renderGender (Just p) = [ RD.div' [ RD.span [ RP.className "vol-info-pref-marker" ]
-                                                    [ RD.text $ overnightGenderPrefMarker p ]
-                                          , RD.span' [ RD.text $ overnightGenderPrefDescription p ]
-                                          ] 
+        renderGender (Just p) = [ RD.div [ RP.className "vol-info-pref" ]
+                                         [ RD.div [ RP.className "vol-info-pref-marker" ]
+                                                  [ RD.text $ overnightGenderPrefMarker p ]
+                                         , RD.div [ RP.className "vol-info-pref-description" ]
+                                                  [ RD.text $ overnightGenderPrefDescription p ]
+                                         ] 
                                 ]
   
       renderNotes :: Vol -> Array R.ReactElement
       renderNotes { notes: "" } = []
       renderNotes { notes } = [ RD.h3' [ RD.text "Notes for other volunteers" ]
-                              , RD.div' [ RD.span [ RP.className "vol-info-pref-marker" ] 
-                                                  [ RD.i [ RP.className "icon-info" ] []
-                                                  ]
-                                        , RD.span' [ RD.text notes ]
-                                        ]
+                              , RD.div [ RP.className "vol-info-pref" ]
+                                       [ RD.div [ RP.className "vol-info-pref-marker" ] 
+                                                [ RD.i [ RP.className "icon-info" ] []
+                                                ]
+                                       , RD.div [ RP.className "vol-info-pref-description" ]
+                                                [ RD.text notes ]
+                                       ]
                               ]
 
 changeCurrentVol :: Maybe Vol -> State -> _
