@@ -32,14 +32,15 @@ spec = T.simpleSpec performAction render
 
   render :: T.Render ShiftRowState _ RowAction
   render dispatch _ state _ =
-    [ RD.div [ classNames $ [ "row shift-row" ]
+    [ RD.div ([ classNames $ [ "row shift-row" ]
                             <> weekendClass state
                             <> loadingClass state
                             <> statusClass state
                             <> pastClass state
                             <> todayClass state
+                            <> clickableClass state
              , RP._id $ "shift-row-" <> toDateString state.date
-             ]
+             ] <> rowClick dispatch state)
              [ RD.div [ classNames $ [ "shift-info" ] <> hasMessage state.status
                       , RP.onClick $ R.preventDefault >=> (const $ dispatch $ MessageBubbleAction ToggleFixed)
                       , RP.onMouseOver $ const $ dispatch $ MessageBubbleAction ShowTransitory
@@ -73,6 +74,10 @@ spec = T.simpleSpec performAction render
              ]
     ]
     where
+    clickableClass :: ShiftRowState -> Array String
+    clickableClass { currentVol: Just s@{ shiftType: Nothing } } = [ "clickable" ]
+    clickableClass _ = []
+    
     weekendClass :: ShiftRowState -> Array String
     weekendClass { date } | not $ isWeekday date = [ "weekend" ]
     weekendClass _ = []
@@ -229,6 +234,12 @@ spec = T.simpleSpec performAction render
     renderIcon :: ShiftType -> R.ReactElement
     renderIcon Evening   = RD.i [ RP.className "vol-icon icon-no-bed" ] []
     renderIcon Overnight = RD.i [ RP.className "vol-icon icon-bed" ]    []
+
+    rowClick :: (RowAction -> T.EventHandler) -> ShiftRowState -> Array RP.Props
+    rowClick dispatch state@{ currentVol: Just s@{ shiftType: Nothing } } =
+      [ RP.onClick $ const $ dispatch $ AddCurrentVol state.date $ if s.canAddOvernight then Overnight else Evening
+      ]
+    rowClick _ _ = []
 
 initialState :: RosterState -> ShiftRuleConfig -> Date -> ShiftRowState
 initialState roster config date = 

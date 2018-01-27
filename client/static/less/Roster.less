@@ -29,6 +29,13 @@
       }
     }
 
+    &.clickable {
+      cursor: pointer;
+      &:hover {
+        background: #f7f7f7;
+      }
+    }
+
     &:nth-child(2) {
       border-top: none;
     }
@@ -373,6 +380,12 @@
           font-weight: bold;
         }
       }
+
+      &.clickable {
+        &:hover {
+          background: darken(#eee, 3%) !important;
+        }
+      }
     }
 
     &.loading {
@@ -441,6 +454,12 @@
         border-bottom: 6*@px solid transparent;
         border-left: 6*@px solid #555;
         content: " ";
+      }
+
+      &.clickable {
+        &:hover {
+          background: darken(rgb(218, 239, 255), 3%) !important;
+        }
       }
     }
   }
