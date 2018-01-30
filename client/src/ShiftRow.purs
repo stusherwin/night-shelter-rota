@@ -75,7 +75,7 @@ spec = T.simpleSpec performAction render
     ]
     where
     clickableClass :: ShiftRowState -> Array String
-    clickableClass { currentVol: Just s@{ shiftType: Nothing } } = [ "clickable" ]
+    clickableClass { volMarkers: Nil, currentVol: Just s@{ shiftType: Nothing } } = [ "clickable" ]
     clickableClass _ = []
     
     weekendClass :: ShiftRowState -> Array String
@@ -236,7 +236,7 @@ spec = T.simpleSpec performAction render
     renderIcon Overnight = RD.i [ RP.className "vol-icon icon-bed" ]    []
 
     rowClick :: (RowAction -> T.EventHandler) -> ShiftRowState -> Array RP.Props
-    rowClick dispatch state@{ currentVol: Just s@{ shiftType: Nothing } } =
+    rowClick dispatch state@{ volMarkers: Nil, currentVol: Just s@{ shiftType: Nothing } } =
       [ RP.onClick $ const $ dispatch $ AddCurrentVol state.date $ if s.canAddOvernight then Overnight else Evening
       ]
     rowClick _ _ = []
