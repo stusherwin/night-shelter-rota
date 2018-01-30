@@ -9,3 +9,4 @@
 * vol info popup doesn't show on click sometimes (small screen)
 * vol info popup header should wrap/truncate long vol name
 * Better button icons
+* Loading icon wobble
