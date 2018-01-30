@@ -10,3 +10,4 @@
 * vol info popup header should wrap/truncate long vol name
 * Better button icons
 * Loading icon wobble
+* Different logo image resolutions

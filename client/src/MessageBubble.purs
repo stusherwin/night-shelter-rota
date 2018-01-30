@@ -32,14 +32,15 @@ renderMessageBubble dispatch mb =
     Fixed msg      -> render msg true
     _ -> []
   where
-  render msg close = [ RD.div [ classNames [ "message-bubble"
+  render msg fixed = [ RD.div [ classNames [ "message-bubble"
                                            , case msg.position of
                                                Over -> "inverted"
                                                _ -> ""
+                                           , if fixed then "fixed" else ""
                                            ]
                               ] 
                               $
-                              (if close
+                              (if fixed
                                 then [ RD.a [ RP.href "#"
                                             , RP.onClick $ R.preventDefault >=> (const $ dispatch $ ToggleFixed)
                                             ]
