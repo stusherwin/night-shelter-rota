@@ -18,24 +18,32 @@
     "heroku-postbuild": "bower install && webpack"
   },
   "dependencies": {
+    "@types/react": "^16.0.35",
+    "@types/react-dom": "^16.0.3",
     "bower": "latest",
     "css-loader": "^0.28.7",
     "extract-text-webpack-plugin": "^2.1.2",
     "file-loader": "^1.1.6",
     "less": "^2.7.3",
     "less-loader": "^4.0.5",
-    "style-loader": "^0.19.1",
-    "url-loader": "^0.6.2",
     "lodash.difference": "^4.5.0",
     "purescript": "^0.11.0",
     "purescript-psa": "^0.5.0",
     "purs-loader": "^3.0.0-beta.1",
-    "react": "^15.3.2",
-    "react-dom": "^15.3.2",
+    "react": "^15.6.2",
+    "react-dom": "^15.6.2",
+    "style-loader": "^0.19.1",
+    "ts-loader": "^3.3.1",
+    "typescript": "^2.6.2",
+    "url-loader": "^0.6.2",
     "webpack": "^2.0.0",
     "webpack-dev-server": "^2.0.0",
     "wrappy": "^1.0.2"
   },
   "devDependencies": {
+    "awesome-typescript-loader": "^3.4.1",
+    "source-map-loader": "^0.2.3",
+    "ts-loader": "^3.3.1",
+    "typescript": "^2.6.2"
   }
 }

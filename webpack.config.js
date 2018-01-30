@@ -19,8 +19,6 @@ var plugins =
   ]
 ;
 
-var jsOutputFilename = isWebpackDevServer ? './js/bundle.js' : './client/static/js/bundle.js'
-
 var lessUse = [];
 if(isWebpackDevServer) {
   lessUse = [
@@ -29,7 +27,7 @@ if(isWebpackDevServer) {
     { loader: "less-loader" }
   ];
 } else {
-  plugins.push(new ExtractTextPlugin("./client/static/css/bundle.css"));
+  plugins.push(new ExtractTextPlugin("./css/bundle.css"));
   lessUse = ExtractTextPlugin.extract({
     fallback: "style-loader",
     use: [ "css-loader", "less-loader" ]
@@ -37,63 +35,65 @@ if(isWebpackDevServer) {
 }
 
 module.exports = {
-  devtool: 'eval-source-map',
+    entry: "./client/src/react/index.tsx",
+    //entry: './client/src/Main.purs',
 
-  devServer: {
-    contentBase: './client/static',
-    port: 5022,
-    stats: 'errors-only',
-    proxy: {
-      '/api/**': 'http://localhost:8081/'
-    }
-  },
+    output: {
+        filename: "js/bundle.js",
+        path: __dirname + "/client/static"
+    },
 
-  entry: './client/src/Main.purs',
-
-  output: {
-    path: __dirname,
-    pathinfo: true,
-    filename: jsOutputFilename
-  },
-
-  module: {
-    rules: [
-      {
-        test: /\.purs$/,
-        use: [
-          {
-            loader: 'purs-loader',
-            options: {
-              src: [
-                'bower_components/purescript-*/src/**/*.purs',
-                'client/src/**/*.purs'
-              ],
-              bundle: false,
-              psc: 'psa',
-              pscArgs: { censorCodes: "WildcardInferredType" },
-              watch: isWebpackDevServer || isWatch,
-              pscIde: false
-            }
-          }
-        ]
-      }, {
-        test: /\.less$/,
-        use: lessUse
-      }, {
-        test: /\.(png|woff|woff2|eot|ttf|svg)$/,
-        loader: 'url-loader?limit=100000'
+    devServer: {
+      contentBase: './client/static',
+      port: 5022,
+      stats: 'errors-only',
+      proxy: {
+        '/api/**': 'http://localhost:8081/'
       }
-    ]
-  },
+    },
 
-  resolve: {
-    modules: [ 'node_modules', 'bower_components' ],
-    extensions: [ '.purs', '.js']
-  },
+    devtool: "eval-source-map",
 
-  plugins: [
-    new webpack.LoaderOptionsPlugin({
-      debug: true
-    })
-  ].concat(plugins)
+    resolve: {
+        modules: [ 'node_modules', 'bower_components' ],
+        extensions: [".purs", ".ts", ".tsx", ".js", ".json"]
+    },
+
+    module: {
+        rules: [
+            { test: /\.tsx?$/, loader: "awesome-typescript-loader" },
+            { enforce: "pre", test: /\.js$/, loader: "source-map-loader" },
+            { test: /\.less$/, use: lessUse },
+            { test: /\.(png|woff|woff2|eot|ttf|svg)$/, loader: 'url-loader?limit=100000' },
+            { test: /\.purs$/,
+              use: [
+                {
+                  loader: 'purs-loader',
+                  options: {
+                    src: [
+                      'bower_components/purescript-*/src/**/*.purs',
+                      'client/src/**/*.purs'
+                    ],
+                    bundle: false,
+                    psc: 'psa',
+                    pscArgs: { censorCodes: "WildcardInferredType" },
+                    watch: isWebpackDevServer || isWatch,
+                    pscIde: false
+                  }
+                }
+              ]
+            }
+        ]
+    },
+
+    externals: {
+        "react": "React",
+        "react-dom": "ReactDOM"
+    },
+
+    plugins: [
+      new webpack.LoaderOptionsPlugin({
+        debug: true
+      })
+    ].concat(plugins)
 };

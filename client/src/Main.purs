@@ -142,7 +142,7 @@ spec = T.focus _header _HeaderAction H.spec
   volInfo = T.simpleSpec T.defaultPerformAction render
     where
     render :: T.Render (Maybe Vol) _ VolInfoAction
-    render dispatch _ Nothing _ = []
+    render dispatch  _ Nothing _ = []
     render dispatch _ (Just v) _ = [ RD.div [ RP.className "vol-info-fadeout" ]
                                             [ RD.div [ RP.className "vol-info"
                                                      , RP.onClick $ R.preventDefault >=> (const $ dispatch Close)
