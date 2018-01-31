@@ -1,13 +1,13 @@
 module App.ShiftRow (spec, initialState, otherFixedMessage, noOtherFixedMessage, hasFixedMessage) where
  
-import Prelude (const, id, map, not, pure, show, unit, void, ($), (&&), (<), (<#>), (<<<), (<>), (==), (>), (>=>), (||))
+import Prelude
  
 import Data.Array (catMaybes, fromFoldable, reverse)
 import Data.DateTime (Date, weekday, month)
 import Data.List (List(..), find, head, foldl, length)
 import Data.Maybe (Maybe(..), maybe)
 import Data.String (take, toUpper, toLower, length) as S
-import React (ReactElement, preventDefault) as R
+import React (ReactElement, preventDefault, stopPropagation) as R
 import React.DOM as RD
 import React.DOM.Props as RP
 import Thermite as T
@@ -42,7 +42,10 @@ spec = T.simpleSpec performAction render
              , RP._id $ "shift-row-" <> toDateString state.date
              ] <> rowClick dispatch state)
              [ RD.div [ classNames $ [ "shift-info" ] <> hasMessage state.status
-                      , RP.onClick $ R.preventDefault >=> (const $ dispatch $ MessageBubbleAction ToggleFixed)
+                      , RP.onClick \e -> do
+                          _ <- R.preventDefault e
+                          _ <- dispatch $ MessageBubbleAction ToggleFixed
+                          R.stopPropagation e
                       , RP.onMouseOver $ const $ dispatch $ MessageBubbleAction ShowTransitory
                       , RP.onMouseOut $ const $ dispatch $ MessageBubbleAction HideTransitory
                       ]
@@ -75,7 +78,7 @@ spec = T.simpleSpec performAction render
     ]
     where
     clickableClass :: ShiftRowState -> Array String
-    clickableClass { volMarkers: Nil, currentVol: Just s@{ shiftType: Nothing } } = [ "clickable" ]
+    clickableClass { loading: false, currentVol: Just s@{ shiftType: Nothing } } = [ "clickable" ]
     clickableClass _ = []
     
     weekendClass :: ShiftRowState -> Array String
@@ -120,7 +123,10 @@ spec = T.simpleSpec performAction render
               (reverse $ renderSharingPrefs s.volunteer)
               <>
               [ RD.span [ RP.className "vol-name"
-                        , RP.onClick $ const $ dispatch $ ShowVolInfo s.volunteer
+                        , RP.onClick \e -> do
+                            _ <- R.preventDefault e
+                            _ <- dispatch $ ShowVolInfo s.volunteer
+                            R.stopPropagation e
                         ]
                         [ renderIcon s.shiftType
                         , RD.text $ s.volunteer.name
@@ -167,7 +173,11 @@ spec = T.simpleSpec performAction render
                                       , RP._type "checkbox"
                                       , RP._id $ "shift-type-" <> toDateString state.date
                                       , RP.checked $ st == Overnight
-                                      , RP.onChange $ const $ dispatch $ ChangeCurrentVolShiftType state.date $ otherShiftType st
+                                      , RP.onClick R.stopPropagation
+                                      , RP.onChange \e -> do
+                                          _ <- R.preventDefault e
+                                          _ <- dispatch $ ChangeCurrentVolShiftType state.date $ otherShiftType st
+                                          R.stopPropagation e
                                       ]
                                       []
                            , RD.label [ RP.htmlFor $ "shift-type-" <> toDateString state.date ]
@@ -185,7 +195,11 @@ spec = T.simpleSpec performAction render
                                , RP._id $ "shift-type-" <> toDateString state.date <> "-" <> code shiftType
                                , RP.name $ "shift-type-" <> toDateString state.date
                                , RP.checked $ currentShiftType == shiftType
-                               , RP.onChange $ const $ dispatch $ ChangeCurrentVolShiftType state.date shiftType
+                               , RP.onClick R.stopPropagation
+                               , RP.onChange \e -> do
+                                   _ <- R.preventDefault e
+                                   _ <- dispatch $ ChangeCurrentVolShiftType state.date shiftType
+                                   R.stopPropagation e
                                ]
                                [ ]
                     , RD.label [ RP.className "action-label"
@@ -210,7 +224,11 @@ spec = T.simpleSpec performAction render
                   [ RD.input [ RP._type "checkbox"
                              , RP.disabled $ state.loading || (not s.canAddOvernight && not s.canAddEvening)
                              , RP.checked false
-                             , RP.onChange $ const $ dispatch $ AddCurrentVol state.date $ if s.canAddOvernight then Overnight else Evening
+                             , RP.onClick R.stopPropagation
+                             , RP.onChange  \e -> do
+                                 _ <- R.preventDefault e
+                                 _ <- dispatch $ AddCurrentVol state.date $ if s.canAddOvernight then Overnight else Evening
+                                 R.stopPropagation e
                              ]
                              []
                   , RD.label' []
@@ -221,7 +239,11 @@ spec = T.simpleSpec performAction render
                   [ RD.input [ RP._type "checkbox"
                              , RP.disabled $ state.loading
                              , RP.checked true
-                             , RP.onChange $ const $ dispatch $ RemoveCurrentVol state.date
+                             , RP.onClick R.stopPropagation
+                             , RP.onChange  \e -> do
+                                 _ <- R.preventDefault e
+                                 _ <- dispatch $ RemoveCurrentVol state.date
+                                 R.stopPropagation e
                              ]
                              []
                   , RD.label' []
@@ -236,7 +258,7 @@ spec = T.simpleSpec performAction render
     renderIcon Overnight = RD.i [ RP.className "vol-icon icon-bed" ]    []
 
     rowClick :: (RowAction -> T.EventHandler) -> ShiftRowState -> Array RP.Props
-    rowClick dispatch state@{ volMarkers: Nil, currentVol: Just s@{ shiftType: Nothing } } =
+    rowClick dispatch state@{ loading: false, currentVol: Just s@{ shiftType: Nothing } } =
       [ RP.onClick $ const $ dispatch $ AddCurrentVol state.date $ if s.canAddOvernight then Overnight else Evening
       ]
     rowClick _ _ = []

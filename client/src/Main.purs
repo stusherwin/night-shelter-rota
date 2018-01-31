@@ -401,7 +401,7 @@ type APIEffect eff = ReaderT MySettings (ExceptT AjaxError (Aff (ajax :: AJAX, e
 
 apiReq :: forall a. Generic a => APIEffect _ a -> Aff _ (Either AjaxError a)
 apiReq m = do
-  -- delay $ Milliseconds 100000.0
+  -- delay $ Milliseconds 5000.0
   response <- runExceptT $ runReaderT m settings
   case response of
     Left err -> do

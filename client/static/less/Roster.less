@@ -54,6 +54,7 @@
         z-index: @header-z-index + 1;
         top: 55*@px;
         left: 4*@px;
+        opacity: 1;
 
         &::before {
           left: 3*@px;
@@ -366,8 +367,9 @@
         //i.icon-loading?
         i.icon-spin {
           float: right;
-          margin-left: -3*@px;
-          margin-top: 10*@px;
+          margin-left: -1*@px;
+          margin-top: 8*@px;
+  // background: red;
         }
       }
     }
@@ -619,10 +621,9 @@
               top: 0*@px;
             }
           }
-
-          //i.icon-spin?
-          i.loading {
-            margin-top: 2*@px;
+          
+          i.icon-spin {
+            margin-top: 0*@px;
           }
         }
 

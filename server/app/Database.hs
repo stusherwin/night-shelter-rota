@@ -183,28 +183,18 @@ module Database (getAllVolunteers, getVolunteer, addVolunteer, updateVolunteer, 
     conn <- connectPostgreSQL connectionString
     -- TODO: convert to single db query
     -- Add should be idempotent, shouldn't throw an error if already exists
-    -- So attempt to update first and then add if it isn't there (inefficient!)
-    count <- execute conn
-      " update volunteer_shift\
-      \ set shiftType = ?\
-      \ where shiftDate = ? and volunteerId = ?"
-      ( shiftType
-      , shiftDate
+    _ <- execute conn
+      " insert into volunteer_shift as vs\
+      \   (shiftDate, volunteerId, shiftType)\
+      \ values\
+      \   (?, ?, ?)\
+      \ on conflict (shiftDate, volunteerId) do update\
+      \   set shiftType = excluded.shiftType\
+      \   where vs.shiftDate = excluded.shiftDate and vs.volunteerId = excluded.volunteerId"
+      ( shiftDate
       , volId
+      , shiftType
       )
-    
-    _ <- if count == 0 then
-      execute conn
-        " insert into volunteer_shift\
-        \   (shiftDate, volunteerId, shiftType)\
-        \ values\
-        \   (?, ?, ?)"
-        ( shiftDate
-        , volId
-        , shiftType
-        )
-    else
-      return 0
   
     rVols <- query conn
       " select id, name, intro, overnight_pref, overnight_gender_pref, notes\
