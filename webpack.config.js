@@ -35,8 +35,8 @@ if(isWebpackDevServer) {
 }
 
 module.exports = {
-    // entry: "./client/src/react/index.tsx",
-    entry: './client/src/Main.purs',
+    entry: "./client/src/react/index.tsx",
+    // entry: './client/src/Main.purs',
 
     output: {
         filename: "js/bundle.js",
