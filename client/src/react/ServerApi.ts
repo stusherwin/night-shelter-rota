@@ -1,4 +1,4 @@
-import { Vol } from './Types'
+import { Vol, OvernightPreference, OvernightGenderPreference } from './Types'
 
 export type Volunteer = { vId: number
                         , vName: string
@@ -8,19 +8,25 @@ export type Volunteer = { vId: number
                         , vNotes: string
                         }
 
-export class ServerAPI {
+export class ApiError {
+  constructor(error: string, message: string) {
+    this.error = error
+    this.message = message
+  }
+  error: string
+  message: string
+}
+
+export class ServerApi {
   static vols(): Promise<Vol[]> {
     return fetch('/api/vols')
       .then(res => {
         if(!res.ok) {
-          return res.text().then(txt => { throw new Error(`${res.statusText} (${res.status}): ${txt}`) })
+          return res.text().then(txt => { throw new ApiError(`${res.statusText} (${res.status})`, txt) })
         }
         let contentType = res.headers.get('content-type')
-        if (contentType == null) {
-          throw new TypeError('Invalid server response (no content-type defined)');
-        }
-        if (!contentType.includes('application/json')) {
-          throw new TypeError('Invalid server response (expected json content-type)');
+        if (contentType == null || !contentType.includes('application/json')) {
+          throw new ApiError('Invalid server response', 'Expected response to have content-type application/json.');
         }
         return res.json()
       })
@@ -35,7 +41,7 @@ export class ServerAPI {
   }
 }
 
-function constrainOvernightPreference(pref: string): '1' | '2' | null {
+function constrainOvernightPreference(pref: string): OvernightPreference {
   switch(pref) {
     case '1': return '1';
     case '2': return '2';
@@ -43,7 +49,7 @@ function constrainOvernightPreference(pref: string): '1' | '2' | null {
   }
 }
 
-function constrainOvernightGenderPreference(pref: string): 'M' | 'F' | null {
+function constrainOvernightGenderPreference(pref: string): OvernightGenderPreference {
   switch(pref) {
     case 'M': return 'M';
     case 'F': return 'F';

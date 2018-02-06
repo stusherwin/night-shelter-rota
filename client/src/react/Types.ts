@@ -1,11 +1,13 @@
 export type Vol = { id: number
                   , name: string
                   , intro: string
-                  , overnightPreference: '1' | '2' | null
-                  , overnightGenderPreference: 'M' | 'F' | null
+                  , overnightPreference: OvernightPreference
+                  , overnightGenderPreference: OvernightGenderPreference
                   , notes: string
                   }
 
+export type OvernightPreference = '1' | '2' | null
+export type OvernightGenderPreference = 'M' | 'F' | null
 // type VolShift = { volunteer :: Vol
 //                 , shiftType :: ShiftType
 //                 }
