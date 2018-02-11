@@ -39,15 +39,44 @@ export class Header extends React.Component<HeaderProps, HeaderState> {
       return <div className="header">
                <HeaderButtons volDetailsState={this.state.volDetailsState}
                               currentVol={this.state.currentVol}
-                              editNewVol={this.props.editNewVol}
-                              editCurrentVol={this.props.editCurrentVol} />
+                              editNewVol={this.props.editNewVol.bind(this)}
+                              editCurrentVol={this.editCurrentVol.bind(this)} />
                <StatusIcon reqInProgress={this.props.reqInProgress}
                            errorMessage={this.props.errorMessage}
                            action={this.props.errorMessageAction}>
                </StatusIcon>
-               <h2>Night Shelter Rota for {this.props.vols[0].name}</h2>
+               <h2>Night Shelter Rota for </h2>
+               <select className="vol-select"
+                       onChange={e => { this.changeCurrentVol.bind(this)(e.target.value == ''
+                                                                      ? null
+                                                                      : this.props.vols.find(v => v.id == parseInt(e.target.value)) || null) }}>
+                 <option value="">All volunteers</option>
+                 {this.props.vols.sort((a, b) => a.name.localeCompare(b.name))
+                                 .map(v =>
+                   <option selected={this.state.currentVol != null && this.state.currentVol.id == v.id}
+                           value={v.id}>{v.name}
+                   </option>)}
+               </select>
              </div>
     }
+  }
+
+  changeCurrentVol(vol: Vol | null) {
+    console.log('current vol: ' + (vol? vol.name : 'none'))
+    this.setState({currentVol: vol})
+    // this.props.changeCurrentVol(vol)
+  }
+
+  editNewVol() {
+    console.log('edit new vol')
+    this.setState({volDetailsState: 'EditingNewVol'})
+    // this.props.editNewVol()
+  }
+
+  editCurrentVol() {
+    console.log('edit current vol')
+    this.setState({volDetailsState: 'EditingCurrentVol'})
+    // this.props.editCurrentVol()
   }
 }
 
@@ -61,28 +90,34 @@ function HeaderButtons(props: { volDetailsState: VolDetailsState
     buttons.push(<HeaderButton buttonClassName="header-button-new"
                                mediaClassName="media-large-screen"
                                text="New volunteer"
+                               icon="add"
                                action={props.editNewVol} />)
     buttons.push(<HeaderButton buttonClassName="header-button-new"
                                mediaClassName="media-larger-screen media-medium-screen"
                                text="New"
+                               icon="add"
                                action={props.editNewVol} />)
-    buttons.push(<HeaderButton buttonClassName="header-button-new"
+    buttons.push(<HeaderButton buttonClassName="mini icon header-button-new"
                                mediaClassName="media-small-screen"
                                text={null}
+                               icon="add"
                                action={props.editNewVol} />)
 
     if(props.currentVol != null) {
       buttons.push(<HeaderButton buttonClassName="header-button-edit"
                                  mediaClassName="media-large-screen"
                                  text="Edit volunteer details"
+                                 icon="edit"
                                  action={props.editCurrentVol} />)
       buttons.push(<HeaderButton buttonClassName="header-button-edit"
                                  mediaClassName="media-larger-screen media-medium-screen"
                                  text="Edit"
+                                 icon="edit"
                                  action={props.editCurrentVol} />)
-      buttons.push(<HeaderButton buttonClassName="header-button-edit"
+      buttons.push(<HeaderButton buttonClassName="mini icon header-button-edit"
                                  mediaClassName="media-small-screen"
                                  text={null}
+                                 icon="edit"
                                  action={props.editCurrentVol} />)
     }
   }
@@ -95,11 +130,12 @@ function HeaderButtons(props: { volDetailsState: VolDetailsState
 function HeaderButton(props: { buttonClassName: string
                              , mediaClassName: string
                              , text: string | null
+                             , icon: string
                              , action: () => void
                              } ): JSX.Element | null {
   return <button className={`ui button header-button ${props.buttonClassName} ${props.mediaClassName}`}
                  onClick={e => {e.preventDefault(); props.action(); }}>
-           <i className="icon icon-add"></i>
+           <i className={`icon icon-${props.icon}`}></i>
            {props.text}
          </button>
 }

@@ -52,11 +52,14 @@ export class ShelterRota extends React.Component<ShelterRotaProps, ShelterRotaSt
   }
 
   changeCurrentVol(vol: Vol | null) {
+    console.log('current vol: ' + (vol? vol.name : 'none'))
   }
 
   editNewVol() {
+    console.log('edit new vol')
   }
 
   editCurrentVol() {
+    console.log('edit current vol')
   }
 }
