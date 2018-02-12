@@ -1,16 +1,16 @@
 import * as React from 'react';
 import { Vol } from './Types'
 import { MessageBubble, MessageBubbleProps, MessageBubbleAction } from './MessageBubble'
+import { ApiError } from './ServerApi'
 
 export type VolDetailsState = 'NotEditing' 
                             | 'EditingNewVol'
                             | 'EditingCurrentVol'
 
 export interface HeaderProps { reqInProgress: boolean
-                             , errorMessage: MessageBubbleProps
-                             , vols: Vol[]
                              , initialDataLoaded: boolean
-                             , errorMessageAction: (action: MessageBubbleAction) => void
+                             , vols: Vol[]
+                             , error: ApiError | null
                              , changeCurrentVol: (vol: Vol | null) => void
                              , editCurrentVol: () => void
                              , editNewVol: () => void
@@ -18,20 +18,39 @@ export interface HeaderProps { reqInProgress: boolean
 
 export interface HeaderState { volDetailsState: VolDetailsState
                              , currentVol: Vol | null
+                             , errorMessage: MessageBubbleProps
                              }
 
 export class Header extends React.Component<HeaderProps, HeaderState> {
   constructor(props: HeaderProps) {
     super(props)
-    this.state = { volDetailsState: 'NotEditing', currentVol: null }
+    this.state = { volDetailsState: 'NotEditing'
+                 , currentVol: null
+                 , errorMessage: new MessageBubbleProps()
+                 }
   }
- 
+
+  componentWillReceiveProps(props: HeaderProps) {
+    if(props.error != this.props.error) {
+      this.setState(
+        { errorMessage: props.error
+                        ? this.state.errorMessage.setMessage(
+                            { header: props.error.error
+                            , body: props.error.message
+                            , position: 'under'
+                            , icon: 'warning'
+                            })
+                        : this.state.errorMessage.clear()
+        })
+    }
+  }
+
   render() {
     if(!this.props.initialDataLoaded) {
       return <div className="header initial-data-loading">
                <StatusIcon reqInProgress={this.props.reqInProgress}
-                           errorMessage={this.props.errorMessage}
-                           action={this.props.errorMessageAction}>
+                           errorMessage={this.state.errorMessage}
+                           action={this.errorMessageAction.bind(this)}>
                </StatusIcon>
                <h2>Night Shelter Rota</h2>
              </div>
@@ -39,11 +58,11 @@ export class Header extends React.Component<HeaderProps, HeaderState> {
       return <div className="header">
                <HeaderButtons volDetailsState={this.state.volDetailsState}
                               currentVol={this.state.currentVol}
-                              editNewVol={this.props.editNewVol.bind(this)}
+                              editNewVol={this.editNewVol.bind(this)}
                               editCurrentVol={this.editCurrentVol.bind(this)} />
                <StatusIcon reqInProgress={this.props.reqInProgress}
-                           errorMessage={this.props.errorMessage}
-                           action={this.props.errorMessageAction}>
+                           errorMessage={this.state.errorMessage}
+                           action={this.errorMessageAction.bind(this)}>
                </StatusIcon>
                <h2>Night Shelter Rota for </h2>
                <select className="vol-select"
@@ -61,22 +80,27 @@ export class Header extends React.Component<HeaderProps, HeaderState> {
     }
   }
 
+  errorMessageAction(action: MessageBubbleAction) {
+    this.setState({ errorMessage: this.state.errorMessage.afterAction(action)
+                  })
+  }
+
   changeCurrentVol(vol: Vol | null) {
     console.log('current vol: ' + (vol? vol.name : 'none'))
-    this.setState({currentVol: vol})
-    // this.props.changeCurrentVol(vol)
+    this.setState({currentVol: vol, volDetailsState: 'NotEditing', errorMessage: this.state.errorMessage.clear()})
+    this.props.changeCurrentVol(vol)
   }
 
   editNewVol() {
     console.log('edit new vol')
-    this.setState({volDetailsState: 'EditingNewVol'})
-    // this.props.editNewVol()
+    this.setState({volDetailsState: 'EditingNewVol', errorMessage: this.state.errorMessage.clear()})
+    this.props.editNewVol()
   }
 
   editCurrentVol() {
     console.log('edit current vol')
-    this.setState({volDetailsState: 'EditingCurrentVol'})
-    // this.props.editCurrentVol()
+    this.setState({volDetailsState: 'EditingCurrentVol', errorMessage: this.state.errorMessage.clear()})
+    this.props.editCurrentVol()
   }
 }
 
