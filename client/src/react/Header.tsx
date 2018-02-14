@@ -47,36 +47,40 @@ export class Header extends React.Component<HeaderProps, HeaderState> {
 
   render() {
     if(!this.props.initialDataLoaded) {
-      return <div className="header initial-data-loading">
-               <StatusIcon reqInProgress={this.props.reqInProgress}
-                           errorMessage={this.state.errorMessage}
-                           action={this.errorMessageAction.bind(this)}>
-               </StatusIcon>
-               <h2>Night Shelter Rota</h2>
-             </div>
+      return (
+        <div className="header initial-data-loading">
+          <StatusIcon reqInProgress={this.props.reqInProgress}
+                      errorMessage={this.state.errorMessage}
+                      action={this.errorMessageAction.bind(this)}>
+          </StatusIcon>
+          <h2>Night Shelter Rota</h2>
+        </div>
+      )
     } else {
-      return <div className="header">
-               <HeaderButtons volDetailsState={this.state.volDetailsState}
-                              currentVol={this.state.currentVol}
-                              editNewVol={this.editNewVol.bind(this)}
-                              editCurrentVol={this.editCurrentVol.bind(this)} />
-               <StatusIcon reqInProgress={this.props.reqInProgress}
-                           errorMessage={this.state.errorMessage}
-                           action={this.errorMessageAction.bind(this)}>
-               </StatusIcon>
-               <h2>Night Shelter Rota for </h2>
-               <select className="vol-select"
-                       onChange={e => { this.changeCurrentVol.bind(this)(e.target.value == ''
-                                                                      ? null
-                                                                      : this.props.vols.find(v => v.id == parseInt(e.target.value)) || null) }}>
-                 <option value="">All volunteers</option>
-                 {this.props.vols.sort((a, b) => a.name.localeCompare(b.name))
-                                 .map(v =>
-                   <option selected={this.state.currentVol != null && this.state.currentVol.id == v.id}
-                           value={v.id}>{v.name}
-                   </option>)}
-               </select>
-             </div>
+      return (
+        <div className="header">
+          <HeaderButtons volDetailsState={this.state.volDetailsState}
+                         currentVol={this.state.currentVol}
+                         editNewVol={this.editNewVol.bind(this)}
+                         editCurrentVol={this.editCurrentVol.bind(this)} />
+          <StatusIcon reqInProgress={this.props.reqInProgress}
+                      errorMessage={this.state.errorMessage}
+                      action={this.errorMessageAction.bind(this)}>
+          </StatusIcon>
+          <h2>Night Shelter Rota for </h2>
+          <select className="vol-select"
+                  onChange={e => { this.changeCurrentVol.bind(this)(e.target.value == ''
+                                                                 ? null
+                                                                 : this.props.vols.find(v => v.id == parseInt(e.target.value)) || null) }}>
+            <option value="">All volunteers</option>
+            {this.props.vols.sort((a, b) => a.name.localeCompare(b.name))
+                            .map(v =>
+              <option selected={this.state.currentVol != null && this.state.currentVol.id == v.id}
+                      value={v.id}>{v.name}
+              </option>)}
+          </select>
+        </div>
+      )
     }
   }
 
@@ -87,19 +91,26 @@ export class Header extends React.Component<HeaderProps, HeaderState> {
 
   changeCurrentVol(vol: Vol | null) {
     console.log('current vol: ' + (vol? vol.name : 'none'))
-    this.setState({currentVol: vol, volDetailsState: 'NotEditing', errorMessage: this.state.errorMessage.clear()})
+    this.setState({ currentVol: vol
+                  , volDetailsState: 'NotEditing'
+                  , errorMessage: this.state.errorMessage.clear()
+                  })
     this.props.changeCurrentVol(vol)
   }
 
   editNewVol() {
     console.log('edit new vol')
-    this.setState({volDetailsState: 'EditingNewVol', errorMessage: this.state.errorMessage.clear()})
+    this.setState({ volDetailsState: 'EditingNewVol'
+                  , errorMessage: this.state.errorMessage.clear()
+                  })
     this.props.editNewVol()
   }
 
   editCurrentVol() {
     console.log('edit current vol')
-    this.setState({volDetailsState: 'EditingCurrentVol', errorMessage: this.state.errorMessage.clear()})
+    this.setState({ volDetailsState: 'EditingCurrentVol'
+                  , errorMessage: this.state.errorMessage.clear()
+                  })
     this.props.editCurrentVol()
   }
 }
@@ -108,7 +119,7 @@ function HeaderButtons(props: { volDetailsState: VolDetailsState
                               , currentVol: Vol | null
                               , editNewVol: () => void
                               , editCurrentVol: () => void
-                              } ): JSX.Element {
+                              }): JSX.Element {
   let buttons = [];
   if(props.volDetailsState == 'NotEditing') {
     buttons.push(<HeaderButton buttonClassName="header-button-new"

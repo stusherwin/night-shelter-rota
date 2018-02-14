@@ -4,6 +4,7 @@ import { Roster, RosterProps } from './Roster'
 import { Vol } from './Types'
 import { ServerApi, ApiError } from './ServerApi'
 import { MessageBubbleProps, MessageBubbleAction } from './MessageBubble'
+import { Util } from './Util'
 
 export interface ShelterRotaProps {}
 export interface ShelterRotaState { header: HeaderProps
@@ -23,7 +24,7 @@ export class ShelterRota extends React.Component<ShelterRotaProps, ShelterRotaSt
                            }
                  , roster: { visible: false
                            , currentVol: null
-                           , currentDate: new Date(Date.now())
+                           , currentDate: Util.today()
                            , shifts: []
                            }
                  }
@@ -56,12 +57,14 @@ export class ShelterRota extends React.Component<ShelterRotaProps, ShelterRotaSt
   }
 
   render() {
-    return <div>
-             <Header {...this.state.header} />
-             <div className="container">
-               <Roster {...this.state.roster} />
-             </div>
-           </div>
+    return (
+      <div>
+        <Header {...this.state.header} />
+        <div className="container">
+          <Roster {...this.state.roster} />
+        </div>
+      </div>
+    )
   }
 
   changeCurrentVol(vol: Vol | null) {

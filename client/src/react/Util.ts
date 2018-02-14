@@ -1,5 +1,7 @@
 import * as React from 'react';
 
+const MONTH_NAMES = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December']
+const WEEKDAY_NAMES = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday']
 export class Util {
   static addDays(date: Date, days: number): Date {
     let clone = new Date(date)
@@ -12,8 +14,7 @@ export class Util {
 
   static monthYearString(date: Date): string {
     //TODO: Use Moment.js or something?
-    let monthNames = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December']
-    return monthNames[date.getUTCMonth()] + ' ' + date.getUTCFullYear().toString()
+    return MONTH_NAMES[date.getUTCMonth()] + ' ' + date.getUTCFullYear().toString()
   }
 
   static datePart(date: Date): Date {
@@ -30,5 +31,50 @@ export class Util {
     let bval = Util.datePart(b).valueOf()
 
     return (aval - bval) / (24*60*60*1000)
+  }
+
+  static isWeekend(date: Date): boolean {
+    return date.getUTCDay() == 0 || date.getUTCDay() == 6
+  }
+
+  static weekdayName(date: Date): string {
+    return WEEKDAY_NAMES[date.getUTCDay()]
+  }
+
+  static monthName(date: Date): string {
+    return MONTH_NAMES[date.getUTCMonth()]
+  }
+
+  static day(date: Date): number {
+    return date.getUTCDate()
+  }
+
+  static positionalPostfix(num: number): string {
+    if([11, 12, 13].indexOf(num) >= 0) {
+      return "th"
+    }
+
+    if(num % 10 == 1) {
+      return "st"
+    }
+    
+    if(num % 10 == 2) {
+      return "nd"
+    }
+    
+    if(num % 10 == 3) {
+      return "rd"
+    }
+    
+    return "th"
+  }
+
+  static today(): Date {
+    return Util.datePart(new Date(Date.now()))
+  }
+
+  static previousWeekday(date: Date, weekday: number): Date {
+    let daysToSubtract = (date.getUTCDay() - weekday + 7) % 7
+    return Util.addDays(date, -daysToSubtract)
   }
 }

@@ -19,7 +19,7 @@ const SHIFT_COUNT = 28
 export class Roster extends React.Component<RosterProps, RosterState> {
   constructor(props: RosterProps) {
     super(props)
-    let startDate = Util.datePart(props.currentDate)
+    let startDate = Util.previousWeekday(props.currentDate, 1)
     this.state = { startDate: startDate
                  , endDate: Util.addDays(startDate, SHIFT_COUNT)
                  }
@@ -30,13 +30,15 @@ export class Roster extends React.Component<RosterProps, RosterState> {
       return null
     }
 
-    return <div className={this.classNames()}>
-               {/* Roster today: {this.props.currentDate.toString()}
-               start: {this.state.startDate.toString()}
-               end: {this.state.endDate.toString()}
-               rows: {rows.length} */}
-               {this.rows()}
-           </div>
+    return (
+      <div className={this.classNames()}>
+          {/* Roster today: {this.props.currentDate.toString()}
+          start: {this.state.startDate.toString()}
+          end: {this.state.endDate.toString()}
+          rows: {rows.length} */}
+          {this.rows()}
+      </div>
+    )
   }
 
   classNames(): string {
@@ -53,30 +55,45 @@ export class Roster extends React.Component<RosterProps, RosterState> {
                                   .sort((a, b) => a.date.valueOf() - b.date.valueOf())
     let date = this.state.startDate
     let i = 0;
+
     while(date < this.state.endDate) {
       if(Util.isFirstDayOfMonth(date) || !rows.length) {
-        rows.push(<HeaderRow showPrev={!rows.length}
-                             showNext={false}
-                             loadPrevPeriod={this.loadPrevPeriod.bind(this)}
-                             loadNextPeriod={this.loadNextPeriod.bind(this)}>
-                    {Util.monthYearString(date)}
-                  </HeaderRow>)
+        rows.push(
+          <HeaderRow showPrev={!rows.length}
+                     showNext={false}
+                     loadPrevPeriod={this.loadPrevPeriod.bind(this)}
+                     loadNextPeriod={this.loadNextPeriod.bind(this)}>
+            {Util.monthYearString(date)}
+          </HeaderRow>
+        )
       }
 
       if(shifts.length > i && Util.datesEqual(shifts[i].date, date)) {
-        rows.push(<ShiftRow date={date} vols={shifts[i].volunteers} />)
+        rows.push(
+          <ShiftRow date={date}
+                    vols={shifts[i].volunteers}
+                    currentDate={this.props.currentDate}
+                    currentVol={this.props.currentVol} />
+        )
         i++
       } else {
-        rows.push(<ShiftRow date={date} vols={[]} />)
+        rows.push(
+          <ShiftRow date={date}
+                    vols={[]}
+                    currentDate={this.props.currentDate}
+                    currentVol={this.props.currentVol} />
+        )
       }
 
       date = Util.addDays(date, 1)
     }
-    rows.push(<HeaderRow showPrev={false}
-                         showNext={true}
-                         loadPrevPeriod={this.loadPrevPeriod.bind(this)}
-                         loadNextPeriod={this.loadNextPeriod.bind(this)} >
-              </HeaderRow>)
+    rows.push(
+      <HeaderRow showPrev={false}
+                 showNext={true}
+                 loadPrevPeriod={this.loadPrevPeriod.bind(this)}
+                 loadNextPeriod={this.loadNextPeriod.bind(this)} >
+      </HeaderRow>
+    )
     return rows
   }
 
