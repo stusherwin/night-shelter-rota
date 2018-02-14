@@ -1,12 +1,25 @@
-import { Vol, OvernightPreference, OvernightGenderPreference } from './Types'
+import { Vol, OvernightPreference, OvernightGenderPreference, Shift, VolShift, ShiftType } from './Types'
 
-export type Volunteer = { vId: number
-                        , vName: string
-                        , vIntro: string
-                        , vOvernightPreference: string
-                        , vOvernightGenderPreference: string
-                        , vNotes: string
-                        }
+type ApiVolunteer = { vId: number
+                    , vName: string
+                    , vIntro: string
+                    , vOvernightPreference: string
+                    , vOvernightGenderPreference: string
+                    , vNotes: string
+                    }
+
+type ApiShiftDate = { year: number
+                    , month: number
+                    , day: number
+                    }
+
+type ApiVolunteerShift = { vsVolunteer: ApiVolunteer
+                         , vsShiftType: string
+                         }
+
+type ApiShift = { sDate: ApiShiftDate
+                , sVolunteers: ApiVolunteerShift[]
+                }
 
 export class ApiError {
   constructor(error: string, message: string) {
@@ -30,29 +43,70 @@ export class ServerApi {
         }
         return res.json()
       })
-      .then(res => Promise.resolve((res as Volunteer[]).map(v => ({
-        id: v.vId,
-        name: v.vName,
-        intro: v.vIntro,
-        overnightPreference: constrainOvernightPreference(v.vOvernightPreference),
-        overnightGenderPreference: constrainOvernightGenderPreference(v.vOvernightGenderPreference),
-        notes: v.vNotes
+      .then(res => Promise.resolve((res as ApiVolunteer[]).map(toVol)))
+  }
+
+  static shifts(): Promise<Shift[]> {
+    return fetch('/api/shifts')
+      .then(res => {
+        if(!res.ok) {
+          return res.text().then(txt => { throw new ApiError(`${res.statusText} (${res.status})`, txt) })
+        }
+        let contentType = res.headers.get('content-type')
+        if (contentType == null || !contentType.includes('application/json')) {
+          throw new ApiError('Invalid server response', 'Expected response to have content-type application/json.');
+        }
+        return res.json()
+      })
+      .then(res => Promise.resolve((res as ApiShift[]).map(s => ({
+        date: toDate(s.sDate),
+        volunteers: s.sVolunteers.map(toVolShift)
       }))))
+  }
+}
+
+function toDate(date: ApiShiftDate): Date {
+  return new Date(date.year, date.month - 1, date.day)
+}
+
+function toVolShift(vs: ApiVolunteerShift): VolShift {
+  return {
+    volunteer: toVol(vs.vsVolunteer),
+    shiftType: constrainShiftType(vs.vsShiftType)
+  }
+}
+
+function toVol(v: ApiVolunteer): Vol {
+  return {
+    id: v.vId,
+    name: v.vName,
+    intro: v.vIntro,
+    overnightPreference: constrainOvernightPreference(v.vOvernightPreference),
+    overnightGenderPreference: constrainOvernightGenderPreference(v.vOvernightGenderPreference),
+    notes: v.vNotes
   }
 }
 
 function constrainOvernightPreference(pref: string): OvernightPreference {
   switch(pref) {
-    case '1': return '1';
-    case '2': return '2';
+    case 'PreferToBeAlone': return 'PreferToBeAlone';
+    case 'PreferAnotherVolunteer': return 'PreferAnotherVolunteer';
     default: return null;
   }
 }
 
 function constrainOvernightGenderPreference(pref: string): OvernightGenderPreference {
   switch(pref) {
-    case 'M': return 'M';
-    case 'F': return 'F';
+    case 'Male': return 'Male';
+    case 'Female': return 'Female';
     default: return null;
+  }
+}
+
+function constrainShiftType(shiftType: string): ShiftType {
+  switch(shiftType) {
+    case 'Overnight': return 'Overnight';
+    case 'Evening': 
+    default: return 'Evening';
   }
 }

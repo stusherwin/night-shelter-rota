@@ -6,15 +6,18 @@ export type Vol = { id: number
                   , notes: string
                   }
 
-export type OvernightPreference = '1' | '2' | null
-export type OvernightGenderPreference = 'M' | 'F' | null
-// type VolShift = { volunteer :: Vol
-//                 , shiftType :: ShiftType
-//                 }
+export type OvernightPreference = 'PreferToBeAlone' | 'PreferAnotherVolunteer' | null
+export type OvernightGenderPreference = 'Male' | 'Female' | null
+export type ShiftType = 'Overnight'
+                      | 'Evening'
 
-// type Shift = { date :: Date
-//              , volunteers :: List VolShift
-//              }
+export type VolShift = { volunteer: Vol
+                       , shiftType: ShiftType
+                       }
+
+export type Shift = { date: Date
+                    , volunteers: VolShift[]
+                    }
 
 // data OvernightPreference =
 //     PreferToBeAlone
@@ -28,9 +31,6 @@ export type OvernightGenderPreference = 'M' | 'F' | null
 
 // derive instance eqOvernightGenderPreference :: Eq OvernightGenderPreference
 
-// data ShiftType =
-//     Overnight
-//   | Evening
 
 // derive instance eqShiftType :: Eq ShiftType
 

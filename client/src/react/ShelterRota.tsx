@@ -24,12 +24,13 @@ export class ShelterRota extends React.Component<ShelterRotaProps, ShelterRotaSt
                  , roster: { visible: false
                            , currentVol: null
                            , currentDate: new Date(Date.now())
+                           , shifts: []
                            }
                  }
   }
 
   componentDidMount() {
-    Promise.all([ServerApi.vols()])
+    Promise.all([ServerApi.vols(), ServerApi.shifts()])
       .then(results => {
         console.log(results);
         this.setState({ header: Object.assign(this.state.header,
@@ -39,6 +40,7 @@ export class ShelterRota extends React.Component<ShelterRotaProps, ShelterRotaSt
                           })
                       , roster: Object.assign(this.state.roster,
                           { visible: true
+                          , shifts: results[1]
                           })
                       })
       })
