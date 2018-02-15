@@ -24,7 +24,10 @@ export class ShelterRota extends React.Component<ShelterRotaProps, ShelterRotaSt
                            }
                  , roster: { visible: false
                            , currentVol: null
-                           , currentDate: Util.today()
+                           , config: { maxVolsPerShift: 2
+                                     , currentDate: Util.today()
+                                     , urgentPeriodDays: 14
+                             }
                            , shifts: []
                            }
                  }

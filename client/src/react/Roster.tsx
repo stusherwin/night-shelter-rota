@@ -3,11 +3,12 @@ import { Vol, Shift, VolShift } from './Types'
 import { Util } from './Util'
 import { HeaderRow, HeaderRowProps } from './HeaderRow'
 import { ShiftRow, ShiftRowProps } from './ShiftRow'
+import { ShiftRuleConfig } from './ShiftRules'
 
 export interface RosterProps { visible: boolean
                              , currentVol: Vol | null
                              , shifts: Shift[]
-                             , currentDate: Date
+                             , config: ShiftRuleConfig
                              }
 
 export interface RosterState { startDate: Date
@@ -19,7 +20,7 @@ const SHIFT_COUNT = 28
 export class Roster extends React.Component<RosterProps, RosterState> {
   constructor(props: RosterProps) {
     super(props)
-    let startDate = Util.previousWeekday(props.currentDate, 1)
+    let startDate = Util.previousWeekday(props.config.currentDate, 1)
     this.state = { startDate: startDate
                  , endDate: Util.addDays(startDate, SHIFT_COUNT)
                  }
@@ -72,7 +73,7 @@ export class Roster extends React.Component<RosterProps, RosterState> {
         rows.push(
           <ShiftRow date={date}
                     vols={shifts[i].volunteers}
-                    currentDate={this.props.currentDate}
+                    config={this.props.config}
                     currentVol={this.props.currentVol} />
         )
         i++
@@ -80,7 +81,7 @@ export class Roster extends React.Component<RosterProps, RosterState> {
         rows.push(
           <ShiftRow date={date}
                     vols={[]}
-                    currentDate={this.props.currentDate}
+                    config={this.props.config}
                     currentVol={this.props.currentVol} />
         )
       }

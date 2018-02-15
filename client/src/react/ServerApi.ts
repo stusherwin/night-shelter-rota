@@ -3,8 +3,8 @@ import { Vol, OvernightPreference, OvernightGenderPreference, Shift, VolShift, S
 type ApiVolunteer = { vId: number
                     , vName: string
                     , vIntro: string
-                    , vOvernightPreference: string
-                    , vOvernightGenderPreference: string
+                    , vOvernightPreference: string | null
+                    , vOvernightGenderPreference: string | null
                     , vNotes: string
                     }
 
@@ -87,7 +87,7 @@ function toVol(v: ApiVolunteer): Vol {
   }
 }
 
-function constrainOvernightPreference(pref: string): OvernightPreference {
+function constrainOvernightPreference(pref: string | null): OvernightPreference | null {
   switch(pref) {
     case 'PreferToBeAlone': return 'PreferToBeAlone';
     case 'PreferAnotherVolunteer': return 'PreferAnotherVolunteer';
@@ -95,7 +95,7 @@ function constrainOvernightPreference(pref: string): OvernightPreference {
   }
 }
 
-function constrainOvernightGenderPreference(pref: string): OvernightGenderPreference {
+function constrainOvernightGenderPreference(pref: string | null): OvernightGenderPreference | null {
   switch(pref) {
     case 'Male': return 'Male';
     case 'Female': return 'Female';
@@ -106,7 +106,6 @@ function constrainOvernightGenderPreference(pref: string): OvernightGenderPrefer
 function constrainShiftType(shiftType: string): ShiftType {
   switch(shiftType) {
     case 'Overnight': return 'Overnight';
-    case 'Evening': 
     default: return 'Evening';
   }
 }

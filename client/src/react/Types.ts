@@ -1,13 +1,13 @@
 export type Vol = { id: number
                   , name: string
                   , intro: string
-                  , overnightPreference: OvernightPreference
-                  , overnightGenderPreference: OvernightGenderPreference
+                  , overnightPreference: OvernightPreference | null
+                  , overnightGenderPreference: OvernightGenderPreference | null
                   , notes: string
                   }
 
-export type OvernightPreference = 'PreferToBeAlone' | 'PreferAnotherVolunteer' | null
-export type OvernightGenderPreference = 'Male' | 'Female' | null
+export type OvernightPreference = 'PreferToBeAlone' | 'PreferAnotherVolunteer'
+export type OvernightGenderPreference = 'Male' | 'Female'
 export type ShiftType = 'Overnight'
                       | 'Evening'
 
@@ -44,20 +44,17 @@ export type Shift = { date: Date
 // otherShiftType :: ShiftType -> ShiftType
 // otherShiftType Evening   = Overnight
 // otherShiftType Overnight = Evening
+export interface PrefInfo {
+  marker: string
+  description: string
+}
 
-// overnightPrefMarker :: OvernightPreference -> String
-// overnightPrefMarker PreferToBeAlone = '1'
-// overnightPrefMarker PreferAnotherVolunteer = '2'
-
-// overnightPrefDescription :: OvernightPreference -> String
-// overnightPrefDescription PreferToBeAlone = 'I prefer to be on my own'
-// overnightPrefDescription PreferAnotherVolunteer = 'I prefer to work with another volunteer'
-
-// overnightGenderPrefMarker :: OvernightGenderPreference -> String
-// overnightGenderPrefMarker Male = 'M'
-// overnightGenderPrefMarker Female = 'F'
-
-// overnightGenderPrefDescription :: OvernightGenderPreference -> String
-// overnightGenderPrefDescription Male = 'Males only'
-// overnightGenderPrefDescription Female = 'Females only'
-// }
+export function info(pref: OvernightPreference | OvernightGenderPreference): PrefInfo {
+  switch(pref) {
+    case 'PreferToBeAlone':        return { marker: '1', description: 'I prefer to be on my own' }
+    case 'PreferAnotherVolunteer': return { marker: '2', description: 'I prefer to work with another volunteer' }
+    case 'Male':                   return { marker: 'M', description: 'Males only' }
+    case 'Female':
+    default:                       return { marker: 'F', description: 'Females only' }
+  }
+}
