@@ -1,5 +1,5 @@
 import * as React from 'react';
-import { Vol, Shift, VolShift } from './Types'
+import { Vol, Shift, VolShift, ShiftType } from './Types'
 import { Util } from './Util'
 import { HeaderRow, HeaderRowProps } from './HeaderRow'
 import { ShiftRow, ShiftRowProps } from './ShiftRow'
@@ -9,6 +9,8 @@ export interface RosterProps { visible: boolean
                              , currentVol: Vol | null
                              , shifts: Shift[]
                              , config: ShiftRuleConfig
+                             , addCurrentVol: (shiftDate: Date, shiftType: ShiftType) => void
+                             , removeCurrentVol: (shiftDate: Date) => void
                              }
 
 export interface RosterState { startDate: Date
@@ -69,20 +71,19 @@ export class Roster extends React.Component<RosterProps, RosterState> {
         )
       }
 
+      let shift = {date: date, vols: [] as VolShift[]}
       if(shifts.length > i && Util.datesEqual(shifts[i].date, date)) {
-        rows.push(
-          <ShiftRow shift={shifts[i]}
-                    config={this.props.config}
-                    currentVol={this.props.currentVol} />
-        )
+        shift = shifts[i]
         i++
-      } else {
-        rows.push(
-          <ShiftRow shift={{date: date, vols: []}}
-                    config={this.props.config}
-                    currentVol={this.props.currentVol} />
-        )
-      }
+      }        
+
+      rows.push(
+        <ShiftRow shift={shift}
+                  config={this.props.config}
+                  currentVol={this.props.currentVol}
+                  addCurrentVol={this.props.addCurrentVol}
+                  removeCurrentVol={this.props.removeCurrentVol} />
+      )
 
       date = Util.addDays(date, 1)
     }

@@ -6,7 +6,7 @@ export type ShiftRuleConfig = { currentDate: Date
                               }
 export type ShiftRuleResultType = 'Error' | 'Warning' | 'Info' | 'Neutral'
 export type ShiftRuleResult = { type: ShiftRuleResultType
-                              , message: string
+                              , message: string | null
                               }
 
 export class ShiftRules {

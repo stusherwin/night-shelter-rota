@@ -1,18 +1,20 @@
 import * as React from 'react';
 import { Vol, Shift, VolShift, ShiftType, info } from './Types'
 import { Util } from './Util'
-import { ShiftRules, ShiftRuleConfig, ShiftRuleResultType } from './ShiftRules'
+import { ShiftRules, ShiftRuleConfig, ShiftRuleResult, ShiftRuleResultType } from './ShiftRules'
 
 export interface ShiftRowProps { shift: Shift
                                , currentVol: Vol | null
                                , config: ShiftRuleConfig
+                               , addCurrentVol: (shiftDate: Date, shiftType: ShiftType) => void
+                               , removeCurrentVol: (shiftDate: Date) => void
                                }
 
 export interface CurrentVolSignedUpState { shiftType: string | null
                                          }
 
 export interface ShiftRowState { loading: boolean
-                               , status: ShiftRuleResultType
+                               , ruleResult: ShiftRuleResult
                                , currentVolSignedUp: CurrentVolSignedUpState | null
                                }
 
@@ -23,7 +25,7 @@ export class ShiftRow extends React.Component<ShiftRowProps, ShiftRowState> {
     let results = ShiftRules.validateShift(props.shift, props.config)
     
     this.state = { loading: false
-                 , status: results[0].type
+                 , ruleResult: results[0]
                  , currentVolSignedUp: null
                  }
   }
@@ -32,21 +34,15 @@ export class ShiftRow extends React.Component<ShiftRowProps, ShiftRowState> {
     return (
       <div className={this.classNames()}
            id={`shift-row-${this.props.shift.date}`}>
-         <div className="shift-info"> {/*hasMessage state.status */}
-              {/* , RP.onClick \e -> do
-                     _ <- R.preventDefault e
-                     _ <- dispatch $ MessageBubbleAction ToggleFixed
-                     R.stopPropagation e
-                  , RP.onMouseOver $ const $ dispatch $ MessageBubbleAction ShowTransitory
-                  , RP.onMouseOut $ const $ dispatch $ MessageBubbleAction HideTransitory */}
-             <ShiftDate date={this.props.shift.date} />
-             <ShiftStatus noOfVols={this.props.shift.vols.length}
-                          status={this.state.status}
-                          date={this.props.shift.date}
-                          config={this.props.config} />
-             <CurrentVolSignUp />
-             <VolMarkers vols={this.props.shift.vols} />
-         </div>
+         <ShiftInfo shift={this.props.shift}
+                    config={this.props.config}
+                    ruleResult={this.state.ruleResult} />
+         <CurrentVolSignUp shift={this.props.shift}
+                           currentVol={this.props.currentVol}
+                           loading={this.state.loading}
+                           addCurrentVol={this.props.addCurrentVol}
+                           removeCurrentVol={this.props.removeCurrentVol} />
+         <VolMarkers vols={this.props.shift.vols} />
       </div>
     )
   }
@@ -75,11 +71,44 @@ export class ShiftRow extends React.Component<ShiftRowProps, ShiftRowState> {
         classNames.push('today')
       }
     
-      if(this.state.status == 'Error') {
+      if(this.state.ruleResult.type == 'Error') {
         classNames.push('negative1')
-      } else if(this.state.status == 'Warning') {
+      } else if(this.state.ruleResult.type == 'Warning') {
         classNames.push('warning1')
       }
+    }
+
+    return classNames.join(' ')
+  }
+}
+
+export class ShiftInfo extends React.Component<{ shift: Shift
+                                               , config: ShiftRuleConfig
+                                               , ruleResult: ShiftRuleResult
+                                               }, {}> {
+  render() {
+    return (
+      <div className={this.classNames()}>
+            {/* , RP.onClick \e -> do
+                   _ <- R.preventDefault e
+                   _ <- dispatch $ MessageBubbleAction ToggleFixed
+                   R.stopPropagation e
+                , RP.onMouseOver $ const $ dispatch $ MessageBubbleAction ShowTransitory
+                , RP.onMouseOut $ const $ dispatch $ MessageBubbleAction HideTransitory */}
+           <ShiftDate date={this.props.shift.date} />
+           <ShiftStatus noOfVols={this.props.shift.vols.length}
+                        ruleResult={this.props.ruleResult}
+                        date={this.props.shift.date}
+                        config={this.props.config} />
+         </div>
+    )
+  }
+
+  classNames(): string {
+    let classNames = ['shift-info']
+
+    if(this.props.ruleResult.message) {
+      classNames.push('has-message')
     }
 
     return classNames.join(' ')
@@ -105,7 +134,11 @@ function ShiftDate(props: {date: Date}): JSX.Element {
   )
 }
 
-function ShiftStatus(props: {date: Date, noOfVols: number, status: ShiftRuleResultType, config: ShiftRuleConfig}): JSX.Element {
+function ShiftStatus(props: { date: Date
+                            , noOfVols: number
+                            , ruleResult: ShiftRuleResult
+                            , config: ShiftRuleConfig
+                            }): JSX.Element {
   return (
     <div className="row-item shift-status">
       <div className="shift-status-part shift-status-vol-count collapsing">
@@ -118,26 +151,21 @@ function ShiftStatus(props: {date: Date, noOfVols: number, status: ShiftRuleResu
   )
 }
 
-function ShiftStatusIcon(props: {date: Date, status: ShiftRuleResultType, config: ShiftRuleConfig}): JSX.Element | null {
+function ShiftStatusIcon(props: { date: Date
+                                , ruleResult: ShiftRuleResult
+                                , config: ShiftRuleConfig
+                                }): JSX.Element | null {
   if(props.date < props.config.currentDate) {
     return <i className="icon-clock"></i>
   }
 
-  switch(props.status) {
+  switch(props.ruleResult.type) {
     case 'Error':   return <i className="icon-warning"></i>
     case 'Warning': return <i className="icon-info"></i>
     case 'Info':    return <i className="icon-info"></i>
   }
 
   return null
-}
-
-function CurrentVolSignUp(props: {}): JSX.Element {
-  return (
-    <div className="row-item current-vol collapsing right aligned">
-                    {/* $ renderCurrentVol state.currentVol */}
-    </div>
-  )
 }
 
 function VolMarkers(props: {vols: VolShift[]}): JSX.Element {
@@ -187,4 +215,63 @@ function ShiftTypeIcon(props: {shiftType: ShiftType}): JSX.Element {
     default:
       return <i className="vol-icon icon-bed"></i>
   }
+}
+
+function CurrentVolSignUp(props: { shift: Shift
+                                 , currentVol: Vol | null
+                                 , loading: boolean
+                                 , addCurrentVol: (shiftDate: Date, shiftType: ShiftType) => void
+                                 , removeCurrentVol: (shiftDate: Date) => void
+                                 }): JSX.Element {
+  if(props.currentVol == null) {
+    return (
+      <div className="row-item current-vol collapsing right aligned">
+      </div>
+    )
+  }
+
+  return (
+    <div className="row-item current-vol collapsing right aligned">
+      <CurrentVolSelected shift={props.shift} currentVol={props.currentVol} loading={props.loading} addCurrentVol={props.addCurrentVol} removeCurrentVol={props.removeCurrentVol} />
+      <CurrentVolShiftType shift={props.shift} currentVol={props.currentVol} loading={props.loading} />
+    </div>
+  )
+}
+
+function CurrentVolSelected(props: { shift: Shift
+                                   , currentVol: Vol
+                                   , loading: boolean
+                                   , addCurrentVol: (shiftDate: Date, shiftType: ShiftType) => void
+                                   , removeCurrentVol: (shiftDate: Date) => void
+                                   }): JSX.Element | null {
+  if(props.loading) {
+    return <i className="icon-spin animate-spin loading"></i>
+  }
+
+  let checked = false
+  let onChange = () => props.addCurrentVol(props.shift.date, 'Overnight')
+  let disabled = props.loading
+ 
+  if(props.currentVol && props.shift.vols.find(s => s.volunteer.id == props.currentVol.id)) {
+    checked = true
+    onChange = () => props.removeCurrentVol(props.shift.date)
+    disabled = disabled /* || ShiftRules.canAddVolunteer(shift, )
+    , canAddOvernight: canAddVolunteer config { shiftType: Overnight, volunteer: cv} shift
+                       , canAddEvening: canAddVolunteer config { shiftType: Evening, volunteer: cv} shift
+                       */
+  }
+
+  return (
+    <span className="current-vol-selected ui fitted checkbox">
+      <input type="checkbox"
+             checked={checked}
+             disabled={disabled}
+             onChange={e => {onChange();}} />
+      <label></label>
+    </span>
+  )
+}
+
+function CurrentVolShiftType(props: {shift: Shift, currentVol: Vol | null, loading: boolean}): JSX.Element | null {
+  return null
 }
