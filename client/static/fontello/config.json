@@ -165,6 +165,18 @@
       "src": "fontawesome"
     },
     {
+      "uid": "1bafeeb1808a5fe24484c7890096901a",
+      "css": "user-plus",
+      "code": 62004,
+      "src": "fontawesome"
+    },
+    {
+      "uid": "8b80d36d4ef43889db10bc1f0dc9a862",
+      "css": "user",
+      "code": 59403,
+      "src": "fontawesome"
+    },
+    {
       "uid": "99c58e3837b383dd5375924289db1801",
       "css": "no-bed",
       "code": 59399,

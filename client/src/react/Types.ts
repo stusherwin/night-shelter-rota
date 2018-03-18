@@ -16,7 +16,7 @@ export type VolShift = { volunteer: Vol
                        }
 
 export type Shift = { date: Date
-                    , volunteers: VolShift[]
+                    , vols: VolShift[]
                     }
 
 // data OvernightPreference =

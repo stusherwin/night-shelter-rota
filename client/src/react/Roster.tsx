@@ -71,16 +71,14 @@ export class Roster extends React.Component<RosterProps, RosterState> {
 
       if(shifts.length > i && Util.datesEqual(shifts[i].date, date)) {
         rows.push(
-          <ShiftRow date={date}
-                    vols={shifts[i].volunteers}
+          <ShiftRow shift={shifts[i]}
                     config={this.props.config}
                     currentVol={this.props.currentVol} />
         )
         i++
       } else {
         rows.push(
-          <ShiftRow date={date}
-                    vols={[]}
+          <ShiftRow shift={{date: date, vols: []}}
                     config={this.props.config}
                     currentVol={this.props.currentVol} />
         )

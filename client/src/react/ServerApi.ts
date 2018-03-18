@@ -60,7 +60,7 @@ export class ServerApi {
       })
       .then(res => Promise.resolve((res as ApiShift[]).map(s => ({
         date: toDate(s.sDate),
-        volunteers: s.sVolunteers.map(toVolShift)
+        vols: s.sVolunteers.map(toVolShift)
       }))))
   }
 }
