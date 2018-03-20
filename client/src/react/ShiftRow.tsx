@@ -3,18 +3,20 @@ import { Vol, Shift, VolShift, ShiftType, info } from './Types'
 import { Util } from './Util'
 import { ShiftRules, ShiftRuleConfig, ShiftRuleResult, ShiftRuleResultType } from './ShiftRules'
 
-export interface ShiftRowProps { shift: Shift
+export interface ShiftRowProps { date: Date
+                               , vols: VolShift[]
+                               , loading: boolean
                                , currentVol: Vol | null
                                , config: ShiftRuleConfig
                                , addCurrentVol: (shiftDate: Date, shiftType: ShiftType) => void
                                , removeCurrentVol: (shiftDate: Date) => void
+                               , changeCurrentVolShiftType: (date: Date, shiftType: ShiftType) => void
                                }
 
 export interface CurrentVolSignedUpState { shiftType: string | null
                                          }
 
-export interface ShiftRowState { loading: boolean
-                               , ruleResult: ShiftRuleResult
+export interface ShiftRowState { ruleResult: ShiftRuleResult
                                , currentVolSignedUp: CurrentVolSignedUpState | null
                                }
 
@@ -22,10 +24,9 @@ export class ShiftRow extends React.Component<ShiftRowProps, ShiftRowState> {
   constructor(props: ShiftRowProps) {
     super(props)
     
-    let results = ShiftRules.validateShift(props.shift, props.config)
+    let results = ShiftRules.validateShift(props.date, props.vols, props.config)
     
-    this.state = { loading: false
-                 , ruleResult: results[0]
+    this.state = { ruleResult: results[0]
                  , currentVolSignedUp: null
                  }
   }
@@ -33,16 +34,19 @@ export class ShiftRow extends React.Component<ShiftRowProps, ShiftRowState> {
   render() {
     return (
       <div className={this.classNames()}
-           id={`shift-row-${this.props.shift.date}`}>
-         <ShiftInfo shift={this.props.shift}
+           id={`shift-row-${this.props.date}`}>
+         <ShiftInfo date={this.props.date}
+                    vols={this.props.vols}
                     config={this.props.config}
                     ruleResult={this.state.ruleResult} />
-         <CurrentVolSignUp shift={this.props.shift}
+         <CurrentVolSignUp date={this.props.date}
+                           vols={this.props.vols}
                            currentVol={this.props.currentVol}
-                           loading={this.state.loading}
-                           addCurrentVol={this.props.addCurrentVol}
-                           removeCurrentVol={this.props.removeCurrentVol} />
-         <VolMarkers vols={this.props.shift.vols} />
+                           loading={this.props.loading}
+                           addCurrentVol={this.addCurrentVol.bind(this)}
+                           removeCurrentVol={this.removeCurrentVol.bind(this)}
+                           changeCurrentVolShiftType={this.changeCurrentVolShiftType.bind(this)} />
+         <VolMarkers vols={this.props.vols} />
       </div>
     )
   }
@@ -50,24 +54,24 @@ export class ShiftRow extends React.Component<ShiftRowProps, ShiftRowState> {
   classNames() {
     let classNames = ['row shift-row']
 
-    if(!this.state.loading && this.state.currentVolSignedUp != null && this.state.currentVolSignedUp.shiftType == null) {
+    if(!this.props.loading && this.state.currentVolSignedUp != null && this.state.currentVolSignedUp.shiftType == null) {
       classNames.push('clickable')
     }
 
-    if(Util.isWeekend(this.props.shift.date)) {
+    if(Util.isWeekend(this.props.date)) {
       classNames.push('weekend')
     }
 
-    if(this.state.loading) {
+    if(this.props.loading) {
       classNames.push('loading')
     }
 
-    if(this.props.shift.date < this.props.config.currentDate) {
-      console.log(this.props.shift.date)
-      console.log(this.props.config.currentDate)
+    if(this.props.date < this.props.config.currentDate) {
+      // console.log(this.props.date)
+      // console.log(this.props.config.currentDate)
       classNames.push('past')
     } else {
-      if(Util.datesEqual(this.props.shift.date, this.props.config.currentDate)) {
+      if(Util.datesEqual(this.props.date, this.props.config.currentDate)) {
         classNames.push('today')
       }
     
@@ -80,9 +84,22 @@ export class ShiftRow extends React.Component<ShiftRowProps, ShiftRowState> {
 
     return classNames.join(' ')
   }
+
+  addCurrentVol(shiftType: ShiftType) {
+    this.props.addCurrentVol(this.props.date, shiftType)
+  }
+
+  removeCurrentVol() {
+    this.props.removeCurrentVol(this.props.date)
+  }
+
+  changeCurrentVolShiftType(shiftType: ShiftType) {
+    this.props.changeCurrentVolShiftType(this.props.date, shiftType)
+  }
 }
 
-export class ShiftInfo extends React.Component<{ shift: Shift
+export class ShiftInfo extends React.Component<{ date: Date
+                                               , vols: VolShift[]
                                                , config: ShiftRuleConfig
                                                , ruleResult: ShiftRuleResult
                                                }, {}> {
@@ -95,10 +112,10 @@ export class ShiftInfo extends React.Component<{ shift: Shift
                    R.stopPropagation e
                 , RP.onMouseOver $ const $ dispatch $ MessageBubbleAction ShowTransitory
                 , RP.onMouseOut $ const $ dispatch $ MessageBubbleAction HideTransitory */}
-           <ShiftDate date={this.props.shift.date} />
-           <ShiftStatus noOfVols={this.props.shift.vols.length}
+           <ShiftDate date={this.props.date} />
+           <ShiftStatus noOfVols={this.props.vols.length}
                         ruleResult={this.props.ruleResult}
-                        date={this.props.shift.date}
+                        date={this.props.date}
                         config={this.props.config} />
          </div>
     )
@@ -217,11 +234,13 @@ function ShiftTypeIcon(props: {shiftType: ShiftType}): JSX.Element {
   }
 }
 
-function CurrentVolSignUp(props: { shift: Shift
+function CurrentVolSignUp(props: { date: Date
+                                 , vols: VolShift[]
                                  , currentVol: Vol | null
                                  , loading: boolean
-                                 , addCurrentVol: (shiftDate: Date, shiftType: ShiftType) => void
-                                 , removeCurrentVol: (shiftDate: Date) => void
+                                 , addCurrentVol: (shiftType: ShiftType) => void
+                                 , removeCurrentVol: () => void
+                                 , changeCurrentVolShiftType: (shiftType: ShiftType) => void
                                  }): JSX.Element {
   if(props.currentVol == null) {
     return (
@@ -232,29 +251,37 @@ function CurrentVolSignUp(props: { shift: Shift
 
   return (
     <div className="row-item current-vol collapsing right aligned">
-      <CurrentVolSelected shift={props.shift} currentVol={props.currentVol} loading={props.loading} addCurrentVol={props.addCurrentVol} removeCurrentVol={props.removeCurrentVol} />
-      <CurrentVolShiftType shift={props.shift} currentVol={props.currentVol} loading={props.loading} />
+      <CurrentVolSelected vols={props.vols}
+                          currentVol={props.currentVol}
+                          loading={props.loading}
+                          addCurrentVol={props.addCurrentVol}
+                          removeCurrentVol={props.removeCurrentVol} />
+      <CurrentVolShiftType date={props.date}
+                           vols={props.vols}
+                           currentVol={props.currentVol}
+                           loading={props.loading}
+                           changeCurrentVolShiftType={props.changeCurrentVolShiftType} />
     </div>
   )
 }
 
-function CurrentVolSelected(props: { shift: Shift
+function CurrentVolSelected(props: { vols: VolShift[]
                                    , currentVol: Vol
                                    , loading: boolean
-                                   , addCurrentVol: (shiftDate: Date, shiftType: ShiftType) => void
-                                   , removeCurrentVol: (shiftDate: Date) => void
+                                   , addCurrentVol: (shiftType: ShiftType) => void
+                                   , removeCurrentVol: () => void
                                    }): JSX.Element | null {
   if(props.loading) {
     return <i className="icon-spin animate-spin loading"></i>
   }
 
   let checked = false
-  let onChange = () => props.addCurrentVol(props.shift.date, 'Overnight')
+  let onChange = () => props.addCurrentVol('Overnight')
   let disabled = props.loading
  
-  if(props.currentVol && props.shift.vols.find(s => s.volunteer.id == props.currentVol.id)) {
+  if(props.currentVol && props.vols.find(s => s.volunteer.id == props.currentVol.id)) {
     checked = true
-    onChange = () => props.removeCurrentVol(props.shift.date)
+    onChange = () => props.removeCurrentVol()
     disabled = disabled /* || ShiftRules.canAddVolunteer(shift, )
     , canAddOvernight: canAddVolunteer config { shiftType: Overnight, volunteer: cv} shift
                        , canAddEvening: canAddVolunteer config { shiftType: Evening, volunteer: cv} shift
@@ -266,12 +293,84 @@ function CurrentVolSelected(props: { shift: Shift
       <input type="checkbox"
              checked={checked}
              disabled={disabled}
-             onChange={e => {onChange();}} />
+             onClick={e => {e.stopPropagation()}}
+             onChange={e => {e.preventDefault(); onChange(); e.stopPropagation()}} />
       <label></label>
     </span>
   )
 }
 
-function CurrentVolShiftType(props: {shift: Shift, currentVol: Vol | null, loading: boolean}): JSX.Element | null {
-  return null
+function CurrentVolShiftType(props: { date: Date
+                                    , vols: VolShift[]
+                                    , currentVol: Vol | null
+                                    , loading: boolean
+                                    , changeCurrentVolShiftType: (shiftType: ShiftType) => void
+                                    }): JSX.Element | null {
+  if(!props.currentVol) {
+    return null
+  }
+  
+  let currentVolId = props.currentVol.id
+  let volShift = props.vols.find(s => s.volunteer.id == currentVolId)
+  
+  if(!volShift) {
+    return null
+  }
+
+  let st = volShift.shiftType
+  
+  return (
+    <span>
+      <span className="current-vol-shift-type radio media-large-screen media-larger-screen">
+        <ShiftTypeRadio shiftType="Overnight"
+                        currentShiftType={st}
+                        date={props.date}
+                        changeCurrentVolShiftType={props.changeCurrentVolShiftType} />
+        <ShiftTypeRadio shiftType="Evening"
+                        currentShiftType={st}
+                        date={props.date}
+                        changeCurrentVolShiftType={props.changeCurrentVolShiftType} />
+      </span>
+      <span className="current-vol-shift-type toggle media-medium-screen media-small-screen">
+        <div className="ui toggle checkbox">
+          <input tabIndex={0}
+                 className="hidden"
+                 type="checkbox"
+                 id={`shift-type-${Util.toDateString(props.date)}`}
+                 checked={st == 'Overnight'} />
+                                        {/* , RP.onClick R.stopPropagation
+                                        , RP.onChange \e -> do
+                                            _ <- R.preventDefault e
+                                            _ <- dispatch $ ChangeCurrentVolShiftType state.date $ otherShiftType st
+                                            R.stopPropagation e */}
+          <label htmlFor={`shift-type-${Util.toDateString(props.date)}`}></label>
+          <span className="current-vol-shift-type-toggle-description">
+            {st}
+          </span>
+        </div>
+      </span>
+    </span>
+  )
+}
+
+function ShiftTypeRadio(props: { shiftType: ShiftType
+                               , currentShiftType: ShiftType
+                               , date: Date
+                               , changeCurrentVolShiftType: (shiftType: ShiftType) => void
+                               }): JSX.Element {
+  return (
+    <span className="current-vol-shift-type-option">
+      <input type="radio"
+             id={`shift-type-${Util.toDateString(props.date)}-${props.shiftType.toLowerCase()}`}
+             name={`shift-type-${Util.toDateString(props.date)}`}
+             checked={props.currentShiftType == props.shiftType}
+             onClick={e => {e.stopPropagation()}}
+             onChange={e => {e.preventDefault(); props.changeCurrentVolShiftType(props.shiftType); e.stopPropagation()}} />
+      <label className="action-label"
+             htmlFor={`shift-type-${Util.toDateString(props.date)}-${props.shiftType.toLowerCase()}`}>
+        <ShiftTypeIcon shiftType={props.shiftType} />
+        {props.shiftType}
+      </label>
+    </span>
+  )
 }

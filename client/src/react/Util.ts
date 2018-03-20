@@ -2,6 +2,7 @@ import * as React from 'react';
 
 const MONTH_NAMES = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December']
 const WEEKDAY_NAMES = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday']
+
 export class Util {
   static addDays(date: Date, days: number): Date {
     let clone = new Date(date)
@@ -76,5 +77,9 @@ export class Util {
   static previousWeekday(date: Date, weekday: number): Date {
     let daysToSubtract = (date.getUTCDay() - weekday + 7) % 7
     return Util.addDays(date, -daysToSubtract)
+  }
+
+  static toDateString(date: Date): string {
+    return `${date.getFullYear()}-${date.getMonth()}-${date.getDate()}`
   }
 }

@@ -17,6 +17,7 @@ export type VolShift = { volunteer: Vol
 
 export type Shift = { date: Date
                     , vols: VolShift[]
+                    , loading: boolean
                     }
 
 // data OvernightPreference =
@@ -34,12 +35,12 @@ export type Shift = { date: Date
 
 // derive instance eqShiftType :: Eq ShiftType
 
-// type VolunteerDetails = { name :: String
-//                         , intro :: String
-//                         , pref :: Maybe OvernightPreference
-//                         , genderPref :: Maybe OvernightGenderPreference
-//                         , notes :: String
-//                         }
+export type VolDetails = { name: string
+                         , intro: string
+                         , pref: OvernightPreference | null
+                         , genderPref: OvernightGenderPreference | null
+                         , notes: string
+                         }
 
 // otherShiftType :: ShiftType -> ShiftType
 // otherShiftType Evening   = Overnight

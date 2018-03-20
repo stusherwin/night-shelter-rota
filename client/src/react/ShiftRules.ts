@@ -10,7 +10,7 @@ export type ShiftRuleResult = { type: ShiftRuleResultType
                               }
 
 export class ShiftRules {
-  static validateShift(shift: Shift, config: ShiftRuleConfig): ShiftRuleResult[] {
+  static validateShift(date: Date, vols: VolShift[], config: ShiftRuleConfig): ShiftRuleResult[] {
     return ([{ type: 'Error', message: 'There was error' }])
   }
 }

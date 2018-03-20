@@ -1,7 +1,7 @@
 import * as React from 'react';
 import { Header, HeaderProps } from './Header'
 import { Roster, RosterProps } from './Roster'
-import { Vol, ShiftType } from './Types'
+import { Vol, ShiftType, VolShift, Shift } from './Types'
 import { ServerApi, ApiError } from './ServerApi'
 import { MessageBubbleProps, MessageBubbleAction } from './MessageBubble'
 import { Util } from './Util'
@@ -31,12 +31,13 @@ export class ShelterRota extends React.Component<ShelterRotaProps, ShelterRotaSt
                            , shifts: []
                            , addCurrentVol: this.addCurrentVol.bind(this)
                            , removeCurrentVol: this.removeCurrentVol.bind(this)
+                           , changeCurrentVolShiftType: this.changeCurrentVolShiftType.bind(this)
                            }
                  }
   }
 
   componentDidMount() {
-    Promise.all([ServerApi.vols(), ServerApi.shifts()])
+    Promise.all([ServerApi.getVols(), ServerApi.getShifts()])
       .then(results => {
         console.log(results);
         this.setState({ header: Object.assign(this.state.header, { reqInProgress: false
@@ -85,10 +86,91 @@ export class ShelterRota extends React.Component<ShelterRotaProps, ShelterRotaSt
   }
 
   addCurrentVol(shiftDate: Date, shiftType: ShiftType) {
-    console.log('add current vol')
+    console.log('addCurrentVol')
+    
+    if(!this.state.roster.currentVol) {
+      return
+    }
+
+    this.setState({ header: Object.assign(this.state.header, { reqInProgress: true
+                                                             , error: null
+                                                             }),
+                    roster: Object.assign(this.state.roster, { shifts: this.setShiftLoading(shiftDate, this.state.roster.shifts)})
+                  })
+    ServerApi.putVolShift(shiftType, shiftDate, this.state.roster.currentVol.id)
+      .then(volShifts => {
+        this.setState({ header: Object.assign(this.state.header, { reqInProgress: false
+                                                                 }),
+                        roster: Object.assign(this.state.roster, { shifts: this.addOrUpdateShift(shiftDate, volShifts, this.state.roster.shifts)
+                                                                 })
+                      })
+      })
+      .catch(err => {
+        let apiError = err as ApiError
+        console.log(err)
+        this.setState({ header: Object.assign(this.state.header, { reqInProgress: false
+                                                                 , error: apiError
+                                                                 })
+                      })
+      })
   }
 
   removeCurrentVol(shiftDate: Date) {
-    console.log('remove current vol')
+    console.log('removeCurrentVol')
+    
+    if(!this.state.roster.currentVol) {
+      return
+    }
+
+    this.setState({ header: Object.assign(this.state.header, { reqInProgress: true
+                                                             , error: null
+                                                             }),
+                    roster: Object.assign(this.state.roster, { shifts: this.setShiftLoading(shiftDate, this.state.roster.shifts)})
+                  })
+    ServerApi.deleteVolShift(shiftDate, this.state.roster.currentVol.id)
+      .then(volShifts => {
+        this.setState({ header: Object.assign(this.state.header, { reqInProgress: false
+                                                                 }),
+                        roster: Object.assign(this.state.roster, { shifts: this.addOrUpdateShift(shiftDate, volShifts, this.state.roster.shifts)
+                                                                 })
+                      })
+      })
+      .catch(err => {
+        let apiError = err as ApiError
+        console.log(err)
+        this.setState({ header: Object.assign(this.state.header, { reqInProgress: false
+                                                                 , error: apiError
+                                                                 })
+                      })
+      })
+  }
+
+  changeCurrentVolShiftType(shiftDate: Date, shiftType: ShiftType) {
+    console.log('change current vol shift type')
+  }
+
+  setShiftLoading(date: Date, shifts: Shift[]): Shift[] {
+    let result = shifts.slice()
+    let shift = result.find(s => Util.datesEqual(s.date, date))
+
+    if(shift) {
+      shift.loading = true
+    }
+
+    return result
+  }
+
+  addOrUpdateShift(date: Date, vols: VolShift[], shifts: Shift[]): Shift[] {
+    let result = shifts.slice()
+    let shift = result.find(s => Util.datesEqual(s.date, date))
+
+    if(shift) {
+      shift.vols = vols
+      shift.loading = false
+    } else {
+      result.push({date: date, vols: vols, loading: false})
+    }
+
+    return result
   }
 }
