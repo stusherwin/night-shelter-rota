@@ -5,34 +5,33 @@ import { Vol, ShiftType, VolShift, Shift } from './Types'
 import { ServerApi, ApiError } from './ServerApi'
 import { MessageBubbleProps, MessageBubbleAction } from './MessageBubble'
 import { Util } from './Util'
+import { ShiftRuleConfig } from './ShiftRules'
 
 export interface ShelterRotaProps {}
-export interface ShelterRotaState { header: HeaderProps
-                                  , roster: RosterProps
+export interface ShelterRotaState { initialDataLoaded: boolean
+                                  , vols: Vol[]
+                                  , shifts: Shift[]
+                                  , currentVol: Vol | null
+                                  , config: ShiftRuleConfig
+                                  , rosterVisible: boolean
+                                  , reqInProgress: boolean
+                                  , error: ApiError | null
                                   }
 
 export class ShelterRota extends React.Component<ShelterRotaProps, ShelterRotaState> {
   constructor(props: ShelterRotaProps) {
     super(props)
-    this.state = { header: { vols: []
-                           , reqInProgress: true
-                           , error: null
-                           , initialDataLoaded: false
-                           , changeCurrentVol: this.changeCurrentVol.bind(this)
-                           , editNewVol: this.editNewVol.bind(this)
-                           , editCurrentVol: this.editCurrentVol.bind(this)
+    this.state = { initialDataLoaded: false
+                 , vols: []
+                 , shifts: []
+                 , currentVol: null
+                 , config: { maxVolsPerShift: 2
+                           , currentDate: Util.today()
+                           , urgentPeriodDays: 14
                            }
-                 , roster: { visible: false
-                           , currentVol: null
-                           , config: { maxVolsPerShift: 2
-                                     , currentDate: Util.today()
-                                     , urgentPeriodDays: 14
-                                     }
-                           , shifts: []
-                           , addCurrentVol: this.addCurrentVol.bind(this)
-                           , removeCurrentVol: this.removeCurrentVol.bind(this)
-                           , changeCurrentVolShiftType: this.changeCurrentVolShiftType.bind(this)
-                           }
+                 , rosterVisible: false
+                 , reqInProgress: true
+                 , error: null
                  }
   }
 
@@ -40,21 +39,18 @@ export class ShelterRota extends React.Component<ShelterRotaProps, ShelterRotaSt
     Promise.all([ServerApi.getVols(), ServerApi.getShifts()])
       .then(results => {
         console.log(results);
-        this.setState({ header: Object.assign(this.state.header, { reqInProgress: false
-                                                                 , vols: results[0]
-                                                                 , initialDataLoaded: true
-                                                                 })
-                      , roster: Object.assign(this.state.roster, { visible: true
-                                                                 , shifts: results[1]
-                                                                 })
+        this.setState({ reqInProgress: false
+                      , vols: results[0]
+                      , initialDataLoaded: true
+                      , rosterVisible: true
+                      , shifts: results[1]
                       })
       })
       .catch(err => {
         let apiError = err as ApiError
         console.log(err)
-        this.setState({ header: Object.assign(this.state.header, { reqInProgress: false
-                                                                 , error: apiError
-                                                                 })
+        this.setState({ reqInProgress: false
+                      , error: apiError
                       })
       })
   }
@@ -62,9 +58,21 @@ export class ShelterRota extends React.Component<ShelterRotaProps, ShelterRotaSt
   render() {
     return (
       <div>
-        <Header {...this.state.header} />
+        <Header reqInProgress={this.state.reqInProgress}
+                initialDataLoaded={this.state.initialDataLoaded}
+                vols={this.state.vols}
+                error={this.state.error}
+                changeCurrentVol={this.changeCurrentVol.bind(this)}
+                editNewVol={this.editNewVol.bind(this)}
+                editCurrentVol={this.editCurrentVol.bind(this)} />
         <div className="container">
-          <Roster {...this.state.roster} />
+          <Roster visible={this.state.rosterVisible}
+                  currentVol={this.state.currentVol}
+                  shifts={this.state.shifts}
+                  config={this.state.config}
+                  addCurrentVol={this.addCurrentVol.bind(this)}
+                  removeCurrentVol={this.removeCurrentVol.bind(this)}
+                  changeCurrentVolShiftType={this.changeCurrentVolShiftType.bind(this)} />
         </div>
       </div>
     )
@@ -72,8 +80,7 @@ export class ShelterRota extends React.Component<ShelterRotaProps, ShelterRotaSt
 
   changeCurrentVol(vol: Vol | null) {
     console.log('current vol: ' + (vol? vol.name : 'none'))
-    this.setState({ roster: Object.assign(this.state.roster, { currentVol: vol
-                                                             })
+    this.setState({ currentVol: vol
                   })
   }
 
@@ -88,29 +95,25 @@ export class ShelterRota extends React.Component<ShelterRotaProps, ShelterRotaSt
   addCurrentVol(shiftDate: Date, shiftType: ShiftType) {
     console.log('addCurrentVol')
     
-    if(!this.state.roster.currentVol) {
+    if(!this.state.currentVol) {
       return
     }
 
-    this.setState({ header: Object.assign(this.state.header, { reqInProgress: true
-                                                             , error: null
-                                                             }),
-                    roster: Object.assign(this.state.roster, { shifts: this.setShiftLoading(shiftDate, this.state.roster.shifts)})
+    this.setState({ reqInProgress: true
+                  , error: null
+                  , shifts: this.setShiftLoading(shiftDate, this.state.shifts)
                   })
-    ServerApi.putVolShift(shiftType, shiftDate, this.state.roster.currentVol.id)
+    ServerApi.putVolShift(shiftType, shiftDate, this.state.currentVol.id)
       .then(volShifts => {
-        this.setState({ header: Object.assign(this.state.header, { reqInProgress: false
-                                                                 }),
-                        roster: Object.assign(this.state.roster, { shifts: this.addOrUpdateShift(shiftDate, volShifts, this.state.roster.shifts)
-                                                                 })
+        this.setState({ reqInProgress: false
+                      , shifts: this.addOrUpdateShift(shiftDate, volShifts, this.state.shifts)
                       })
       })
       .catch(err => {
         let apiError = err as ApiError
         console.log(err)
-        this.setState({ header: Object.assign(this.state.header, { reqInProgress: false
-                                                                 , error: apiError
-                                                                 })
+        this.setState({ reqInProgress: false
+                      , error: apiError
                       })
       })
   }
@@ -118,29 +121,25 @@ export class ShelterRota extends React.Component<ShelterRotaProps, ShelterRotaSt
   removeCurrentVol(shiftDate: Date) {
     console.log('removeCurrentVol')
     
-    if(!this.state.roster.currentVol) {
+    if(!this.state.currentVol) {
       return
     }
 
-    this.setState({ header: Object.assign(this.state.header, { reqInProgress: true
-                                                             , error: null
-                                                             }),
-                    roster: Object.assign(this.state.roster, { shifts: this.setShiftLoading(shiftDate, this.state.roster.shifts)})
+    this.setState({ reqInProgress: true
+                  , error: null
+                  , shifts: this.setShiftLoading(shiftDate, this.state.shifts)
                   })
-    ServerApi.deleteVolShift(shiftDate, this.state.roster.currentVol.id)
+    ServerApi.deleteVolShift(shiftDate, this.state.currentVol.id)
       .then(volShifts => {
-        this.setState({ header: Object.assign(this.state.header, { reqInProgress: false
-                                                                 }),
-                        roster: Object.assign(this.state.roster, { shifts: this.addOrUpdateShift(shiftDate, volShifts, this.state.roster.shifts)
-                                                                 })
+        this.setState({ reqInProgress: false
+                      , shifts: this.addOrUpdateShift(shiftDate, volShifts, this.state.shifts)
                       })
       })
       .catch(err => {
         let apiError = err as ApiError
         console.log(err)
-        this.setState({ header: Object.assign(this.state.header, { reqInProgress: false
-                                                                 , error: apiError
-                                                                 })
+        this.setState({ reqInProgress: false
+                      , error: apiError
                       })
       })
   }
