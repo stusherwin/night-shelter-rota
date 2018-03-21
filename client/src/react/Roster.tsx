@@ -4,14 +4,16 @@ import { Util } from './Util'
 import { HeaderRow, HeaderRowProps } from './HeaderRow'
 import { ShiftRow, ShiftRowProps } from './ShiftRow'
 import { ShiftRuleConfig } from './ShiftRules'
+import { ServerApi, ApiError } from './ServerApi'
 
 export interface RosterProps { visible: boolean
                              , currentVol: Vol | null
                              , shifts: Shift[]
                              , config: ShiftRuleConfig
-                             , addCurrentVol: (shiftDate: Date, shiftType: ShiftType) => void
-                             , removeCurrentVol: (shiftDate: Date) => void
-                             , changeCurrentVolShiftType: (date: Date, shiftType: ShiftType) => void
+                             , requestStarted: () => void
+                             , requestFailed: (error: ApiError) => void
+                             , requestSucceeded: () => void
+                             , updateShifts: (date: Date, vols: VolShift[]) => void
                              }
 
 export interface RosterState { startDate: Date
@@ -74,22 +76,20 @@ export class Roster extends React.Component<RosterProps, RosterState> {
       }
 
       let vols = [] as VolShift[]
-      let loading = false
       if(shifts.length > i && Util.datesEqual(shifts[i].date, date)) {
         vols = shifts[i].vols
-        loading = shifts[i].loading
         i++
       }        
 
       rows.push(
         <ShiftRow date={date}
                   vols={vols}
-                  loading={loading}
                   config={this.props.config}
                   currentVol={this.props.currentVol}
-                  addCurrentVol={this.props.addCurrentVol}
-                  removeCurrentVol={this.props.removeCurrentVol}
-                  changeCurrentVolShiftType={this.props.changeCurrentVolShiftType} />
+                  requestStarted={this.props.requestStarted}
+                  requestFailed={this.props.requestFailed}
+                  requestSucceeded={this.props.requestSucceeded}
+                  updateShifts={this.props.updateShifts} />
       )
 
       date = Util.addDays(date, 1)

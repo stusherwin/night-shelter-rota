@@ -2,15 +2,16 @@ import * as React from 'react';
 import { Vol, Shift, VolShift, ShiftType, info } from './Types'
 import { Util } from './Util'
 import { ShiftRules, ShiftRuleConfig, ShiftRuleResult, ShiftRuleResultType } from './ShiftRules'
+import { ServerApi, ApiError } from './ServerApi'
 
 export interface ShiftRowProps { date: Date
                                , vols: VolShift[]
-                               , loading: boolean
                                , currentVol: Vol | null
                                , config: ShiftRuleConfig
-                               , addCurrentVol: (shiftDate: Date, shiftType: ShiftType) => void
-                               , removeCurrentVol: (shiftDate: Date) => void
-                               , changeCurrentVolShiftType: (date: Date, shiftType: ShiftType) => void
+                               , requestStarted: () => void
+                               , requestFailed: (error: ApiError) => void
+                               , requestSucceeded: () => void
+                               , updateShifts: (date: Date, vols: VolShift[]) => void
                                }
 
 export interface CurrentVolSignedUpState { shiftType: string | null
@@ -18,6 +19,7 @@ export interface CurrentVolSignedUpState { shiftType: string | null
 
 export interface ShiftRowState { ruleResult: ShiftRuleResult
                                , currentVolSignedUp: CurrentVolSignedUpState | null
+                               , loading: boolean
                                }
 
 export class ShiftRow extends React.Component<ShiftRowProps, ShiftRowState> {
@@ -28,6 +30,7 @@ export class ShiftRow extends React.Component<ShiftRowProps, ShiftRowState> {
     
     this.state = { ruleResult: results[0]
                  , currentVolSignedUp: null
+                 , loading: false
                  }
   }
 
@@ -42,7 +45,7 @@ export class ShiftRow extends React.Component<ShiftRowProps, ShiftRowState> {
          <CurrentVolSignUp date={this.props.date}
                            vols={this.props.vols}
                            currentVol={this.props.currentVol}
-                           loading={this.props.loading}
+                           loading={this.state.loading}
                            addCurrentVol={this.addCurrentVol.bind(this)}
                            removeCurrentVol={this.removeCurrentVol.bind(this)}
                            changeCurrentVolShiftType={this.changeCurrentVolShiftType.bind(this)} />
@@ -54,7 +57,7 @@ export class ShiftRow extends React.Component<ShiftRowProps, ShiftRowState> {
   classNames() {
     let classNames = ['row shift-row']
 
-    if(!this.props.loading && this.state.currentVolSignedUp != null && this.state.currentVolSignedUp.shiftType == null) {
+    if(!this.state.loading && this.state.currentVolSignedUp != null && this.state.currentVolSignedUp.shiftType == null) {
       classNames.push('clickable')
     }
 
@@ -62,7 +65,7 @@ export class ShiftRow extends React.Component<ShiftRowProps, ShiftRowState> {
       classNames.push('weekend')
     }
 
-    if(this.props.loading) {
+    if(this.state.loading) {
       classNames.push('loading')
     }
 
@@ -86,15 +89,53 @@ export class ShiftRow extends React.Component<ShiftRowProps, ShiftRowState> {
   }
 
   addCurrentVol(shiftType: ShiftType) {
-    this.props.addCurrentVol(this.props.date, shiftType)
+    console.log('addCurrentVol')
+    
+    if(!this.props.currentVol) {
+      return
+    }
+
+    this.props.requestStarted();
+    this.setState({ loading: true })
+    ServerApi.putVolShift(shiftType, this.props.date, this.props.currentVol.id)
+      .then(volShifts => {
+        this.props.updateShifts(this.props.date, volShifts);
+        this.props.requestSucceeded();
+        this.setState({ loading: false })
+      })
+      .catch(err => {
+        let apiError = err as ApiError
+        console.log(err)
+        this.props.requestFailed(apiError);
+        this.setState({ loading: false })
+      })
   }
 
   removeCurrentVol() {
-    this.props.removeCurrentVol(this.props.date)
+    console.log('removeCurrentVol')
+    
+    if(!this.props.currentVol) {
+      return
+    }
+
+    this.props.requestStarted();
+    this.setState({ loading: true })
+    ServerApi.deleteVolShift(this.props.date, this.props.currentVol.id)
+      .then(volShifts => {
+        this.props.updateShifts(this.props.date, volShifts);
+        this.props.requestSucceeded();
+        this.setState({ loading: false })
+      })
+      .catch(err => {
+        let apiError = err as ApiError
+        console.log(err)
+        this.props.requestFailed(apiError);
+        this.setState({ loading: false })
+      })
   }
 
-  changeCurrentVolShiftType(shiftType: ShiftType) {
-    this.props.changeCurrentVolShiftType(this.props.date, shiftType)
+  changeCurrentVolShiftType(shiftDate: Date, shiftType: ShiftType) {
+    console.log('change current vol shift type')
   }
 }
 

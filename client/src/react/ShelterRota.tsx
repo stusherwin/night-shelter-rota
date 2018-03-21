@@ -70,12 +70,31 @@ export class ShelterRota extends React.Component<ShelterRotaProps, ShelterRotaSt
                   currentVol={this.state.currentVol}
                   shifts={this.state.shifts}
                   config={this.state.config}
-                  addCurrentVol={this.addCurrentVol.bind(this)}
-                  removeCurrentVol={this.removeCurrentVol.bind(this)}
-                  changeCurrentVolShiftType={this.changeCurrentVolShiftType.bind(this)} />
+                  requestStarted={this.requestStarted.bind(this)}
+                  requestFailed={this.requestFailed.bind(this)}
+                  requestSucceeded={this.requestSucceeded.bind(this)}
+                  updateShifts={this.updateShifts.bind(this)} />
         </div>
       </div>
     )
+  }
+
+  requestStarted() {
+    this.setState({ reqInProgress: true
+                  , error: null
+                  })
+  }
+
+  requestFailed(error: ApiError) {
+    this.setState({ reqInProgress: false
+                  , error: error
+                  })
+  }
+
+  requestSucceeded() {
+    this.setState({ reqInProgress: false
+                  , error: null
+                  })
   }
 
   changeCurrentVol(vol: Vol | null) {
@@ -92,75 +111,8 @@ export class ShelterRota extends React.Component<ShelterRotaProps, ShelterRotaSt
     console.log('edit current vol')
   }
 
-  addCurrentVol(shiftDate: Date, shiftType: ShiftType) {
-    console.log('addCurrentVol')
-    
-    if(!this.state.currentVol) {
-      return
-    }
-
-    this.setState({ reqInProgress: true
-                  , error: null
-                  , shifts: this.setShiftLoading(shiftDate, this.state.shifts)
-                  })
-    ServerApi.putVolShift(shiftType, shiftDate, this.state.currentVol.id)
-      .then(volShifts => {
-        this.setState({ reqInProgress: false
-                      , shifts: this.addOrUpdateShift(shiftDate, volShifts, this.state.shifts)
-                      })
-      })
-      .catch(err => {
-        let apiError = err as ApiError
-        console.log(err)
-        this.setState({ reqInProgress: false
-                      , error: apiError
-                      })
-      })
-  }
-
-  removeCurrentVol(shiftDate: Date) {
-    console.log('removeCurrentVol')
-    
-    if(!this.state.currentVol) {
-      return
-    }
-
-    this.setState({ reqInProgress: true
-                  , error: null
-                  , shifts: this.setShiftLoading(shiftDate, this.state.shifts)
-                  })
-    ServerApi.deleteVolShift(shiftDate, this.state.currentVol.id)
-      .then(volShifts => {
-        this.setState({ reqInProgress: false
-                      , shifts: this.addOrUpdateShift(shiftDate, volShifts, this.state.shifts)
-                      })
-      })
-      .catch(err => {
-        let apiError = err as ApiError
-        console.log(err)
-        this.setState({ reqInProgress: false
-                      , error: apiError
-                      })
-      })
-  }
-
-  changeCurrentVolShiftType(shiftDate: Date, shiftType: ShiftType) {
-    console.log('change current vol shift type')
-  }
-
-  setShiftLoading(date: Date, shifts: Shift[]): Shift[] {
-    let result = shifts.slice()
-    let shift = result.find(s => Util.datesEqual(s.date, date))
-
-    if(shift) {
-      shift.loading = true
-    }
-
-    return result
-  }
-
-  addOrUpdateShift(date: Date, vols: VolShift[], shifts: Shift[]): Shift[] {
-    let result = shifts.slice()
+  updateShifts(date: Date, vols: VolShift[]) {
+    let result = this.state.shifts.slice()
     let shift = result.find(s => Util.datesEqual(s.date, date))
 
     if(shift) {
@@ -170,6 +122,6 @@ export class ShelterRota extends React.Component<ShelterRotaProps, ShelterRotaSt
       result.push({date: date, vols: vols, loading: false})
     }
 
-    return result
+    this.setState({ shifts: result })
   }
 }
