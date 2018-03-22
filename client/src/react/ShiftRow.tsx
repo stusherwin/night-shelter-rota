@@ -134,8 +134,27 @@ export class ShiftRow extends React.Component<ShiftRowProps, ShiftRowState> {
       })
   }
 
-  changeCurrentVolShiftType(shiftDate: Date, shiftType: ShiftType) {
+  changeCurrentVolShiftType(shiftType: ShiftType) {
     console.log('change current vol shift type')
+    
+    if(!this.props.currentVol) {
+      return
+    }
+
+    this.props.requestStarted();
+    this.setState({ loading: true })
+    ServerApi.postVolShift(shiftType, this.props.date, this.props.currentVol.id)
+      .then(volShifts => {
+        this.props.updateShifts(this.props.date, volShifts);
+        this.props.requestSucceeded();
+        this.setState({ loading: false })
+      })
+      .catch(err => {
+        let apiError = err as ApiError
+        console.log(err)
+        this.props.requestFailed(apiError);
+        this.setState({ loading: false })
+      })
   }
 }
 
@@ -378,12 +397,9 @@ function CurrentVolShiftType(props: { date: Date
                  className="hidden"
                  type="checkbox"
                  id={`shift-type-${Util.toDateString(props.date)}`}
-                 checked={st == 'Overnight'} />
-                                        {/* , RP.onClick R.stopPropagation
-                                        , RP.onChange \e -> do
-                                            _ <- R.preventDefault e
-                                            _ <- dispatch $ ChangeCurrentVolShiftType state.date $ otherShiftType st
-                                            R.stopPropagation e */}
+                 checked={st == 'Overnight'} 
+                 onClick={e => e.stopPropagation()}
+                 onChange={e => { e.preventDefault(); props.changeCurrentVolShiftType(otherShiftType(st)); e.stopPropagation() }} />
           <label htmlFor={`shift-type-${Util.toDateString(props.date)}`}></label>
           <span className="current-vol-shift-type-toggle-description">
             {st}
@@ -392,6 +408,14 @@ function CurrentVolShiftType(props: { date: Date
       </span>
     </span>
   )
+}
+
+function otherShiftType(shiftType: ShiftType) {
+  if(shiftType == 'Evening') {
+    return 'Overnight'
+  } else {
+    return 'Evening'
+  }
 }
 
 function ShiftTypeRadio(props: { shiftType: ShiftType
