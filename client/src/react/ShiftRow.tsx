@@ -3,6 +3,7 @@ import { Vol, Shift, VolShift, ShiftType, info } from './Types'
 import { Util } from './Util'
 import { ShiftRules, ShiftRuleConfig, ShiftRuleResult, ShiftRuleResultType } from './ShiftRules'
 import { ServerApi, ApiError } from './ServerApi'
+import { MessageBubble, MessageBubbleProps, MessageBubbleAction, Message, MessageBubblePosition } from './MessageBubble'
 
 export interface ShiftRowProps { date: Date
                                , vols: VolShift[]
@@ -20,6 +21,7 @@ export interface CurrentVolSignedUpState { shiftType: string | null
 export interface ShiftRowState { ruleResult: ShiftRuleResult
                                , currentVolSignedUp: CurrentVolSignedUpState | null
                                , loading: boolean
+                               , messageBubble: MessageBubbleProps
                                }
 
 export class ShiftRow extends React.Component<ShiftRowProps, ShiftRowState> {
@@ -27,10 +29,40 @@ export class ShiftRow extends React.Component<ShiftRowProps, ShiftRowState> {
     super(props)
     
     let results = ShiftRules.validateShift(props.date, props.vols, props.config)
+    let resultsWithMessages = results.filter(r => r.message && r.message.length)
+
+    let message = { header: null
+                  , body: ''
+                  , position: 'Over'
+                  , icon: null
+                  } as Message
+
+    if(this.props.date < this.props.config.currentDate) {
+      message.body = 'This shift is in the past'
+      message.icon = 'clock'
+    } else if(resultsWithMessages.length) {
+      switch(results[0].type) {
+        case 'Error':
+          message.icon = 'warning'
+          break
+        case 'Warning':
+        case 'Info':
+          message.icon = 'info'
+      }
+
+      for(let r of resultsWithMessages) {
+        if(!message.body.length) {
+          message.body = 'This shift ' + r.message
+        } else {
+          message.body += ', and also ' + r.message
+        }
+      }
+    }
     
     this.state = { ruleResult: results[0]
                  , currentVolSignedUp: null
                  , loading: false
+                 , messageBubble: new MessageBubbleProps(message)
                  }
   }
 
@@ -41,7 +73,9 @@ export class ShiftRow extends React.Component<ShiftRowProps, ShiftRowState> {
          <ShiftInfo date={this.props.date}
                     vols={this.props.vols}
                     config={this.props.config}
-                    ruleResult={this.state.ruleResult} />
+                    ruleResult={this.state.ruleResult}
+                    messageBubble={this.state.messageBubble}
+                    messageBubbleAction={this.messageBubbleAction.bind(this)} />
          <CurrentVolSignUp date={this.props.date}
                            vols={this.props.vols}
                            currentVol={this.props.currentVol}
@@ -70,8 +104,6 @@ export class ShiftRow extends React.Component<ShiftRowProps, ShiftRowState> {
     }
 
     if(this.props.date < this.props.config.currentDate) {
-      // console.log(this.props.date)
-      // console.log(this.props.config.currentDate)
       classNames.push('past')
     } else {
       if(Util.datesEqual(this.props.date, this.props.config.currentDate)) {
@@ -156,28 +188,36 @@ export class ShiftRow extends React.Component<ShiftRowProps, ShiftRowState> {
         this.setState({ loading: false })
       })
   }
+  
+  messageBubbleAction(action: MessageBubbleAction) {
+    console.log('messageBubbleAction: ' + action)
+    this.setState({ messageBubble: this.state.messageBubble.afterAction(action)
+                  })
+  }
 }
 
 export class ShiftInfo extends React.Component<{ date: Date
                                                , vols: VolShift[]
                                                , config: ShiftRuleConfig
                                                , ruleResult: ShiftRuleResult
+                                               , messageBubble: MessageBubbleProps
+                                               , messageBubbleAction: (action: MessageBubbleAction) => void
                                                }, {}> {
   render() {
     return (
-      <div className={this.classNames()}>
-            {/* , RP.onClick \e -> do
-                   _ <- R.preventDefault e
-                   _ <- dispatch $ MessageBubbleAction ToggleFixed
-                   R.stopPropagation e
-                , RP.onMouseOver $ const $ dispatch $ MessageBubbleAction ShowTransitory
-                , RP.onMouseOut $ const $ dispatch $ MessageBubbleAction HideTransitory */}
-           <ShiftDate date={this.props.date} />
-           <ShiftStatus noOfVols={this.props.vols.length}
-                        ruleResult={this.props.ruleResult}
-                        date={this.props.date}
-                        config={this.props.config} />
-         </div>
+      <div className={this.classNames()}
+           onClick={e => { e.preventDefault(); this.props.messageBubbleAction('ToggleFixed'); e.stopPropagation() }}
+           onMouseOver={e => this.props.messageBubbleAction('ShowTransitory')}
+           onMouseOut={e => this.props.messageBubbleAction('HideTransitory')} >
+        <ShiftDate date={this.props.date} />
+        <ShiftStatus noOfVols={this.props.vols.length}
+                     ruleResult={this.props.ruleResult}
+                     date={this.props.date}
+                     config={this.props.config} />
+        <MessageBubble {...this.props.messageBubble}
+                       action={this.props.messageBubbleAction}>
+        </MessageBubble>
+      </div>
     )
   }
 

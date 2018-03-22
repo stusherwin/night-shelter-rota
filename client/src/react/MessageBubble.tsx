@@ -6,13 +6,13 @@ export type MessageBubbleAction = 'ToggleFixed'
 
 type MessageBubbleState = 'hidden' | 'fixed' | 'transitory' | 'otherFixedMessage'
 
-type Message = { header: string | null
+export type Message = { header: string | null
                , body: string
                , icon: string | null
                , position: MessageBubblePosition
                }
 
-type MessageBubblePosition = 'under' | 'over'
+export type MessageBubblePosition = 'Under' | 'Over'
 
 export interface IMessageBubbleProps {
   message: Message | null
@@ -96,7 +96,7 @@ export class MessageBubbleProps {
 export class MessageBubble extends React.Component<IMessageBubbleProps, {}> {
   render() {
     if(this.props.state == 'hidden' || this.props.message == null) {
-      return null;
+      return null
     } else {
       return <div className={this.classNames()}
                   onClick={e => {e.preventDefault(); this.props.action('ToggleFixed'); }}>
@@ -113,7 +113,7 @@ export class MessageBubble extends React.Component<IMessageBubbleProps, {}> {
   classNames(): string {
     let result = ['message-bubble']
 
-    if(this.props.message != null && this.props.message.position == 'over') {
+    if(this.props.message != null && this.props.message.position == 'Over') {
       result.push('inverted')
     }
 

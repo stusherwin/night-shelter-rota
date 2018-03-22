@@ -37,7 +37,7 @@ export class Header extends React.Component<HeaderProps, HeaderState> {
                         ? this.state.errorMessage.setMessage(
                             { header: props.error.error
                             , body: props.error.message
-                            , position: 'under'
+                            , position: 'Under'
                             , icon: 'warning'
                             })
                         : this.state.errorMessage.clear()
