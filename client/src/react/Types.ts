@@ -59,3 +59,11 @@ export function info(pref: OvernightPreference | OvernightGenderPreference): Pre
     default:                       return { marker: 'F', description: 'Females only' }
   }
 }
+
+export function otherShiftType(shiftType: ShiftType) {
+  if(shiftType == 'Evening') {
+    return 'Overnight'
+  } else {
+    return 'Evening'
+  }
+}

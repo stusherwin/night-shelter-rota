@@ -1,5 +1,5 @@
 import * as React from 'react';
-import { Vol, Shift, VolShift, ShiftType, info } from './Types'
+import { Vol, Shift, VolShift, ShiftType, info, otherShiftType } from './Types'
 import { Util } from './Util'
 import { ShiftRules, ShiftRuleConfig, ShiftRuleResult, ShiftRuleResultType } from './ShiftRules'
 import { ServerApi, ApiError } from './ServerApi'
@@ -19,7 +19,6 @@ export interface CurrentVolSignedUpState { shiftType: string | null
                                          }
 
 export interface ShiftRowState { ruleResult: ShiftRuleResult
-                               , currentVolSignedUp: CurrentVolSignedUpState | null
                                , loading: boolean
                                , messageBubble: MessageBubbleProps
                                }
@@ -60,38 +59,61 @@ export class ShiftRow extends React.Component<ShiftRowProps, ShiftRowState> {
     }
     
     this.state = { ruleResult: results[0]
-                 , currentVolSignedUp: null
                  , loading: false
                  , messageBubble: new MessageBubbleProps(message)
                  }
   }
 
   render() {
-    return (
-      <div className={this.classNames()}
-           id={`shift-row-${this.props.date}`}>
-         <ShiftInfo date={this.props.date}
+    let children =
+      [ <ShiftInfo date={this.props.date}
                     vols={this.props.vols}
                     config={this.props.config}
                     ruleResult={this.state.ruleResult}
                     messageBubble={this.state.messageBubble}
                     messageBubbleAction={this.messageBubbleAction.bind(this)} />
-         <CurrentVolSignUp date={this.props.date}
+      , <CurrentVolSignUp date={this.props.date}
                            vols={this.props.vols}
                            currentVol={this.props.currentVol}
                            loading={this.state.loading}
                            addCurrentVol={this.addCurrentVol.bind(this)}
                            removeCurrentVol={this.removeCurrentVol.bind(this)}
                            changeCurrentVolShiftType={this.changeCurrentVolShiftType.bind(this)} />
-         <VolMarkers vols={this.props.vols} />
+      , <VolMarkers vols={this.props.vols} />
+      ]
+
+    if(!this.clickable()) {
+      return (
+        <div className={this.classNames()}
+             id={`shift-row-${this.props.date}`}>
+          {children}
+        </div>
+      )
+    }
+
+    return (
+      <div className={this.classNames()}
+           id={`shift-row-${this.props.date}`}
+           onClick={e => this.addCurrentVol.bind(this)('Overnight')}>
+        {children}
       </div>
     )
+  }
+
+  clickable() {
+    if(this.state.loading || !this.props.currentVol) {
+      return false
+    }
+
+    let currentVolId = this.props.currentVol.id
+    
+    return !this.props.vols.find(s => s.volunteer.id == currentVolId)
   }
 
   classNames() {
     let classNames = ['row shift-row']
 
-    if(!this.state.loading && this.state.currentVolSignedUp != null && this.state.currentVolSignedUp.shiftType == null) {
+    if(this.clickable()) {
       classNames.push('clickable')
     }
 
@@ -382,10 +404,7 @@ function CurrentVolSelected(props: { vols: VolShift[]
   if(props.currentVol && props.vols.find(s => s.volunteer.id == props.currentVol.id)) {
     checked = true
     onChange = () => props.removeCurrentVol()
-    disabled = disabled /* || ShiftRules.canAddVolunteer(shift, )
-    , canAddOvernight: canAddVolunteer config { shiftType: Overnight, volunteer: cv} shift
-                       , canAddEvening: canAddVolunteer config { shiftType: Evening, volunteer: cv} shift
-                       */
+    disabled = disabled
   }
 
   return (
@@ -448,14 +467,6 @@ function CurrentVolShiftType(props: { date: Date
       </span>
     </span>
   )
-}
-
-function otherShiftType(shiftType: ShiftType) {
-  if(shiftType == 'Evening') {
-    return 'Overnight'
-  } else {
-    return 'Evening'
-  }
 }
 
 function ShiftTypeRadio(props: { shiftType: ShiftType
