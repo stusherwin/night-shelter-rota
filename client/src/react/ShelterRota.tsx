@@ -6,6 +6,7 @@ import { ServerApi, ApiError } from './ServerApi'
 import { MessageBubbleProps, MessageBubbleAction } from './MessageBubble'
 import { Util } from './Util'
 import { ShiftRuleConfig } from './ShiftRules'
+import { VolInfo } from './VolInfo'
 
 export interface ShelterRotaProps {}
 export interface ShelterRotaState { initialDataLoaded: boolean
@@ -16,6 +17,7 @@ export interface ShelterRotaState { initialDataLoaded: boolean
                                   , rosterVisible: boolean
                                   , reqInProgress: boolean
                                   , error: ApiError | null
+                                  , volInfo: Vol | null
                                   }
 
 export class ShelterRota extends React.Component<ShelterRotaProps, ShelterRotaState> {
@@ -32,6 +34,7 @@ export class ShelterRota extends React.Component<ShelterRotaProps, ShelterRotaSt
                  , rosterVisible: false
                  , reqInProgress: true
                  , error: null
+                 , volInfo : null
                  }
   }
 
@@ -73,8 +76,11 @@ export class ShelterRota extends React.Component<ShelterRotaProps, ShelterRotaSt
                   requestStarted={this.requestStarted.bind(this)}
                   requestFailed={this.requestFailed.bind(this)}
                   requestSucceeded={this.requestSucceeded.bind(this)}
-                  updateShifts={this.updateShifts.bind(this)} />
+                  updateShifts={this.updateShifts.bind(this)}
+                  showVolInfo={this.showVolInfo.bind(this)} />
         </div>
+        <VolInfo vol={this.state.volInfo}
+                 close={this.hideVolInfo.bind(this)} />
       </div>
     )
   }
@@ -123,5 +129,13 @@ export class ShelterRota extends React.Component<ShelterRotaProps, ShelterRotaSt
     }
 
     this.setState({ shifts: result })
+  }
+
+  showVolInfo(vol: Vol) {
+    this.setState({volInfo: vol})
+  }
+
+  hideVolInfo() {
+    this.setState({volInfo: null})
   }
 }

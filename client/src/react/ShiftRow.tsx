@@ -13,6 +13,7 @@ export interface ShiftRowProps { date: Date
                                , requestFailed: (error: ApiError) => void
                                , requestSucceeded: () => void
                                , updateShifts: (date: Date, vols: VolShift[]) => void
+                               , showVolInfo: (vol: Vol) => void
                                }
 
 export interface CurrentVolSignedUpState { shiftType: string | null
@@ -79,7 +80,8 @@ export class ShiftRow extends React.Component<ShiftRowProps, ShiftRowState> {
                            addCurrentVol={this.addCurrentVol.bind(this)}
                            removeCurrentVol={this.removeCurrentVol.bind(this)}
                            changeCurrentVolShiftType={this.changeCurrentVolShiftType.bind(this)} />
-      , <VolMarkers vols={this.props.vols} />
+      , <VolMarkers vols={this.props.vols}
+                    showVolInfo={this.props.showVolInfo} />
       ]
 
     if(!this.clickable()) {
@@ -107,7 +109,7 @@ export class ShiftRow extends React.Component<ShiftRowProps, ShiftRowState> {
 
     let currentVolId = this.props.currentVol.id
     
-    return !this.props.vols.find(s => s.volunteer.id == currentVolId)
+    return !this.props.vols.find(s => s.vol.id == currentVolId)
   }
 
   classNames() {
@@ -307,40 +309,38 @@ function ShiftStatusIcon(props: { date: Date
   return null
 }
 
-function VolMarkers(props: {vols: VolShift[]}): JSX.Element {
+function VolMarkers(props: {vols: VolShift[], showVolInfo: (vol: Vol) => void}): JSX.Element {
   return (
     <div className="row-item vol-markers collapsing">
-      {props.vols.map(v => <VolMarker volShift={v} />)}
+      {props.vols.map(v => <VolMarker vol={v.vol}
+                                      shiftType={v.shiftType}
+                                      showVolInfo={props.showVolInfo} />)}
     </div>
   )
 }
 
-function VolMarker(props: {volShift: VolShift}): JSX.Element {
+function VolMarker(props: {vol: Vol, shiftType: ShiftType, showVolInfo: (vol: Vol) => void}): JSX.Element {
   return (
     <span className="vol-marker">
-      {props.volShift.volunteer.notes.length
+      {props.vol.notes.length
         ? <span className="sharing-pref icon">
             <i className="icon-info"></i>&nbsp;
           </span>
         : null}
-      {props.volShift.volunteer.overnightGenderPreference
+      {props.vol.overnightGenderPreference
         ? <span className="sharing-pref gender">
-            <span>{info(props.volShift.volunteer.overnightGenderPreference).marker}</span>
+            <span>{info(props.vol.overnightGenderPreference).marker}</span>
           </span>
         : null}
-      {props.volShift.volunteer.overnightPreference
+      {props.vol.overnightPreference
         ? <span className="sharing-pref alone">
-            <span>{info(props.volShift.volunteer.overnightPreference).marker}</span>
+            <span>{info(props.vol.overnightPreference).marker}</span>
           </span>
         : null}
       <span className="vol-name"
-                      // , RP.onClick \e -> do
-                      //     _ <- R.preventDefault e
-                      //     _ <- dispatch $ ShowVolInfo s.volunteer
-                      //     R.stopPropagation e
-                      >
-        <ShiftTypeIcon shiftType={props.volShift.shiftType} />
-        {props.volShift.volunteer.name}
+            onClick={e => {e.preventDefault(); props.showVolInfo(props.vol); e.stopPropagation()}}>
+        <ShiftTypeIcon shiftType={props.shiftType} />
+        {props.vol.name}
       </span>
     </span>
   )
@@ -401,7 +401,7 @@ function CurrentVolSelected(props: { vols: VolShift[]
   let onChange = () => props.addCurrentVol('Overnight')
   let disabled = props.loading
  
-  if(props.currentVol && props.vols.find(s => s.volunteer.id == props.currentVol.id)) {
+  if(props.currentVol && props.vols.find(s => s.vol.id == props.currentVol.id)) {
     checked = true
     onChange = () => props.removeCurrentVol()
     disabled = disabled
@@ -430,7 +430,7 @@ function CurrentVolShiftType(props: { date: Date
   }
   
   let currentVolId = props.currentVol.id
-  let volShift = props.vols.find(s => s.volunteer.id == currentVolId)
+  let volShift = props.vols.find(s => s.vol.id == currentVolId)
   
   if(!volShift) {
     return null

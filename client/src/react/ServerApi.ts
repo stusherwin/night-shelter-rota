@@ -129,7 +129,7 @@ function toDate(date: ApiShiftDate): Date {
 
 function toVolShift(vs: ApiVolunteerShift): VolShift {
   return {
-    volunteer: toVol(vs.vsVolunteer),
+    vol: toVol(vs.vsVolunteer),
     shiftType: constrainShiftType(vs.vsShiftType)
   }
 }

@@ -11,7 +11,7 @@ export type OvernightGenderPreference = 'Male' | 'Female'
 export type ShiftType = 'Overnight'
                       | 'Evening'
 
-export type VolShift = { volunteer: Vol
+export type VolShift = { vol: Vol
                        , shiftType: ShiftType
                        }
 

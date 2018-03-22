@@ -14,6 +14,7 @@ export interface RosterProps { visible: boolean
                              , requestFailed: (error: ApiError) => void
                              , requestSucceeded: () => void
                              , updateShifts: (date: Date, vols: VolShift[]) => void
+                             , showVolInfo: (vol: Vol) => void
                              }
 
 export interface RosterState { startDate: Date
@@ -89,7 +90,8 @@ export class Roster extends React.Component<RosterProps, RosterState> {
                   requestStarted={this.props.requestStarted}
                   requestFailed={this.props.requestFailed}
                   requestSucceeded={this.props.requestSucceeded}
-                  updateShifts={this.props.updateShifts} />
+                  updateShifts={this.props.updateShifts}
+                  showVolInfo={this.props.showVolInfo} />
       )
 
       date = Util.addDays(date, 1)
