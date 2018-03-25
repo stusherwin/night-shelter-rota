@@ -1,5 +1,5 @@
 import * as React from 'react';
-import { Vol, OvernightPreference, OvernightGenderPreference } from './Types'
+import { Vol, OvernightPreference, OvernightGenderPreference, PrefInfo, info } from './Types'
 
 export interface VolInfoProps { vol: Vol | null
                               , close: () => void
@@ -25,8 +25,9 @@ export class VolInfo extends React.Component<VolInfoProps, {}> {
             <div className="vol-info-content">
               <Intro name={this.props.vol.name}
                      intro={this.props.vol.intro} />
-              <Preferences overnightPreference={this.props.vol.overnightPreference}
-                           overnightGenderPreference={this.props.vol.overnightGenderPreference} />
+              <Preferences prefs={[ info(this.props.vol.overnightPreference)
+                                  , info(this.props.vol.overnightGenderPreference)
+                                  ]} />
               <Notes notes={this.props.vol.notes} />
             </div>
           </div>
@@ -60,36 +61,31 @@ function Intro(props: { name: string
   )
 }
 
-function Preferences(props: { overnightPreference: OvernightPreference | null
-                            , overnightGenderPreference: OvernightGenderPreference | null
-                            }): JSX.Element {
+function Preferences(props: { prefs: [PrefInfo | null]
+                            }): JSX.Element | null {
+  if(!props.prefs.filter(p => !!p).length) {
+    return null
+  }
+
   return (
-    <div></div>
+    <div>
+      <h3>My preferences</h3>
+      {props.prefs.map(p => <Preference pref={p} />)}
+    </div>
   )
-      // renderPreferences { overnightPreference: Nothing, overnightGenderPreference: Nothing } = []
-      // renderPreferences v = [ RD.h3' [ RD.text "My preferences" ] ]
-      //                       <> renderOvernight v.overnightPreference
-      //                       <> renderGender v.overnightGenderPreference
-      //   where
-      //   renderOvernight :: Maybe OvernightPreference -> Array R.ReactElement
-      //   renderOvernight Nothing = []
-      //   renderOvernight (Just p) = [ RD.div [ RP.className "vol-info-pref" ]
-      //                                       [ RD.div [ RP.className "vol-info-pref-marker" ]
-      //                                                [ RD.text $ overnightPrefMarker p ]
-      //                                       , RD.div [ RP.className "vol-info-pref-description" ]
-      //                                                [ RD.text $ overnightPrefDescription p ]
-      //                                       ] 
-      //                              ]
-    
-      //   renderGender :: Maybe OvernightGenderPreference -> Array R.ReactElement
-      //   renderGender Nothing = []
-      //   renderGender (Just p) = [ RD.div [ RP.className "vol-info-pref" ]
-      //                                    [ RD.div [ RP.className "vol-info-pref-marker" ]
-      //                                             [ RD.text $ overnightGenderPrefMarker p ]
-      //                                    , RD.div [ RP.className "vol-info-pref-description" ]
-      //                                             [ RD.text $ overnightGenderPrefDescription p ]
-      //                                    ] 
-      //                           ]
+}
+
+function Preference(props: {pref: PrefInfo | null}): JSX.Element  | null {
+  if(!props.pref) {
+    return null
+  }
+
+  return (
+    <div className="vol-info-pref">
+      <div className="vol-info-pref-marker">{props.pref.marker}</div>
+      <div className="vol-info-pref-description">{props.pref.description}</div>
+    </div>
+  )
 }
 
 function Notes(props: { notes: string

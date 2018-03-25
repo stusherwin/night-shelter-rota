@@ -50,13 +50,13 @@ export interface PrefInfo {
   description: string
 }
 
-export function info(pref: OvernightPreference | OvernightGenderPreference): PrefInfo {
+export function info(pref: OvernightPreference | OvernightGenderPreference | null): PrefInfo | null {
   switch(pref) {
     case 'PreferToBeAlone':        return { marker: '1', description: 'I prefer to be on my own' }
     case 'PreferAnotherVolunteer': return { marker: '2', description: 'I prefer to work with another volunteer' }
     case 'Male':                   return { marker: 'M', description: 'Males only' }
-    case 'Female':
-    default:                       return { marker: 'F', description: 'Females only' }
+    case 'Female':                 return { marker: 'F', description: 'Females only' }
+    default: return null
   }
 }
 

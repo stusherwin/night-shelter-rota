@@ -320,6 +320,9 @@ function VolMarkers(props: {vols: VolShift[], showVolInfo: (vol: Vol) => void}):
 }
 
 function VolMarker(props: {vol: Vol, shiftType: ShiftType, showVolInfo: (vol: Vol) => void}): JSX.Element {
+  let genderPref = info(props.vol.overnightGenderPreference)
+  let overnightPref = info(props.vol.overnightPreference)
+  
   return (
     <span className="vol-marker">
       {props.vol.notes.length
@@ -327,14 +330,14 @@ function VolMarker(props: {vol: Vol, shiftType: ShiftType, showVolInfo: (vol: Vo
             <i className="icon-info"></i>&nbsp;
           </span>
         : null}
-      {props.vol.overnightGenderPreference
+      {genderPref
         ? <span className="sharing-pref gender">
-            <span>{info(props.vol.overnightGenderPreference).marker}</span>
+            <span>{genderPref.marker}</span>
           </span>
         : null}
-      {props.vol.overnightPreference
+      {overnightPref
         ? <span className="sharing-pref alone">
-            <span>{info(props.vol.overnightPreference).marker}</span>
+            <span>{overnightPref.marker}</span>
           </span>
         : null}
       <span className="vol-name"
