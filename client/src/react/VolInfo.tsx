@@ -6,10 +6,6 @@ export interface VolInfoProps { vol: Vol | null
                               }
 
 export class VolInfo extends React.Component<VolInfoProps, {}> {
-  constructor(props: VolInfoProps) {
-    super(props)
-  }
-
   render() {
     if(!this.props.vol) {
       return null
@@ -75,7 +71,7 @@ function Preferences(props: { prefs: [PrefInfo | null]
   )
 }
 
-function Preference(props: {pref: PrefInfo | null}): JSX.Element  | null {
+function Preference(props: {pref: PrefInfo | null}): JSX.Element | null {
   if(!props.pref) {
     return null
   }

@@ -2,31 +2,26 @@ import * as React from 'react';
 import { Vol } from './Types'
 import { MessageBubble, MessageBubbleProps, MessageBubbleAction } from './MessageBubble'
 import { ApiError } from './ServerApi'
+import { VolDetailsState } from './VolDetailsForm'
 
-export type VolDetailsState = 'NotEditing' 
-                            | 'EditingNewVol'
-                            | 'EditingCurrentVol'
-
-export interface HeaderProps { reqInProgress: boolean
+export interface HeaderProps { currentVol: Vol | null
+                             , reqInProgress: boolean
                              , initialDataLoaded: boolean
                              , vols: Vol[]
                              , error: ApiError | null
+                             , volDetailsState: VolDetailsState
                              , changeCurrentVol: (vol: Vol | null) => void
                              , editCurrentVol: () => void
                              , editNewVol: () => void
                              }
 
-export interface HeaderState { volDetailsState: VolDetailsState
-                             , currentVol: Vol | null
-                             , errorMessage: MessageBubbleProps
+export interface HeaderState { errorMessage: MessageBubbleProps
                              }
 
 export class Header extends React.Component<HeaderProps, HeaderState> {
   constructor(props: HeaderProps) {
     super(props)
-    this.state = { volDetailsState: 'NotEditing'
-                 , currentVol: null
-                 , errorMessage: new MessageBubbleProps()
+    this.state = { errorMessage: new MessageBubbleProps()
                  }
   }
 
@@ -40,7 +35,7 @@ export class Header extends React.Component<HeaderProps, HeaderState> {
                             , position: 'Under'
                             , icon: 'warning'
                             })
-                        : this.state.errorMessage.clear()
+                        : new MessageBubbleProps()
         })
     }
   }
@@ -59,23 +54,23 @@ export class Header extends React.Component<HeaderProps, HeaderState> {
     } else {
       return (
         <div className="header">
-          <HeaderButtons volDetailsState={this.state.volDetailsState}
-                         currentVol={this.state.currentVol}
-                         editNewVol={this.editNewVol.bind(this)}
-                         editCurrentVol={this.editCurrentVol.bind(this)} />
+          <HeaderButtons volDetailsState={this.props.volDetailsState}
+                         currentVol={this.props.currentVol}
+                         editNewVol={this.props.editNewVol}
+                         editCurrentVol={this.props.editCurrentVol} />
           <StatusIcon reqInProgress={this.props.reqInProgress}
                       errorMessage={this.state.errorMessage}
                       action={this.errorMessageAction.bind(this)}>
           </StatusIcon>
           <h2>Night Shelter Rota for </h2>
           <select className="vol-select"
-                  onChange={e => { this.changeCurrentVol.bind(this)(e.target.value == ''
+                  onChange={e => { this.props.changeCurrentVol(e.target.value == ''
                                                                  ? null
                                                                  : this.props.vols.find(v => v.id == parseInt(e.target.value)) || null) }}>
             <option value="">All volunteers</option>
             {this.props.vols.sort((a, b) => a.name.localeCompare(b.name))
                             .map(v =>
-              <option selected={this.state.currentVol != null && this.state.currentVol.id == v.id}
+              <option selected={this.props.currentVol != null && this.props.currentVol.id == v.id}
                       value={v.id}>{v.name}
               </option>)}
           </select>
@@ -87,31 +82,6 @@ export class Header extends React.Component<HeaderProps, HeaderState> {
   errorMessageAction(action: MessageBubbleAction) {
     this.setState({ errorMessage: this.state.errorMessage.afterAction(action)
                   })
-  }
-
-  changeCurrentVol(vol: Vol | null) {
-    console.log('current vol: ' + (vol? vol.name : 'none'))
-    this.setState({ currentVol: vol
-                  , volDetailsState: 'NotEditing'
-                  , errorMessage: this.state.errorMessage.clear()
-                  })
-    this.props.changeCurrentVol(vol)
-  }
-
-  editNewVol() {
-    console.log('edit new vol')
-    this.setState({ volDetailsState: 'EditingNewVol'
-                  , errorMessage: this.state.errorMessage.clear()
-                  })
-    this.props.editNewVol()
-  }
-
-  editCurrentVol() {
-    console.log('edit current vol')
-    this.setState({ volDetailsState: 'EditingCurrentVol'
-                  , errorMessage: this.state.errorMessage.clear()
-                  })
-    this.props.editCurrentVol()
   }
 }
 

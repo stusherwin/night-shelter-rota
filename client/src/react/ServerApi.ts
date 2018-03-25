@@ -1,5 +1,4 @@
 import { Vol, OvernightPreference, OvernightGenderPreference, Shift, VolShift, ShiftType, VolDetails } from './Types'
-import { VolDetailsState } from './Header';
 
 type ApiVolunteer = { vId: number
                     , vName: string

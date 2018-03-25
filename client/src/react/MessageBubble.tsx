@@ -32,10 +32,6 @@ export class MessageBubbleProps {
     return new MessageBubbleProps(message, this.state)
   }
 
-  clear(): MessageBubbleProps {
-    return new MessageBubbleProps(null, 'hidden')
-  }
-
   showTransitory(): MessageBubbleProps {
     if(this.state == 'hidden' && this.message != null) {
       return new MessageBubbleProps(this.message, 'transitory')
