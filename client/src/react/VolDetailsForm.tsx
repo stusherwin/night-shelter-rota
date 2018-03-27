@@ -63,6 +63,7 @@ export class VolDetailsForm extends React.Component<VolDetailsFormProps, VolDeta
         <div className={`required field ${formError? "error" : ""}`}>
           <label htmlFor="volName">Name</label>
           <input type="text"
+                 id="volName"
                  autoFocus={true}
                  value={this.state.name}
                  onChange={e => {this.setState({name: e.target.value})}}
@@ -70,87 +71,47 @@ export class VolDetailsForm extends React.Component<VolDetailsFormProps, VolDeta
         </div>
         <div className="field">
           <label htmlFor="volIntro">A short intro about yourself</label>
-          <textarea onChange={e => {this.setState({intro: e.target.value})}}
+          <textarea id="volIntro"
+                    onChange={e => {this.setState({intro: e.target.value})}}
                     disabled={this.props.readOnly}>
             {this.state.intro}
           </textarea>
         </div>
         <div className="field">
           <label>Would you prefer to work with another volunteer?</label>
-          <div className="ui radio checkbox">
-            <input type="radio"
-                   id="pref-alone-2"
-                   name="pref-alone"
-                   checked={this.state.pref == 'PreferAnotherVolunteer'}
-                   onChange={e => { if(e.target.checked) { this.setState({pref: 'PreferAnotherVolunteer'}) } }}
-                   disabled={this.props.readOnly} />
-            <label className="action-label"
-                   htmlFor="pref-alone-2">
-              <Preference className="alone" pref={info('PreferAnotherVolunteer')} />
-            </label>
-          </div>
-          <div className="ui radio checkbox">
-            <input type="radio"
-                   id="pref-alone-1"
-                   name="pref-alone"
-                   checked={this.state.pref == 'PreferToBeAlone'}
-                   onChange={e => { if(e.target.checked) { this.setState({pref: 'PreferToBeAlone'}) } }}
-                   disabled={this.props.readOnly} />
-            <label className="action-label"
-                   htmlFor="pref-alone-1">
-              <Preference className="alone" pref={info('PreferToBeAlone')} />
-            </label>
-          </div>
-          <div className="ui radio checkbox">
-            <input type="radio"
-                   id="pref-alone-none"
-                   name="pref-alone"
-                   checked={this.state.pref == null}
-                   onChange={e => { if(e.target.checked) { this.setState({pref: null}) } }}
-                   disabled={this.props.readOnly} />
-            <label className="action-label"
-                   htmlFor="pref-alone-none">
-              I don't mind
-            </label>
-          </div>
+          <PreferenceRadio name="alone"
+                           value="PreferAnotherVolunteer"
+                           checked={this.state.pref == 'PreferAnotherVolunteer'}
+                           onChecked={() => this.setState({pref: 'PreferAnotherVolunteer'})}
+                           readOnly={this.props.readOnly} />
+          <PreferenceRadio name="alone"
+                           value="PreferToBeAlone"
+                           checked={this.state.pref == 'PreferToBeAlone'}
+                           onChecked={() => this.setState({pref: 'PreferToBeAlone'})}
+                           readOnly={this.props.readOnly} />
+          <PreferenceRadio name="alone"
+                           value={null}
+                           checked={this.state.pref == null}
+                           onChecked={() => this.setState({pref: null})}
+                           readOnly={this.props.readOnly} />
         </div>
-        <div className="field ">
+        <div className="field">
           <label>Who would you prefer to share the volunteers' room with?</label>
-          <div className="ui radio checkbox">
-            <input type="radio"
-                   id="pref-gender-f"
-                   name="pref-gender"
-                   checked={this.state.genderPref == 'Female'}
-                   onChange={e => { if(e.target.checked) { this.setState({genderPref: 'Female'}) } }}
-                   disabled={this.props.readOnly} />
-            <label className="action-label"
-                   htmlFor="pref-gender-f">
-              <Preference className="gender" pref={info('Female')} />
-            </label>
-          </div>
-          <div className="ui radio checkbox">
-            <input type="radio"
-                   id="pref-gender-m"
-                   name="pref-gender"
-                   onChange={e => { if(e.target.checked) { this.setState({genderPref: 'Male'}) } }}
-                   disabled={this.props.readOnly} />
-            <label className="action-label"
-                   htmlFor="pref-gender-m">
-              <Preference className="gender" pref={info('Male')} />
-            </label>
-          </div>
-          <div className="ui radio checkbox">
-            <input type="radio"
-                   id="pref-gender-none"
-                   name="pref-gender"
-                   checked={this.state.genderPref == null}
-                   onChange={e => { if(e.target.checked) { this.setState({genderPref: null}) } }}
-                   disabled={this.props.readOnly} />
-            <label className="action-label"
-                   htmlFor="pref-gender-none">
-              I don't mind
-            </label>
-          </div>
+          <PreferenceRadio name="gender"
+                           value="Male"
+                           checked={this.state.genderPref == 'Male'}
+                           onChecked={() => this.setState({genderPref: 'Male'})}
+                           readOnly={this.props.readOnly} />
+          <PreferenceRadio name="gender"
+                           value="Female"
+                           checked={this.state.genderPref == 'Female'}
+                           onChecked={() => this.setState({genderPref: 'Female'})}
+                           readOnly={this.props.readOnly} />
+          <PreferenceRadio name="gender"
+                           value={null}
+                           checked={this.state.genderPref == null}
+                           onChecked={() => this.setState({genderPref: null})}
+                           readOnly={this.props.readOnly} />
         </div>
         <div className="field">
           <label htmlFor="volNotes">Any other preferences?</label>
@@ -195,17 +156,39 @@ export class VolDetailsForm extends React.Component<VolDetailsFormProps, VolDeta
   }
 }
 
+function PreferenceRadio(props: { name: string
+                                , value: OvernightPreference | OvernightGenderPreference | null
+                                , checked: boolean
+                                , onChecked: () => void
+                                , readOnly: boolean
+                                }): JSX.Element {
+  let prefInfo = info(props.value)
+  let marker = prefInfo? prefInfo.marker : 'none'
+
+  return (
+    <div className="ui radio checkbox">
+      <input type="radio"
+             id={`pref-${props.name}-${marker}`}
+             name={`pref-${props.name}`}
+             checked={props.checked}
+             onChange={e => { if(e.target.checked) { props.onChecked() } }}
+             disabled={props.readOnly} />
+      <label className="action-label"
+             htmlFor={`pref-${props.name}-${marker}`}>
+        <Preference className={props.name} pref={prefInfo} />
+      </label>
+    </div>
+  )
+}
+
 function Preference(props: {pref: PrefInfo | null, className: string}): JSX.Element | null {
   if(!props.pref) {
-    return null
+    return <span>I don't mind</span>      
   }
 
   return (
     <span>
-      {props.pref.description}
-      (<span className={`sharing-pref ${props.className}`}>
-        <span>{props.pref.marker}</span>
-      </span>)
+      {props.pref.description} (<span className={`sharing-pref ${props.className}`}><span>{props.pref.marker}</span></span>)
     </span>
   )
 }
