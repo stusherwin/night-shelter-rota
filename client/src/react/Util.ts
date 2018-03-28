@@ -86,4 +86,16 @@ export class Util {
   static update<T, U>(t: T, u: U): T & U {
     return Object.assign({}, t, u)
   }
+
+  static dedupeBy<T, U>(list: T[], fn: (t: T) => U): T[] {
+    let result = [] as T[]
+
+    for(let i of list) {
+      if(!result.find(r => fn(r) == fn(i))) {
+        result.push(i)
+      }
+    }
+
+    return result
+  }
 }

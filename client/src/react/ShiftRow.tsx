@@ -29,18 +29,41 @@ export class ShiftRow extends React.Component<ShiftRowProps, ShiftRowState> {
     super(props)
     
     let results = ShiftRules.validateShift(props.date, props.vols, props.config)
-    let resultsWithMessages = results.filter(r => r.message && r.message.length)
+    let message = this.message(results)
+    
+    this.state = { ruleResult: results[0]
+                 , loading: false
+                 , messageBubble: new MessageBubbleProps(message)
+                 }
+  }
 
-    let message = { header: null
-                  , body: ''
-                  , position: 'Over'
-                  , icon: null
-                  } as Message
+  componentWillReceiveProps(props: ShiftRowProps) {
+    let results = ShiftRules.validateShift(props.date, props.vols, props.config)
+    let message = this.message(results)
+    
+    this.setState({ ruleResult: results[0]
+                  , messageBubble: this.state.messageBubble.setMessage(message)
+                  })
+  }
+
+  message(results: ShiftRuleResult[]): Message | null {
+    let resultsWithMessages = results.filter(r => r.message && r.message.length)
+    let message: Message | null = null
 
     if(this.props.date < this.props.config.currentDate) {
+      message = { header: null
+                , body: ''
+                , position: 'Over'
+                , icon: null
+                } as Message
       message.body = 'This shift is in the past'
       message.icon = 'clock'
     } else if(resultsWithMessages.length) {
+      message = { header: null
+                , body: ''
+                , position: 'Over'
+                , icon: null
+                } as Message
       switch(results[0].type) {
         case 'Error':
           message.icon = 'warning'
@@ -58,11 +81,8 @@ export class ShiftRow extends React.Component<ShiftRowProps, ShiftRowState> {
         }
       }
     }
-    
-    this.state = { ruleResult: results[0]
-                 , loading: false
-                 , messageBubble: new MessageBubbleProps(message)
-                 }
+
+    return message
   }
 
   render() {
@@ -248,7 +268,7 @@ export class ShiftInfo extends React.Component<{ date: Date
   classNames(): string {
     let classNames = ['shift-info']
 
-    if(this.props.ruleResult.message) {
+    if(this.props.messageBubble.message) {
       classNames.push('has-message')
     }
 

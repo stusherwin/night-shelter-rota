@@ -123,7 +123,7 @@ function fetchHttpRequest<T>(req: Request, process: (res: any) => T): Promise<T>
 }
 
 function toDate(date: ApiShiftDate): Date {
-  return new Date(date.year, date.month - 1, date.day)
+  return new Date(Date.UTC(date.year, date.month - 1, date.day))
 }
 
 function toVolShift(vs: ApiVolunteerShift): VolShift {
@@ -187,8 +187,8 @@ function fromVolDetails(details: VolDetails): ApiVolDetails {
 
 function fromDate(date: Date): ApiShiftDate {
   return {
-    year: date.getFullYear(),
-    month: date.getMonth() + 1,
-    day: date.getDate()
+    year: date.getUTCFullYear(),
+    month: date.getUTCMonth() + 1,
+    day: date.getUTCDate()
   }
 }
