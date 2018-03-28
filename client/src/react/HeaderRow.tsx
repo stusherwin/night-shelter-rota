@@ -23,8 +23,8 @@ export class HeaderRow extends React.Component<HeaderRowProps, {}> {
             ? <a onClick={e => {e.preventDefault(); this.props.loadNextPeriod()}}
                  href="#"
                  className="action">
-                <i className="icon-up-open"></i>
-                <span>previous 4 weeks</span>
+                <i className="icon-down-open"></i>
+                <span>next 4 weeks</span>
               </a>
             : null}
         </div>

@@ -57,7 +57,6 @@ export class Roster extends React.Component<RosterProps, RosterState> {
   }
 
   rows(): JSX.Element[] {
-    console.log('rows')
     let rows = []
     let shifts = this.props.shifts.filter(s => s.date >= this.state.startDate && s.date <= this.state.endDate)
                                   .sort((a, b) => a.date.valueOf() - b.date.valueOf())
@@ -80,8 +79,8 @@ export class Roster extends React.Component<RosterProps, RosterState> {
       if(shifts.length > i && Util.datesEqual(shifts[i].date, date)) {
         vols = shifts[i].vols
         i++
-      }        
-
+      }     
+      
       rows.push(
         <ShiftRow date={date}
                   vols={vols}

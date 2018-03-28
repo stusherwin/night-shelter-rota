@@ -1,3 +1,5 @@
+import { Util } from './Util'
+
 export type Vol = { id: number
                   , name: string
                   , intro: string
@@ -66,4 +68,29 @@ export function otherShiftType(shiftType: ShiftType) {
   } else {
     return 'Evening'
   }
+}
+
+export function updateVolDetails(vols: Vol[], vol: Vol): Vol[] {
+  return vols.map(v => v.id == vol.id? Util.update(v, vol) : v)
+}
+
+export function updateShiftVolDetails(shifts: Shift[], vol: Vol): Shift[] {
+  return shifts.map(s => Util.update(s, { vols: s.vols.map(v => v.vol.id == vol.id
+                                                                  ? Util.update(v, {vol: vol})
+                                                                  : v)
+                                        }))
+}
+
+export function updateVolShifts(shifts: Shift[], date: Date, vols: VolShift[]): Shift[] {
+  let result = shifts.slice()
+  let shift = result.find(s => Util.datesEqual(s.date, date))
+
+  if(shift) {
+    shift.vols = vols
+    shift.loading = false
+  } else {
+    result.push({date: date, vols: vols, loading: false})
+  }
+
+  return result
 }

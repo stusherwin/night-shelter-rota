@@ -51,7 +51,7 @@ export class ServerApi {
   static putVol(details: VolDetails): Promise<Vol> {
     const req = new Request('/api/vols',
                               { method: 'PUT'
-                              , body: JSON.stringify(details)
+                              , body: JSON.stringify(fromVolDetails(details))
                               , headers: new Headers({'Content-Type' : 'application/json'})
                               })
     return fetchHttpRequest(req, res => toVol(res as ApiVolunteer))
@@ -60,7 +60,7 @@ export class ServerApi {
   static postVol(details: VolDetails, volId: number): Promise<Vol> {
     const req = new Request(`/api/vols/${volId}`,
                               { method: 'POST'
-                              , body: JSON.stringify(details)
+                              , body: JSON.stringify(fromVolDetails(details))
                               , headers: new Headers({'Content-Type' : 'application/json'})
                               })
     return fetchHttpRequest(req, res => toVol(res as ApiVolunteer))

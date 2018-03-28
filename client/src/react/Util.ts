@@ -24,7 +24,7 @@ export class Util {
   }
 
   static datesEqual(a: Date, b: Date): boolean {
-    return a.valueOf() == b.valueOf()
+    return Util.datePart(a).valueOf() == Util.datePart(b).valueOf()
   }
 
   static dateDiffDays(a: Date, b: Date): number {
@@ -80,6 +80,10 @@ export class Util {
   }
 
   static toDateString(date: Date): string {
-    return `${date.getFullYear()}-${date.getMonth()}-${date.getDate()}`
+    return `${date.getUTCFullYear()}-${date.getUTCMonth()}-${date.getUTCDate()}`
+  }
+
+  static update<T, U>(t: T, u: U): T & U {
+    return Object.assign({}, t, u)
   }
 }

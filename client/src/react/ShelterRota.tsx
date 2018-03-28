@@ -1,7 +1,7 @@
 import * as React from 'react';
 import { Header, HeaderProps } from './Header'
 import { Roster, RosterProps } from './Roster'
-import { Vol, VolDetails, ShiftType, VolShift, Shift } from './Types'
+import { Vol, VolDetails, ShiftType, VolShift, Shift, updateVolShifts, updateVolDetails, updateShiftVolDetails } from './Types'
 import { ServerApi, ApiError } from './ServerApi'
 import { MessageBubbleProps, MessageBubbleAction } from './MessageBubble'
 import { Util } from './Util'
@@ -139,9 +139,39 @@ export class ShelterRota extends React.Component<ShelterRotaProps, ShelterRotaSt
   saveVolDetails(details: VolDetails) {
     console.log('save vol details')
     console.log(details)
-    this.setState({ volDetails: null
-                  , volDetailsState: 'NotEditing'
-                  })
+
+    if(this.state.currentVol) {
+      ServerApi.postVol(details, this.state.currentVol.id)
+      .then(vol => {
+        this.requestSucceeded();
+        this.setState({ currentVol: vol
+                      , vols: updateVolDetails(this.state.vols, vol)
+                      , shifts: updateShiftVolDetails(this.state.shifts, vol)
+                      , volDetails: null
+                      , volDetailsState: 'NotEditing'
+                      })      
+      })
+      .catch(err => {
+        let apiError = err as ApiError
+        console.log(err)
+        this.requestFailed(apiError);
+      })
+    } else {
+      ServerApi.putVol(details)
+      .then(vol => {
+        this.requestSucceeded();
+        this.setState({ currentVol: vol
+                      , vols: this.state.vols.concat([vol])
+                      , volDetails: null
+                      , volDetailsState: 'NotEditing'
+                      })      
+      })
+      .catch(err => {
+        let apiError = err as ApiError
+        console.log(err)
+        this.requestFailed(apiError);
+      })
+    }
   }
 
   cancelEditingVolDetails() {
@@ -152,17 +182,7 @@ export class ShelterRota extends React.Component<ShelterRotaProps, ShelterRotaSt
   }
 
   updateShifts(date: Date, vols: VolShift[]) {
-    let result = this.state.shifts.slice()
-    let shift = result.find(s => Util.datesEqual(s.date, date))
-
-    if(shift) {
-      shift.vols = vols
-      shift.loading = false
-    } else {
-      result.push({date: date, vols: vols, loading: false})
-    }
-
-    this.setState({ shifts: result })
+    this.setState({ shifts: updateVolShifts(this.state.shifts, date, vols) })
   }
 
   showVolInfo(vol: Vol) {
