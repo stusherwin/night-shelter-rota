@@ -57,7 +57,7 @@ function Intro(props: { name: string
   )
 }
 
-function Preferences(props: { prefs: [PrefInfo | null]
+function Preferences(props: { prefs: (PrefInfo | null)[]
                             }): JSX.Element | null {
   if(!props.prefs.filter(p => !!p).length) {
     return null
