@@ -1,12 +1,15 @@
 import * as React from 'react';
 import { Vol, OvernightPreference, OvernightGenderPreference, PrefInfo, info, VolDetails, createVolDetails } from './Types'
 import { Util } from './Util'
+import { ServerApi } from './ServerApi'
 
 export class VolDetailsFormProps {
   visible: boolean
   currentVol: Vol | null
   readOnly: boolean
-  save: (details: VolDetails) => void
+  apiRequest: (req: Promise<any>) => void
+  updateCurrentVol: (vol: Vol) => void
+  addNewVol: (vol: Vol) => void
   cancel: () => void
 }
 
@@ -49,6 +52,17 @@ export class VolDetailsForm extends React.Component<VolDetailsFormProps, VolDeta
       return false
     }
     return true
+  }
+
+  save() {
+    if(this.props.currentVol) {
+      let currentVolId = this.props.currentVol.id
+      this.props.apiRequest(ServerApi.postVol(this.state.details, currentVolId)
+          .then(vol => this.props.updateCurrentVol(vol)))
+    } else {
+      this.props.apiRequest(ServerApi.putVol(this.state.details)
+          .then(vol => this.props.addNewVol(vol)))
+    }
   }
 
   render() {
@@ -138,7 +152,7 @@ export class VolDetailsForm extends React.Component<VolDetailsFormProps, VolDeta
                   onClick={e => {
                     e.preventDefault(); 
                     if(this.state.formValid) {
-                      this.props.save(this.state.details)
+                      this.save()
                     } else {
                       this.setState({formSubmitted: true})
                     }

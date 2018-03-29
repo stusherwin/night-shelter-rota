@@ -10,9 +10,7 @@ export interface RosterProps { visible: boolean
                              , currentVol: Vol | null
                              , shifts: Shift[]
                              , config: ShiftRuleConfig
-                             , requestStarted: () => void
-                             , requestFailed: (error: ApiError) => void
-                             , requestSucceeded: () => void
+                             , apiRequest: (req: Promise<any>) => void
                              , updateShifts: (date: Date, vols: VolShift[]) => void
                              , showVolInfo: (vol: Vol) => void
                              }
@@ -39,11 +37,7 @@ export class Roster extends React.Component<RosterProps, RosterState> {
 
     return (
       <div className={this.classNames()}>
-          {/* Roster today: {this.props.currentDate.toString()}
-          start: {this.state.startDate.toString()}
-          end: {this.state.endDate.toString()}
-          rows: {rows.length} */}
-          {this.rows()}
+        {this.rows()}
       </div>
     )
   }
@@ -86,9 +80,7 @@ export class Roster extends React.Component<RosterProps, RosterState> {
                   vols={vols}
                   config={this.props.config}
                   currentVol={this.props.currentVol}
-                  requestStarted={this.props.requestStarted}
-                  requestFailed={this.props.requestFailed}
-                  requestSucceeded={this.props.requestSucceeded}
+                  apiRequest={this.props.apiRequest}
                   updateShifts={this.props.updateShifts}
                   showVolInfo={this.props.showVolInfo} />
       )

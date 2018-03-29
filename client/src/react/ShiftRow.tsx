@@ -9,9 +9,7 @@ export interface ShiftRowProps { date: Date
                                , vols: VolShift[]
                                , currentVol: Vol | null
                                , config: ShiftRuleConfig
-                               , requestStarted: () => void
-                               , requestFailed: (error: ApiError) => void
-                               , requestSucceeded: () => void
+                               , apiRequest: (req: Promise<any>) => void
                                , updateShifts: (date: Date, vols: VolShift[]) => void
                                , showVolInfo: (vol: Vol) => void
                                }
@@ -164,6 +162,16 @@ export class ShiftRow extends React.Component<ShiftRowProps, ShiftRowState> {
     return classNames.join(' ')
   }
 
+  apiRequest(req: Promise<any>) {
+    this.setState({ loading: true })
+
+    this.props.apiRequest(
+      req
+        .then(volShifts => {
+          this.setState({ loading: false })
+        }))
+  }
+
   addCurrentVol(shiftType: ShiftType) {
     console.log('addCurrentVol')
     
@@ -171,20 +179,12 @@ export class ShiftRow extends React.Component<ShiftRowProps, ShiftRowState> {
       return
     }
 
-    this.props.requestStarted();
-    this.setState({ loading: true })
-    ServerApi.putVolShift(shiftType, this.props.date, this.props.currentVol.id)
-      .then(volShifts => {
-        this.props.updateShifts(this.props.date, volShifts);
-        this.props.requestSucceeded();
-        this.setState({ loading: false })
-      })
-      .catch(err => {
-        let apiError = err as ApiError
-        console.log(err)
-        this.props.requestFailed(apiError);
-        this.setState({ loading: false })
-      })
+    let currentVolId = this.props.currentVol.id
+    this.apiRequest(
+      ServerApi.putVolShift(shiftType, this.props.date, currentVolId)
+        .then(volShifts => {
+          this.props.updateShifts(this.props.date, volShifts);
+        }))
   }
 
   removeCurrentVol() {
@@ -194,20 +194,12 @@ export class ShiftRow extends React.Component<ShiftRowProps, ShiftRowState> {
       return
     }
 
-    this.props.requestStarted();
-    this.setState({ loading: true })
-    ServerApi.deleteVolShift(this.props.date, this.props.currentVol.id)
-      .then(volShifts => {
-        this.props.updateShifts(this.props.date, volShifts);
-        this.props.requestSucceeded();
-        this.setState({ loading: false })
-      })
-      .catch(err => {
-        let apiError = err as ApiError
-        console.log(err)
-        this.props.requestFailed(apiError);
-        this.setState({ loading: false })
-      })
+    let currentVolId = this.props.currentVol.id
+    this.apiRequest(
+      ServerApi.deleteVolShift(this.props.date, currentVolId)
+        .then(volShifts => {
+          this.props.updateShifts(this.props.date, volShifts);
+        }))
   }
 
   changeCurrentVolShiftType(shiftType: ShiftType) {
@@ -217,20 +209,12 @@ export class ShiftRow extends React.Component<ShiftRowProps, ShiftRowState> {
       return
     }
 
-    this.props.requestStarted();
-    this.setState({ loading: true })
-    ServerApi.postVolShift(shiftType, this.props.date, this.props.currentVol.id)
-      .then(volShifts => {
-        this.props.updateShifts(this.props.date, volShifts);
-        this.props.requestSucceeded();
-        this.setState({ loading: false })
-      })
-      .catch(err => {
-        let apiError = err as ApiError
-        console.log(err)
-        this.props.requestFailed(apiError);
-        this.setState({ loading: false })
-      })
+    let currentVolId = this.props.currentVol.id
+    this.props.apiRequest(
+      ServerApi.postVolShift(shiftType, this.props.date, currentVolId)
+        .then(volShifts => {
+          this.props.updateShifts(this.props.date, volShifts);
+        }))
   }
   
   messageBubbleAction(action: MessageBubbleAction) {

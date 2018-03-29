@@ -74,39 +74,21 @@ export class ShelterRota extends React.Component<ShelterRotaProps, ShelterRotaSt
                   currentVol={this.state.currentVol}
                   shifts={this.state.shifts}
                   config={this.state.config}
-                  requestStarted={this.requestStarted.bind(this)}
-                  requestFailed={this.requestFailed.bind(this)}
-                  requestSucceeded={this.requestSucceeded.bind(this)}
+                  apiRequest={this.apiRequest.bind(this)}
                   updateShifts={this.updateShifts.bind(this)}
                   showVolInfo={this.showVolInfo.bind(this)} />
           <VolDetailsForm visible={this.state.editingVolDetails}
                           currentVol={this.state.currentVol}
                           readOnly={this.state.reqInProgress}
-                          save={this.saveVolDetails.bind(this)}
+                          apiRequest={this.apiRequest.bind(this)}
+                          addNewVol={this.addNewVol.bind(this)}
+                          updateCurrentVol={this.updateCurrentVol.bind(this)}
                           cancel={this.cancelEditingVolDetails.bind(this)} />
         </div>
         <VolInfo vol={this.state.volInfo}
                  close={this.hideVolInfo.bind(this)} />
       </div>
     )
-  }
-
-  requestStarted() {
-    this.setState({ reqInProgress: true
-                  , error: null
-                  })
-  }
-
-  requestFailed(error: ApiError) {
-    this.setState({ reqInProgress: false
-                  , error: error
-                  })
-  }
-
-  requestSucceeded() {
-    this.setState({ reqInProgress: false
-                  , error: null
-                  })
   }
 
   changeCurrentVol(vol: Vol | null) {
@@ -129,34 +111,39 @@ export class ShelterRota extends React.Component<ShelterRotaProps, ShelterRotaSt
                   })
   }
 
-  saveVolDetails(details: VolDetails) {
-    this.requestStarted();
+  updateCurrentVol(vol: Vol) {
+    this.setState({ currentVol: vol
+                  , vols: updateVolDetails(this.state.vols, vol)
+                  , shifts: updateShiftVolDetails(this.state.shifts, vol)
+                  , editingVolDetails: false
+                  })
+  }
 
-    let req = this.state.currentVol
-      ? ServerApi.postVol(details, this.state.currentVol.id)
-        .then(vol => {
-          this.setState({ currentVol: vol
-                        , vols: updateVolDetails(this.state.vols, vol)
-                        , shifts: updateShiftVolDetails(this.state.shifts, vol)
-                        })
-        })
-      : ServerApi.putVol(details)
-        .then(vol => {
-          this.setState({ currentVol: vol
-                        , vols: this.state.vols.concat([vol])
-                        })      
-        })
+  addNewVol(vol: Vol) {
+    this.setState({ currentVol: vol
+                  , vols: this.state.vols.concat([vol])
+                  , editingVolDetails: false
+                  })      
+  }
+
+  apiRequest(req: Promise<any>) {
+    this.setState({ reqInProgress: true
+                  , error: null
+                  })
 
     req
-    .then(vol => {
-      this.requestSucceeded();
-      this.cancelEditingVolDetails();
-    })
-    .catch(err => {
-      let apiError = err as ApiError
-      console.log(err)
-      this.requestFailed(apiError);
-    })
+      .then(_ => {
+        this.setState({ reqInProgress: false
+                      , error: null
+                      })
+      })
+      .catch(err => {
+        let apiError = err as ApiError
+        console.log(err)
+        this.setState({ reqInProgress: false
+                      , error: apiError
+                      })
+      })
   }
 
   cancelEditingVolDetails() {
