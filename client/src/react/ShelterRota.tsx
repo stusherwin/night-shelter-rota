@@ -7,7 +7,7 @@ import { MessageBubbleProps, MessageBubbleAction } from './MessageBubble'
 import { Util } from './Util'
 import { ShiftRuleConfig } from './ShiftRules'
 import { VolInfo } from './VolInfo'
-import { VolDetailsForm, VolDetailsState } from './VolDetailsForm'
+import { VolDetailsForm } from './VolDetailsForm'
 
 export interface ShelterRotaProps {}
 export interface ShelterRotaState { initialDataLoaded: boolean
@@ -18,8 +18,7 @@ export interface ShelterRotaState { initialDataLoaded: boolean
                                   , reqInProgress: boolean
                                   , error: ApiError | null
                                   , volInfo: Vol | null
-                                  , volDetailsState: VolDetailsState
-                                  , volDetails: Vol | null
+                                  , editingVolDetails: boolean
                                   }
 
 export class ShelterRota extends React.Component<ShelterRotaProps, ShelterRotaState> {
@@ -36,15 +35,13 @@ export class ShelterRota extends React.Component<ShelterRotaProps, ShelterRotaSt
                  , reqInProgress: true
                  , error: null
                  , volInfo : null
-                 , volDetailsState: 'NotEditing'
-                 , volDetails: null
+                 , editingVolDetails: false
                  }
   }
 
   componentDidMount() {
     Promise.all([ServerApi.getVols(), ServerApi.getShifts()])
       .then(results => {
-        console.log(results);
         this.setState({ reqInProgress: false
                       , vols: results[0]
                       , initialDataLoaded: true
@@ -64,7 +61,7 @@ export class ShelterRota extends React.Component<ShelterRotaProps, ShelterRotaSt
     return (
       <div>
         <Header currentVol={this.state.currentVol}
-                volDetailsState={this.state.volDetailsState}
+                editingVolDetails={this.state.editingVolDetails}
                 reqInProgress={this.state.reqInProgress}
                 initialDataLoaded={this.state.initialDataLoaded}
                 vols={this.state.vols}
@@ -73,7 +70,7 @@ export class ShelterRota extends React.Component<ShelterRotaProps, ShelterRotaSt
                 editNewVol={this.editNewVol.bind(this)}
                 editCurrentVol={this.editCurrentVol.bind(this)} />
         <div className="container">
-          <Roster visible={this.state.initialDataLoaded && this.state.volDetailsState == 'NotEditing'}
+          <Roster visible={this.state.initialDataLoaded && !this.state.editingVolDetails}
                   currentVol={this.state.currentVol}
                   shifts={this.state.shifts}
                   config={this.state.config}
@@ -82,9 +79,9 @@ export class ShelterRota extends React.Component<ShelterRotaProps, ShelterRotaSt
                   requestSucceeded={this.requestSucceeded.bind(this)}
                   updateShifts={this.updateShifts.bind(this)}
                   showVolInfo={this.showVolInfo.bind(this)} />
-          <VolDetailsForm state={this.state.volDetailsState}
-                          vol={this.state.volDetails}
-                          readOnly={false}
+          <VolDetailsForm visible={this.state.editingVolDetails}
+                          currentVol={this.state.currentVol}
+                          readOnly={this.state.reqInProgress}
                           save={this.saveVolDetails.bind(this)}
                           cancel={this.cancelEditingVolDetails.bind(this)} />
         </div>
@@ -113,72 +110,57 @@ export class ShelterRota extends React.Component<ShelterRotaProps, ShelterRotaSt
   }
 
   changeCurrentVol(vol: Vol | null) {
-    console.log('current vol: ' + (vol? vol.name : 'none'))
     this.setState({ currentVol: vol
-                  , volDetailsState: 'NotEditing'
+                  , editingVolDetails: false
                   , error: null
                   })
   }
 
   editNewVol() {
-    console.log('edit new vol')
-    this.setState({ volDetails: null
-                  , volDetailsState: 'EditingNewVol'
+    this.setState({ currentVol: null
+                  , editingVolDetails: true
                   , error: null
                   })
   }
 
   editCurrentVol() {
-    console.log('edit current vol')
-    this.setState({ volDetails: this.state.currentVol
-                  , volDetailsState: 'EditingCurrentVol'
+    this.setState({ editingVolDetails: true
                   , error: null
                   })
   }
 
   saveVolDetails(details: VolDetails) {
-    console.log('save vol details')
-    console.log(details)
+    this.requestStarted();
 
-    if(this.state.currentVol) {
-      ServerApi.postVol(details, this.state.currentVol.id)
-      .then(vol => {
-        this.requestSucceeded();
-        this.setState({ currentVol: vol
-                      , vols: updateVolDetails(this.state.vols, vol)
-                      , shifts: updateShiftVolDetails(this.state.shifts, vol)
-                      , volDetails: null
-                      , volDetailsState: 'NotEditing'
-                      })      
-      })
-      .catch(err => {
-        let apiError = err as ApiError
-        console.log(err)
-        this.requestFailed(apiError);
-      })
-    } else {
-      ServerApi.putVol(details)
-      .then(vol => {
-        this.requestSucceeded();
-        this.setState({ currentVol: vol
-                      , vols: this.state.vols.concat([vol])
-                      , volDetails: null
-                      , volDetailsState: 'NotEditing'
-                      })      
-      })
-      .catch(err => {
-        let apiError = err as ApiError
-        console.log(err)
-        this.requestFailed(apiError);
-      })
-    }
+    let req = this.state.currentVol
+      ? ServerApi.postVol(details, this.state.currentVol.id)
+        .then(vol => {
+          this.setState({ currentVol: vol
+                        , vols: updateVolDetails(this.state.vols, vol)
+                        , shifts: updateShiftVolDetails(this.state.shifts, vol)
+                        })
+        })
+      : ServerApi.putVol(details)
+        .then(vol => {
+          this.setState({ currentVol: vol
+                        , vols: this.state.vols.concat([vol])
+                        })      
+        })
+
+    req
+    .then(vol => {
+      this.requestSucceeded();
+      this.cancelEditingVolDetails();
+    })
+    .catch(err => {
+      let apiError = err as ApiError
+      console.log(err)
+      this.requestFailed(apiError);
+    })
   }
 
   cancelEditingVolDetails() {
-    console.log('cancel edit vol details')
-    this.setState({ volDetails: null
-                  , volDetailsState: 'NotEditing'
-                  })
+    this.setState({editingVolDetails: false})
   }
 
   updateShifts(date: Date, vols: VolShift[]) {

@@ -22,21 +22,6 @@ export type Shift = { date: Date
                     , loading: boolean
                     }
 
-// data OvernightPreference =
-//     PreferToBeAlone
-//   | PreferAnotherVolunteer
-
-// derive instance eqOvernightPreference :: Eq OvernightPreference
-
-// data OvernightGenderPreference =
-//     Male
-//   | Female
-
-// derive instance eqOvernightGenderPreference :: Eq OvernightGenderPreference
-
-
-// derive instance eqShiftType :: Eq ShiftType
-
 export type VolDetails = { name: string
                          , intro: string
                          , pref: OvernightPreference | null
@@ -44,9 +29,6 @@ export type VolDetails = { name: string
                          , notes: string
                          }
 
-// otherShiftType :: ShiftType -> ShiftType
-// otherShiftType Evening   = Overnight
-// otherShiftType Overnight = Evening
 export interface PrefInfo {
   marker: string
   description: string
@@ -93,4 +75,20 @@ export function updateVolShifts(shifts: Shift[], date: Date, vols: VolShift[]): 
   }
 
   return result
+}
+
+export function createVolDetails(vol: Vol | null): VolDetails {
+  return vol
+    ? { name: vol.name
+      , intro: vol.intro
+      , pref: vol.overnightPreference
+      , genderPref: vol.overnightGenderPreference
+      , notes: vol.notes
+      }
+    : { name: ''
+      , intro: ''
+      , pref: null
+      , genderPref: null
+      , notes: ''
+      }
 }

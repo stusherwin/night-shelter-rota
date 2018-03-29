@@ -2,14 +2,13 @@ import * as React from 'react';
 import { Vol } from './Types'
 import { MessageBubble, MessageBubbleProps, MessageBubbleAction } from './MessageBubble'
 import { ApiError } from './ServerApi'
-import { VolDetailsState } from './VolDetailsForm'
 
 export interface HeaderProps { currentVol: Vol | null
                              , reqInProgress: boolean
                              , initialDataLoaded: boolean
                              , vols: Vol[]
                              , error: ApiError | null
-                             , volDetailsState: VolDetailsState
+                             , editingVolDetails: boolean
                              , changeCurrentVol: (vol: Vol | null) => void
                              , editCurrentVol: () => void
                              , editNewVol: () => void
@@ -54,7 +53,7 @@ export class Header extends React.Component<HeaderProps, HeaderState> {
     } else {
       return (
         <div className="header">
-          <HeaderButtons volDetailsState={this.props.volDetailsState}
+          <HeaderButtons editingVolDetails={this.props.editingVolDetails}
                          currentVol={this.props.currentVol}
                          editNewVol={this.props.editNewVol}
                          editCurrentVol={this.props.editCurrentVol} />
@@ -85,13 +84,13 @@ export class Header extends React.Component<HeaderProps, HeaderState> {
   }
 }
 
-function HeaderButtons(props: { volDetailsState: VolDetailsState 
+function HeaderButtons(props: { editingVolDetails: boolean 
                               , currentVol: Vol | null
                               , editNewVol: () => void
                               , editCurrentVol: () => void
                               }): JSX.Element {
   let buttons = [];
-  if(props.volDetailsState == 'NotEditing') {
+  if(!props.editingVolDetails) {
     buttons.push(<HeaderButton buttonClassName="header-button-new"
                                mediaClassName="media-large-screen"
                                text="New volunteer"

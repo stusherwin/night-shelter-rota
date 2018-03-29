@@ -1,14 +1,10 @@
 import * as React from 'react';
-import { Vol, OvernightPreference, OvernightGenderPreference, PrefInfo, info, VolDetails } from './Types'
+import { Vol, OvernightPreference, OvernightGenderPreference, PrefInfo, info, VolDetails, createVolDetails } from './Types'
 import { Util } from './Util'
 
-export type VolDetailsState = 'NotEditing' 
-                            | 'EditingNewVol'
-                            | 'EditingCurrentVol'
-
 export class VolDetailsFormProps {
-  state: VolDetailsState
-  vol: Vol | null
+  visible: boolean
+  currentVol: Vol | null
   readOnly: boolean
   save: (details: VolDetails) => void
   cancel: () => void
@@ -23,28 +19,20 @@ export class VolDetailsFormState {
 export class VolDetailsForm extends React.Component<VolDetailsFormProps, VolDetailsFormState> {
   constructor(props: VolDetailsFormProps) {
     super(props)
-    
-    this.state = { details: { name: props.vol? props.vol.name : ''
-                            , intro: props.vol? props.vol.intro : ''
-                            , pref: props.vol? props.vol.overnightPreference : null
-                            , genderPref: props.vol? props.vol.overnightGenderPreference : null
-                            , notes: props.vol? props.vol.notes : ''
-                            }
+
+    let details = createVolDetails(props.currentVol)
+    this.state = { details
                  , formSubmitted: false
-                 , formValid: false
+                 , formValid: this.isValid(details)
                  }
   }
 
   componentWillReceiveProps(props: VolDetailsFormProps) {
-    if(props.vol != this.props.vol) {
-      this.setState({ details: { name: props.vol? props.vol.name : ''
-                               , intro: props.vol? props.vol.intro : ''
-                               , pref: props.vol? props.vol.overnightPreference : null
-                               , genderPref: props.vol? props.vol.overnightGenderPreference : null
-                               , notes: props.vol? props.vol.notes : ''
-                               }
+    if(props.visible != this.props.visible) {
+      let details = createVolDetails(props.currentVol)
+      this.setState({ details
                     , formSubmitted: false
-                    , formValid: false
+                    , formValid: this.isValid(details)
                     })
     }
   }
@@ -64,7 +52,7 @@ export class VolDetailsForm extends React.Component<VolDetailsFormProps, VolDeta
   }
 
   render() {
-    if(this.props.state == 'NotEditing') {
+    if(!this.props.visible) {
       return null
     }
 
@@ -72,7 +60,7 @@ export class VolDetailsForm extends React.Component<VolDetailsFormProps, VolDeta
 
     return (
       <form className={`ui form details ${formError? "error": ""}`}>
-        <h3>{this.props.vol? this.props.vol.name + "'s details" : "Add new volunteer"}</h3>
+        <h3>{this.props.currentVol? this.props.currentVol.name + "'s details" : "Add new volunteer"}</h3>
         <div className={`required field ${formError? "error" : ""}`}>
           <label htmlFor="volName">Name</label>
           <input type="text"
@@ -134,11 +122,12 @@ export class VolDetailsForm extends React.Component<VolDetailsFormProps, VolDeta
                  disabled={this.props.readOnly} />
         </div>
         <div className="ui error message">
-          <div className="header">Please check these fields and try again:</div>
+          <div className="error-message-header">Please check these fields and try again:</div>
           <p>Volunteer name should not be empty.</p>
         </div>
         <div className="buttons">
           <button className="ui button"
+                  disabled={this.props.readOnly}
                   onClick={e => {e.preventDefault(); this.props.cancel()}}>
             <i className="icon icon-cancel"></i>
             Cancel
