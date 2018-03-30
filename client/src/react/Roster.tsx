@@ -17,6 +17,7 @@ export interface RosterProps { visible: boolean
 
 export interface RosterState { startDate: Date
                              , endDate: Date
+                             , fixedMessage: Date | null
                              }
 
 const SHIFT_COUNT = 28
@@ -27,6 +28,7 @@ export class Roster extends React.Component<RosterProps, RosterState> {
     let startDate = Util.previousWeekday(props.config.currentDate, 1)
     this.state = { startDate: startDate
                  , endDate: Util.addDays(startDate, SHIFT_COUNT)
+                 , fixedMessage: null
                  }
   }
  
@@ -82,7 +84,9 @@ export class Roster extends React.Component<RosterProps, RosterState> {
                   currentVol={this.props.currentVol}
                   apiRequest={this.props.apiRequest}
                   updateShifts={this.props.updateShifts}
-                  showVolInfo={this.props.showVolInfo} />
+                  showVolInfo={this.props.showVolInfo}
+                  otherFixedMessage={!!this.state.fixedMessage && !Util.datesEqual(this.state.fixedMessage, date)}
+                  messageFixedStateChanged={this.messageFixedStateChanged.bind(this)} />
       )
 
       date = Util.addDays(date, 1)
@@ -97,11 +101,18 @@ export class Roster extends React.Component<RosterProps, RosterState> {
     return rows
   }
 
+  messageFixedStateChanged(date: Date, fixed: boolean) {
+    if(fixed) {
+      this.setState({fixedMessage: date})
+    } else if(this.state.fixedMessage && Util.datesEqual(this.state.fixedMessage, date)) {
+      this.setState({fixedMessage: null})
+    }
+  }
+
   loadPrevPeriod() {
     // if we've already added an extra set of shifts to the roster we don't want to add any more,
     // so just bring the end date back as well
     let daysInRoster = Util.dateDiffDays(this.state.endDate, this.state.startDate)
-    // console.log(daysInRoster)
     let endDateDiff = daysInRoster > SHIFT_COUNT ? -SHIFT_COUNT : 0
 
     this.setState({ startDate: Util.addDays(this.state.startDate, -SHIFT_COUNT)
@@ -113,7 +124,6 @@ export class Roster extends React.Component<RosterProps, RosterState> {
     // if we've already added an extra set of shifts to the roster we don't want to add any more,
     // so just bring the start date forward as well
     let daysInRoster = Util.dateDiffDays(this.state.endDate, this.state.startDate)
-    // console.log(daysInRoster)
     let startDateDiff = daysInRoster > SHIFT_COUNT ? SHIFT_COUNT : 0
 
     this.setState({ startDate: Util.addDays(this.state.startDate, startDateDiff)

@@ -1,6 +1,6 @@
 import * as React from 'react';
 import { Vol } from './Types'
-import { MessageBubble, MessageBubbleProps, MessageBubbleAction } from './MessageBubble'
+import { MessageBubble, Message } from './MessageBubble'
 import { ApiError } from './ServerApi'
 
 export interface HeaderProps { currentVol: Vol | null
@@ -14,13 +14,13 @@ export interface HeaderProps { currentVol: Vol | null
                              , editNewVol: () => void
                              }
 
-export interface HeaderState { errorMessage: MessageBubbleProps
+export interface HeaderState { errorMessage: Message | null
                              }
 
 export class Header extends React.Component<HeaderProps, HeaderState> {
   constructor(props: HeaderProps) {
     super(props)
-    this.state = { errorMessage: new MessageBubbleProps()
+    this.state = { errorMessage: null
                  }
   }
 
@@ -28,13 +28,12 @@ export class Header extends React.Component<HeaderProps, HeaderState> {
     if(props.error != this.props.error) {
       this.setState(
         { errorMessage: props.error
-                        ? this.state.errorMessage.setMessage(
-                            { header: props.error.error
-                            , body: props.error.message
-                            , position: 'Under'
-                            , icon: 'warning'
-                            })
-                        : new MessageBubbleProps()
+                        ? { header: props.error.error
+                          , body: props.error.message
+                          , position: 'Under'
+                          , icon: 'warning'
+                          }
+                        : null
         })
     }
   }
@@ -44,8 +43,7 @@ export class Header extends React.Component<HeaderProps, HeaderState> {
       return (
         <div className="header initial-data-loading">
           <StatusIcon reqInProgress={this.props.reqInProgress}
-                      errorMessage={this.state.errorMessage}
-                      action={this.errorMessageAction.bind(this)}>
+                      errorMessage={this.state.errorMessage}>
           </StatusIcon>
           <h2>Night Shelter Rota</h2>
         </div>
@@ -58,8 +56,7 @@ export class Header extends React.Component<HeaderProps, HeaderState> {
                          editNewVol={this.props.editNewVol}
                          editCurrentVol={this.props.editCurrentVol} />
           <StatusIcon reqInProgress={this.props.reqInProgress}
-                      errorMessage={this.state.errorMessage}
-                      action={this.errorMessageAction.bind(this)}>
+                      errorMessage={this.state.errorMessage}>
           </StatusIcon>
           <h2>Night Shelter Rota for </h2>
           <select className="vol-select"
@@ -76,11 +73,6 @@ export class Header extends React.Component<HeaderProps, HeaderState> {
         </div>
       )
     }
-  }
-
-  errorMessageAction(action: MessageBubbleAction) {
-    this.setState({ errorMessage: this.state.errorMessage.afterAction(action)
-                  })
   }
 }
 
@@ -145,18 +137,21 @@ function HeaderButton(props: { buttonClassName: string
 }
 
 class StatusIcon extends React.Component<{ reqInProgress: boolean
-                                         , errorMessage: MessageBubbleProps
-                                         , action: (action: MessageBubbleAction) => void
+                                         , errorMessage: Message | null
                                          }, {}> {
+  messageBubble: MessageBubble | null
+
   render() {
     return <div className="header-status">
              <i className={this.iconType()}
-                onClick={e => { e.preventDefault(); this.props.action('ToggleFixed'); }}
-                onMouseOver={e => { e.preventDefault(); this.props.action('ShowTransitory'); }}
-                onMouseLeave={e => { e.preventDefault(); this.props.action('HideTransitory'); }}>
+                onClick={e => { e.preventDefault(); this.messageBubble && this.messageBubble.toggleFixed() }}
+                onMouseOver={e => { e.preventDefault(); this.messageBubble && this.messageBubble.showTransitory() }}
+                onMouseLeave={e => { e.preventDefault(); this.messageBubble && this.messageBubble.hideTransitory() }}>
              </i>
-             <MessageBubble {...this.props.errorMessage}
-                            action={this.props.action}>
+             <MessageBubble message={this.props.errorMessage}
+                            otherFixedMessage={false}
+                            messageFixedStateChanged={() => {}}
+                            ref={messageBubble => {this.messageBubble = messageBubble}}>
              </MessageBubble>
           </div>
   }
@@ -166,7 +161,7 @@ class StatusIcon extends React.Component<{ reqInProgress: boolean
       return 'icon-spin animate-spin'
     }
 
-    return this.props.errorMessage.message
+    return this.props.errorMessage
              ? 'icon-warning'
              : 'logo'
   }

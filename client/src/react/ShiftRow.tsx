@@ -9,6 +9,8 @@ export interface ShiftRowProps { date: Date
                                , vols: VolShift[]
                                , currentVol: Vol | null
                                , config: ShiftRuleConfig
+                               , otherFixedMessage: boolean
+                               , messageFixedStateChanged: (date: Date, fixed: boolean) => void
                                , apiRequest: (req: Promise<any>) => void
                                , updateShifts: (date: Date, vols: VolShift[]) => void
                                , showVolInfo: (vol: Vol) => void
@@ -19,7 +21,7 @@ export interface CurrentVolSignedUpState { shiftType: string | null
 
 export interface ShiftRowState { ruleResult: ShiftRuleResult
                                , loading: boolean
-                               , messageBubble: MessageBubbleProps
+                               , message: Message | null
                                }
 
 export class ShiftRow extends React.Component<ShiftRowProps, ShiftRowState> {
@@ -31,7 +33,7 @@ export class ShiftRow extends React.Component<ShiftRowProps, ShiftRowState> {
     
     this.state = { ruleResult: results[0]
                  , loading: false
-                 , messageBubble: new MessageBubbleProps(message)
+                 , message
                  }
   }
 
@@ -40,7 +42,7 @@ export class ShiftRow extends React.Component<ShiftRowProps, ShiftRowState> {
     let message = this.message(results)
     
     this.setState({ ruleResult: results[0]
-                  , messageBubble: this.state.messageBubble.setMessage(message)
+                  , message
                   })
   }
 
@@ -83,14 +85,20 @@ export class ShiftRow extends React.Component<ShiftRowProps, ShiftRowState> {
     return message
   }
 
+  messageFixedStateChanged(fixed: boolean) {
+    this.props.messageFixedStateChanged(this.props.date, fixed)
+  }
+
   render() {
     let children =
       [ <ShiftInfo date={this.props.date}
                     vols={this.props.vols}
                     config={this.props.config}
                     ruleResult={this.state.ruleResult}
-                    messageBubble={this.state.messageBubble}
-                    messageBubbleAction={this.messageBubbleAction.bind(this)} />
+                    message={this.state.message}
+                    otherFixedMessage={this.props.otherFixedMessage}
+                    messageFixedStateChanged={this.messageFixedStateChanged.bind(this)}
+                    />
       , <CurrentVolSignUp date={this.props.date}
                            vols={this.props.vols}
                            currentVol={this.props.currentVol}
@@ -173,8 +181,6 @@ export class ShiftRow extends React.Component<ShiftRowProps, ShiftRowState> {
   }
 
   addCurrentVol(shiftType: ShiftType) {
-    console.log('addCurrentVol')
-    
     if(!this.props.currentVol) {
       return
     }
@@ -188,8 +194,6 @@ export class ShiftRow extends React.Component<ShiftRowProps, ShiftRowState> {
   }
 
   removeCurrentVol() {
-    console.log('removeCurrentVol')
-    
     if(!this.props.currentVol) {
       return
     }
@@ -203,8 +207,6 @@ export class ShiftRow extends React.Component<ShiftRowProps, ShiftRowState> {
   }
 
   changeCurrentVolShiftType(shiftType: ShiftType) {
-    console.log('change current vol shift type')
-    
     if(!this.props.currentVol) {
       return
     }
@@ -216,34 +218,33 @@ export class ShiftRow extends React.Component<ShiftRowProps, ShiftRowState> {
           this.props.updateShifts(this.props.date, volShifts);
         }))
   }
-  
-  messageBubbleAction(action: MessageBubbleAction) {
-    console.log('messageBubbleAction: ' + action)
-    this.setState({ messageBubble: this.state.messageBubble.afterAction(action)
-                  })
-  }
 }
 
 export class ShiftInfo extends React.Component<{ date: Date
                                                , vols: VolShift[]
                                                , config: ShiftRuleConfig
                                                , ruleResult: ShiftRuleResult
-                                               , messageBubble: MessageBubbleProps
-                                               , messageBubbleAction: (action: MessageBubbleAction) => void
+                                               , message: Message | null
+                                               , otherFixedMessage: boolean
+                                               , messageFixedStateChanged: (fixed: boolean) => void
                                                }, {}> {
+  messageBubble: MessageBubble | null
+
   render() {
     return (
       <div className={this.classNames()}
-           onClick={e => { e.preventDefault(); this.props.messageBubbleAction('ToggleFixed'); e.stopPropagation() }}
-           onMouseOver={e => this.props.messageBubbleAction('ShowTransitory')}
-           onMouseOut={e => this.props.messageBubbleAction('HideTransitory')} >
+           onClick={e => { e.preventDefault(); this.messageBubble && this.messageBubble.toggleFixed(); e.stopPropagation() }}
+           onMouseOver={e => this.messageBubble && this.messageBubble.showTransitory()}
+           onMouseOut={e => this.messageBubble && this.messageBubble.hideTransitory()} >
         <ShiftDate date={this.props.date} />
         <ShiftStatus noOfVols={this.props.vols.length}
                      ruleResult={this.props.ruleResult}
                      date={this.props.date}
                      config={this.props.config} />
-        <MessageBubble {...this.props.messageBubble}
-                       action={this.props.messageBubbleAction}>
+        <MessageBubble message={this.props.message}
+                       otherFixedMessage={this.props.otherFixedMessage}
+                       messageFixedStateChanged={this.props.messageFixedStateChanged}
+                       ref={messageBubble => {this.messageBubble = messageBubble}}>
         </MessageBubble>
       </div>
     )
@@ -252,7 +253,7 @@ export class ShiftInfo extends React.Component<{ date: Date
   classNames(): string {
     let classNames = ['shift-info']
 
-    if(this.props.messageBubble.message) {
+    if(this.props.message) {
       classNames.push('has-message')
     }
 

@@ -4,7 +4,9 @@ export type MessageBubbleAction = 'ToggleFixed'
                                 | 'ShowTransitory'
                                 | 'HideTransitory'
 
-type MessageBubbleState = 'Hidden' | 'Fixed' | 'Transitory' | 'OtherFixedMessage'
+export type MessageBubbleState = {
+  state: 'Hidden' | 'Fixed' | 'Transitory'
+} 
 
 export type Message = { header: string | null
                       , body: string
@@ -14,89 +16,34 @@ export type Message = { header: string | null
 
 export type MessageBubblePosition = 'Under' | 'Over'
 
-export interface IMessageBubbleProps {
+export type MessageBubbleProps = {
   message: Message | null
-  state: MessageBubbleState
-  action: (action: MessageBubbleAction) => void
+  otherFixedMessage: boolean
+  messageFixedStateChanged: (fixed: boolean) => void
 }
 
-export class MessageBubbleProps {
-  constructor(message: Message | null = null, state: MessageBubbleState = 'Hidden' ) {
-    this.message = message
-    this.state = state
-  }
-  readonly message: Message | null
-  readonly state: MessageBubbleState
+export class MessageBubble extends React.Component<MessageBubbleProps, MessageBubbleState> {
+  constructor(props: MessageBubbleProps) {
+    super(props)
 
-  setMessage(message: Message | null): MessageBubbleProps {
-    return new MessageBubbleProps(message, this.state)
+    this.state = { state: 'Hidden' }
   }
 
-  showTransitory(): MessageBubbleProps {
-    if(this.state == 'Hidden' && this.message != null) {
-      return new MessageBubbleProps(this.message, 'Transitory')
+  componentWillReceiveProps(props: MessageBubbleProps) {
+    if(props.otherFixedMessage != this.props.otherFixedMessage) {
+      if(props.otherFixedMessage) {
+        this.setState({state: 'Hidden'})
+      }
     }
-    return this
   }
 
-  hideTransitory(): MessageBubbleProps {
-    if(this.state == 'Transitory') {
-      return new MessageBubbleProps(this.message, 'Hidden')
-    }
-    return this;
-  }
-
-  toggleFixed(): MessageBubbleProps {
-    if(this.state == 'Hidden' && this.message != null) {
-      return new MessageBubbleProps(this.message, 'Fixed')
-    }
-    if(this.state == 'Transitory') {
-      return new MessageBubbleProps(this.message, 'Fixed')
-    }
-    if(this.state == 'Fixed') {
-      return new MessageBubbleProps(this.message, 'Hidden')
-    }
-    if(this.state == 'OtherFixedMessage' && this.message != null) {
-      return new MessageBubbleProps(this.message, 'Fixed')
-    }
-    return this;
-  }
-
-  otherFixedMessage(): MessageBubbleProps {
-    return new MessageBubbleProps(this.message, 'OtherFixedMessage')
-  }
-
-  otherFixedMessageHidden(): MessageBubbleProps {
-    if(this.state == 'OtherFixedMessage') {
-      return new MessageBubbleProps(this.message, 'Hidden')
-    }
-    return this;
-  }
-
-  afterAction(action: MessageBubbleAction): MessageBubbleProps {
-    switch(action) {
-      case 'ShowTransitory':
-        return this.showTransitory()
-     
-      case 'HideTransitory':
-        return this.hideTransitory()
-     
-      case 'ToggleFixed':
-        return this.toggleFixed()
-    }
-
-    return this;
-  }
-}
-
-export class MessageBubble extends React.Component<IMessageBubbleProps, {}> {
   render() {
-    if(this.props.state == 'Hidden' || this.props.message == null) {
+    if(this.state.state == 'Hidden' || this.props.message == null) {
       return null
     } else {
       return <div className={this.classNames()}
-                  onClick={e => {e.preventDefault(); this.props.action('ToggleFixed'); }}>
-               <CloseButton {...this.props} />
+                  onClick={e => {e.preventDefault(); this.toggleFixed(); }}>
+               <CloseButton state={this.state.state} close={this.toggleFixed.bind(this)} />
                <Header {...this.props} />
                <p>
                  <BodyIcon {...this.props} />
@@ -113,25 +60,53 @@ export class MessageBubble extends React.Component<IMessageBubbleProps, {}> {
       result.push('inverted')
     }
 
-    if(this.props.state == 'Fixed') {
+    if(this.state.state == 'Fixed') {
       result.push('fixed')
     }
 
     return result.join(' ')
   }
+  
+  showTransitory() {
+    if(this.state.state == 'Hidden' && !this.props.otherFixedMessage && this.props.message != null) {
+      this.setState({state: 'Transitory'})
+    }
+  }
+
+  hideTransitory() {
+    if(this.state.state == 'Transitory') {
+      this.setState({state: 'Hidden'})
+    }
+  }
+
+  toggleFixed() {
+    if(this.state.state == 'Hidden' && this.props.message != null) {
+      this.setState({state: 'Fixed'})
+      this.props.messageFixedStateChanged(true)
+    } else if(this.state.state == 'Transitory') {
+      this.setState({state: 'Fixed'})
+      this.props.messageFixedStateChanged(true)
+    } else if(this.state.state == 'Fixed') {
+      this.setState({state: 'Hidden'})
+      this.props.messageFixedStateChanged(false)
+    } else if(this.props.otherFixedMessage && this.props.message != null) {
+      this.setState({state: 'Fixed'})
+      this.props.messageFixedStateChanged(true)
+    }
+  }
 }
 
-function CloseButton(props: IMessageBubbleProps): JSX.Element | null {
+function CloseButton(props: {state: 'Hidden' | 'Fixed' | 'Transitory', close: () => void}): JSX.Element | null {
   if(props.state != 'Fixed') {
     return null
   }
 
-  return <a href="#" onClick={e => {e.preventDefault(); props.action('ToggleFixed'); }}>
+  return <a href="#" onClick={e => {e.preventDefault(); props.close(); }}>
            <i className="icon-cancel"></i>
          </a>
 }
 
-function Header(props: IMessageBubbleProps): JSX.Element | null {
+function Header(props: {message: Message | null}): JSX.Element | null {
   if(props.message == null || props.message.header == null) {
     return null
   }
@@ -142,7 +117,7 @@ function Header(props: IMessageBubbleProps): JSX.Element | null {
          </h3>
 }
 
-function HeaderIcon(props: IMessageBubbleProps): JSX.Element | null {
+function HeaderIcon(props: {message: Message | null}): JSX.Element | null {
   if(props.message == null || props.message.icon == null) {
     return null
   }
@@ -150,7 +125,7 @@ function HeaderIcon(props: IMessageBubbleProps): JSX.Element | null {
   return <i className={`icon-${props.message.icon}`}></i>
 }
 
-function BodyIcon(props: IMessageBubbleProps): JSX.Element | null {
+function BodyIcon(props: {message: Message | null}): JSX.Element | null {
   if(props.message == null || props.message.icon == null) {
     return null
   }
