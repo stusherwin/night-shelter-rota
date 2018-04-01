@@ -1,6 +1,6 @@
 import * as React from 'react';
 import { Vol, OvernightPreference, OvernightGenderPreference, PrefInfo, info, VolDetails, createVolDetails } from './Types'
-import { Util } from './Util'
+import { Util, pure } from './Util'
 import { ServerApi } from './ServerApi'
 
 export class VolDetailsFormProps {
@@ -166,12 +166,12 @@ export class VolDetailsForm extends React.Component<VolDetailsFormProps, VolDeta
   }
 }
 
-function PreferenceRadio(props: { name: string
-                                , value: OvernightPreference | OvernightGenderPreference | null
-                                , checked: boolean
-                                , onChecked: () => void
-                                , readOnly: boolean
-                                }): JSX.Element {
+const PreferenceRadio = pure((props: { name: string
+                                     , value: OvernightPreference | OvernightGenderPreference | null
+                                     , checked: boolean
+                                     , onChecked: () => void
+                                     , readOnly: boolean
+                                     }) => {
   let prefInfo = info(props.value)
   let marker = prefInfo? prefInfo.marker : 'none'
 
@@ -189,9 +189,10 @@ function PreferenceRadio(props: { name: string
       </label>
     </div>
   )
-}
+})
 
-function Preference(props: {pref: PrefInfo | null, className: string}): JSX.Element | null {
+const Preference = pure((props: { pref: PrefInfo | null
+                                , className: string}) => {
   if(!props.pref) {
     return <span>I don't mind</span>      
   }
@@ -201,4 +202,4 @@ function Preference(props: {pref: PrefInfo | null, className: string}): JSX.Elem
       {props.pref.description} (<span className={`sharing-pref ${props.className}`}><span>{props.pref.marker}</span></span>)
     </span>
   )
-}
+})

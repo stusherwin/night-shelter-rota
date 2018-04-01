@@ -6,7 +6,7 @@ export interface HeaderRowProps { showPrev: boolean
                                 , loadNextPeriod: () => void
                                 }
 
-export class HeaderRow extends React.Component<HeaderRowProps, {}> {
+export class HeaderRow extends React.PureComponent<HeaderRowProps> {
   render() {
     return (
       <div className="row row-header">

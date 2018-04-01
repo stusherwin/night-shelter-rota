@@ -109,7 +109,16 @@ export class Util {
         return false
       }
     }
-    
+
     return true
   }
+}
+
+export function pure<T>(func: (props: T) => any) {
+  class PureComponentWrap extends React.PureComponent<T> {
+    render() {
+      return func(this.props)
+    }
+  }
+  return PureComponentWrap
 }

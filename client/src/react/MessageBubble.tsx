@@ -1,8 +1,5 @@
 import * as React from 'react';
-
-export type MessageBubbleAction = 'ToggleFixed'
-                                | 'ShowTransitory'
-                                | 'HideTransitory'
+import { pure } from './Util'
 
 export type MessageBubbleState = {
   state: 'Hidden' | 'Fixed' | 'Transitory'
@@ -96,7 +93,8 @@ export class MessageBubble extends React.Component<MessageBubbleProps, MessageBu
   }
 }
 
-function CloseButton(props: {state: 'Hidden' | 'Fixed' | 'Transitory', close: () => void}): JSX.Element | null {
+const CloseButton = pure((props: { state: 'Hidden' | 'Fixed' | 'Transitory'
+                                 , close: () => void}) => {
   if(props.state != 'Fixed') {
     return null
   }
@@ -104,9 +102,9 @@ function CloseButton(props: {state: 'Hidden' | 'Fixed' | 'Transitory', close: ()
   return <a href="#" onClick={e => {e.preventDefault(); props.close(); }}>
            <i className="icon-cancel"></i>
          </a>
-}
+})
 
-function Header(props: {message: Message | null}): JSX.Element | null {
+const Header = pure((props: {message: Message | null}) => {
   if(props.message == null || props.message.header == null) {
     return null
   }
@@ -115,17 +113,17 @@ function Header(props: {message: Message | null}): JSX.Element | null {
            <HeaderIcon {...props}></HeaderIcon>
            {props.message.header}
          </h3>
-}
+})
 
-function HeaderIcon(props: {message: Message | null}): JSX.Element | null {
+const HeaderIcon = pure((props: {message: Message | null}) => {
   if(props.message == null || props.message.icon == null) {
     return null
   }
 
   return <i className={`icon-${props.message.icon}`}></i>
-}
+})
 
-function BodyIcon(props: {message: Message | null}): JSX.Element | null {
+const BodyIcon = pure((props: {message: Message | null}) => {
   if(props.message == null || props.message.icon == null) {
     return null
   }
@@ -135,4 +133,4 @@ function BodyIcon(props: {message: Message | null}): JSX.Element | null {
   }
 
   return <i className={`icon-${props.message.icon}`}></i>
-}
+})

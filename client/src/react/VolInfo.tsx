@@ -1,11 +1,12 @@
 import * as React from 'react';
 import { Vol, OvernightPreference, OvernightGenderPreference, PrefInfo, info } from './Types'
+import { pure } from './Util'
 
 export interface VolInfoProps { vol: Vol | null
                               , close: () => void
                               }
 
-export class VolInfo extends React.Component<VolInfoProps, {}> {
+export class VolInfo extends React.PureComponent<VolInfoProps> {
   render() {
     if(!this.props.vol) {
       return null
@@ -37,9 +38,9 @@ export class VolInfo extends React.Component<VolInfoProps, {}> {
   }
 }
 
-function Intro(props: { name: string
-                      , intro: string
-                      }): JSX.Element {
+const Intro = pure((props: { name: string
+                           , intro: string
+                           }) => {
 
   if(!props.intro.length) {
     return (
@@ -55,10 +56,9 @@ function Intro(props: { name: string
       {paras}
     </div>
   )
-}
+})
 
-function Preferences(props: { prefs: (PrefInfo | null)[]
-                            }): JSX.Element | null {
+const Preferences = pure((props: {prefs: (PrefInfo | null)[]})  => {
   if(!props.prefs.filter(p => !!p).length) {
     return null
   }
@@ -69,9 +69,9 @@ function Preferences(props: { prefs: (PrefInfo | null)[]
       {props.prefs.map(p => <Preference pref={p} />)}
     </div>
   )
-}
+})
 
-function Preference(props: {pref: PrefInfo | null}): JSX.Element | null {
+const Preference = pure((props: {pref: PrefInfo | null}) => {
   if(!props.pref) {
     return null
   }
@@ -82,10 +82,9 @@ function Preference(props: {pref: PrefInfo | null}): JSX.Element | null {
       <div className="vol-info-pref-description">{props.pref.description}</div>
     </div>
   )
-}
+})
 
-function Notes(props: { notes: string
-                      }): JSX.Element | null {
+const Notes = pure((props: {notes: string}) => {
   if(!props.notes.length) {
     return null
   }
@@ -103,4 +102,4 @@ function Notes(props: { notes: string
       </div>
     </div>
   )
-}
+})

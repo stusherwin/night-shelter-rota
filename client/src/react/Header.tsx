@@ -2,6 +2,7 @@ import * as React from 'react';
 import { Vol } from './Types'
 import { MessageBubble, Message } from './MessageBubble'
 import { ApiError } from './ServerApi'
+import { pure } from './Util'
 
 export interface HeaderProps { currentVol: Vol | null
                              , reqInProgress: boolean
@@ -77,11 +78,11 @@ export class Header extends React.Component<HeaderProps, HeaderState> {
   }
 }
 
-function HeaderButtons(props: { editingVolDetails: boolean 
-                              , currentVol: Vol | null
-                              , editNewVol: () => void
-                              , editCurrentVol: () => void
-                              }): JSX.Element {
+const HeaderButtons = pure((props: { editingVolDetails: boolean 
+                                   , currentVol: Vol | null
+                                   , editNewVol: () => void
+                                   , editCurrentVol: () => void
+                                   }) => {
   let buttons = [];
   if(!props.editingVolDetails) {
     buttons.push(<HeaderButton buttonClassName="header-button-new"
@@ -128,20 +129,20 @@ function HeaderButtons(props: { editingVolDetails: boolean
   return <div className="header-buttons">
            {buttons}
          </div>
-}
+})
 
-function HeaderButton(props: { buttonClassName: string
-                             , mediaClassName: string
-                             , text: string | null
-                             , icon: string
-                             , action: () => void
-                             } ): JSX.Element | null {
+const HeaderButton = pure((props: { buttonClassName: string
+                                  , mediaClassName: string
+                                  , text: string | null
+                                  , icon: string
+                                  , action: () => void
+                                  }) => {
   return <button className={`ui button header-button ${props.buttonClassName} ${props.mediaClassName}`}
                  onClick={e => {e.preventDefault(); props.action(); }}>
            <i className={`icon icon-${props.icon}`}></i>
            {props.text}
          </button>
-}
+})
 
 class StatusIcon extends React.Component<{ reqInProgress: boolean
                                          , errorMessage: Message | null

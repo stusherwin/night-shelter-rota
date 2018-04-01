@@ -1,9 +1,9 @@
 import * as React from 'react';
 import { Vol, Shift, VolShift, ShiftType, info, otherShiftType } from './Types'
-import { Util } from './Util'
+import { Util, pure } from './Util'
 import { ShiftRules, ShiftRuleConfig, ShiftRuleResult, ShiftRuleResultType } from './ShiftRules'
 import { ServerApi, ApiError } from './ServerApi'
-import { MessageBubble, MessageBubbleProps, MessageBubbleAction, Message, MessageBubblePosition } from './MessageBubble'
+import { MessageBubble, MessageBubbleProps, Message, MessageBubblePosition } from './MessageBubble'
 
 export interface ShiftRowProps { date: Date
                                , vols: VolShift[]
@@ -278,7 +278,7 @@ export class ShiftInfo extends React.Component<{ date: Date
   }
 }
 
-function ShiftDate(props: {date: Date}): JSX.Element {
+const ShiftDate = pure((props: {date: Date}) => {
   return (
     <div className="row-item shift-date">
       <div className="shift-date-part shift-date-day collapsing">
@@ -295,13 +295,13 @@ function ShiftDate(props: {date: Date}): JSX.Element {
       </div>
     </div>
   )
-}
+})
 
-function ShiftStatus(props: { date: Date
-                            , noOfVols: number
-                            , ruleResult: ShiftRuleResult
-                            , config: ShiftRuleConfig
-                            }): JSX.Element {
+const ShiftStatus = pure((props: { date: Date
+                                 , noOfVols: number
+                                 , ruleResult: ShiftRuleResult
+                                 , config: ShiftRuleConfig
+                                 }) => {
   return (
     <div className="row-item shift-status">
       <div className="shift-status-part shift-status-vol-count collapsing">
@@ -312,12 +312,12 @@ function ShiftStatus(props: { date: Date
       </div>
     </div>
   )
-}
+})
 
-function ShiftStatusIcon(props: { date: Date
-                                , ruleResult: ShiftRuleResult
-                                , config: ShiftRuleConfig
-                                }): JSX.Element | null {
+const ShiftStatusIcon = pure((props: { date: Date
+                                     , ruleResult: ShiftRuleResult
+                                     , config: ShiftRuleConfig
+                                     }) => {
   if(props.date < props.config.currentDate) {
     return <i className="icon-clock"></i>
   }
@@ -329,9 +329,10 @@ function ShiftStatusIcon(props: { date: Date
   }
 
   return null
-}
+})
 
-function VolMarkers(props: {vols: VolShift[], showVolInfo: (vol: Vol) => void}): JSX.Element {
+const VolMarkers = pure((props: { vols: VolShift[]
+                                , showVolInfo: (vol: Vol) => void}) => {
   return (
     <div className="row-item vol-markers collapsing">
       {props.vols.map(v => <VolMarker vol={v.vol}
@@ -340,9 +341,11 @@ function VolMarkers(props: {vols: VolShift[], showVolInfo: (vol: Vol) => void}):
                                       key={v.vol.id} />)}
     </div>
   )
-}
+})
 
-function VolMarker(props: {vol: Vol, shiftType: ShiftType, showVolInfo: (vol: Vol) => void}): JSX.Element {
+const VolMarker = pure((props: { vol: Vol
+                               , shiftType: ShiftType
+                               , showVolInfo: (vol: Vol) => void}) => {
   let genderPref = info(props.vol.overnightGenderPreference)
   let overnightPref = info(props.vol.overnightPreference)
   
@@ -370,9 +373,9 @@ function VolMarker(props: {vol: Vol, shiftType: ShiftType, showVolInfo: (vol: Vo
       </span>
     </span>
   )
-}
+})
 
-function ShiftTypeIcon(props: {shiftType: ShiftType}): JSX.Element {
+const ShiftTypeIcon = pure((props: {shiftType: ShiftType}) => {
   switch(props.shiftType) {
     case 'Evening':
       return <i className="vol-icon icon-no-bed"></i>
@@ -380,16 +383,16 @@ function ShiftTypeIcon(props: {shiftType: ShiftType}): JSX.Element {
     default:
       return <i className="vol-icon icon-bed"></i>
   }
-}
+})
 
-function CurrentVolSignUp(props: { date: Date
-                                 , vols: VolShift[]
-                                 , currentVol: Vol | null
-                                 , loading: boolean
-                                 , addCurrentVol: (shiftType: ShiftType) => void
-                                 , removeCurrentVol: () => void
-                                 , changeCurrentVolShiftType: (shiftType: ShiftType) => void
-                                 }): JSX.Element {
+const CurrentVolSignUp = pure((props: { date: Date
+                                      , vols: VolShift[]
+                                      , currentVol: Vol | null
+                                      , loading: boolean
+                                      , addCurrentVol: (shiftType: ShiftType) => void
+                                      , removeCurrentVol: () => void
+                                      , changeCurrentVolShiftType: (shiftType: ShiftType) => void
+                                      }) => {
   if(props.currentVol == null) {
     return (
       <div className="row-item current-vol collapsing right aligned">
@@ -411,14 +414,14 @@ function CurrentVolSignUp(props: { date: Date
                            changeCurrentVolShiftType={props.changeCurrentVolShiftType} />
     </div>
   )
-}
+})
 
-function CurrentVolSelected(props: { vols: VolShift[]
-                                   , currentVol: Vol
-                                   , loading: boolean
-                                   , addCurrentVol: (shiftType: ShiftType) => void
-                                   , removeCurrentVol: () => void
-                                   }): JSX.Element | null {
+const CurrentVolSelected = pure((props: { vols: VolShift[]
+                                        , currentVol: Vol
+                                        , loading: boolean
+                                        , addCurrentVol: (shiftType: ShiftType) => void
+                                        , removeCurrentVol: () => void
+                                        }) => {
   if(props.loading) {
     return <i className="icon-spin animate-spin loading"></i>
   }
@@ -443,14 +446,14 @@ function CurrentVolSelected(props: { vols: VolShift[]
       <label></label>
     </span>
   )
-}
+})
 
-function CurrentVolShiftType(props: { date: Date
-                                    , vols: VolShift[]
-                                    , currentVol: Vol | null
-                                    , loading: boolean
-                                    , changeCurrentVolShiftType: (shiftType: ShiftType) => void
-                                    }): JSX.Element | null {
+const CurrentVolShiftType = pure((props: { date: Date
+                                         , vols: VolShift[]
+                                         , currentVol: Vol | null
+                                         , loading: boolean
+                                         , changeCurrentVolShiftType: (shiftType: ShiftType) => void
+                                         }) => {
   if(!props.currentVol) {
     return null
   }
@@ -493,26 +496,24 @@ function CurrentVolShiftType(props: { date: Date
       </span>
     </span>
   )
-}
+})
 
-function ShiftTypeRadio(props: { shiftType: ShiftType
-                               , currentShiftType: ShiftType
-                               , date: Date
-                               , changeCurrentVolShiftType: (shiftType: ShiftType) => void
-                               }): JSX.Element {
-  return (
-    <span className="current-vol-shift-type-option">
-      <input type="radio"
-             id={`shift-type-${Util.toDateString(props.date)}-${props.shiftType.toLowerCase()}`}
-             name={`shift-type-${Util.toDateString(props.date)}`}
-             checked={props.currentShiftType == props.shiftType}
-             onClick={e => {e.stopPropagation()}}
-             onChange={e => {e.preventDefault(); props.changeCurrentVolShiftType(props.shiftType); e.stopPropagation()}} />
-      <label className="action-label"
-             htmlFor={`shift-type-${Util.toDateString(props.date)}-${props.shiftType.toLowerCase()}`}>
-        <ShiftTypeIcon shiftType={props.shiftType} />
-        {props.shiftType}
-      </label>
-    </span>
-  )
-}
+const ShiftTypeRadio = pure((props: { shiftType: ShiftType
+                                    , currentShiftType: ShiftType
+                                    , date: Date
+                                    , changeCurrentVolShiftType: (shiftType: ShiftType) => void
+                                    }) => (
+  <span className="current-vol-shift-type-option">
+    <input type="radio"
+           id={`shift-type-${Util.toDateString(props.date)}-${props.shiftType.toLowerCase()}`}
+           name={`shift-type-${Util.toDateString(props.date)}`}
+           checked={props.currentShiftType == props.shiftType}
+           onClick={e => {e.stopPropagation()}}
+           onChange={e => {e.preventDefault(); props.changeCurrentVolShiftType(props.shiftType); e.stopPropagation()}} />
+    <label className="action-label"
+           htmlFor={`shift-type-${Util.toDateString(props.date)}-${props.shiftType.toLowerCase()}`}>
+      <ShiftTypeIcon shiftType={props.shiftType} />
+      {props.shiftType}
+    </label>
+  </span>
+))
