@@ -229,7 +229,7 @@ export class ShiftRow extends React.Component<ShiftRowProps, ShiftRowState> {
     }
 
     let currentVolId = this.props.currentVol.id
-    this.props.apiRequest(
+    this.apiRequest(
       ServerApi.postVolShift(shiftType, this.props.date, currentVolId)
         .then(volShifts => {
           this.props.updateShifts(this.props.date, volShifts);
