@@ -37,13 +37,26 @@ export class ShiftRow extends React.Component<ShiftRowProps, ShiftRowState> {
                  }
   }
 
-  componentWillReceiveProps(props: ShiftRowProps) {
-    let results = ShiftRules.validateShift(props.date, props.vols, props.config)
+  componentWillReceiveProps(nextProps: ShiftRowProps) {
+    if(   Util.datesEqual(this.props.date, nextProps.date)
+       && Util.arraysSame(this.props.vols, nextProps.vols)) {
+      return
+    }
+
+    let results = ShiftRules.validateShift(nextProps.date, nextProps.vols, nextProps.config)
     let message = this.message(results)
     
     this.setState({ ruleResult: results[0]
                   , message
                   })
+  }
+
+  shouldComponentUpdate(nextProps: ShiftRowProps, nextState: ShiftRowState): boolean {
+    return    !Util.arraysSame(this.props.vols, nextProps.vols)
+           || !Util.datesEqual(this.props.date, nextProps.date)
+           || this.props.currentVol != nextProps.currentVol
+           || this.props.otherFixedMessage != nextProps.otherFixedMessage
+           || this.state.loading != nextState.loading
   }
 
   message(results: ShiftRuleResult[]): Message | null {
@@ -130,13 +143,12 @@ export class ShiftRow extends React.Component<ShiftRowProps, ShiftRowState> {
     )
   }
 
-  clickable() {
+  clickable(): boolean {
     if(this.state.loading || !this.props.currentVol) {
       return false
     }
 
     let currentVolId = this.props.currentVol.id
-    
     return !this.props.vols.find(s => s.vol.id == currentVolId)
   }
 
@@ -179,6 +191,9 @@ export class ShiftRow extends React.Component<ShiftRowProps, ShiftRowState> {
       req
         .then(volShifts => {
           this.setState({ loading: false })
+        }, err => {
+          this.setState({ loading: false })
+          throw err
         }))
   }
 

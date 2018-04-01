@@ -80,22 +80,36 @@ export class Util {
   }
 
   static toDateString(date: Date): string {
-    return `${date.getUTCFullYear()}-${date.getUTCMonth()}-${date.getUTCDate()}`
+    return `${date.getUTCFullYear()}-${date.getUTCMonth() + 1}-${date.getUTCDate()}`
   }
 
   static update<T, U>(t: T, u: U): T & U {
     return Object.assign({}, t, u)
   }
 
-  static dedupeBy<T, U>(list: T[], fn: (t: T) => U): T[] {
+  static dedupeBy<T, U>(items: T[], fn: (t: T) => U): T[] {
     let result = [] as T[]
 
-    for(let i of list) {
+    for(let i of items) {
       if(!result.find(r => fn(r) == fn(i))) {
         result.push(i)
       }
     }
 
     return result
+  }
+
+  static arraysSame<T>(a: T[], b: T[]): boolean {
+    if(a.length != b.length) {
+      return false
+    }
+
+    for(let i in a) {
+      if(a[i] != b[i]) {
+        return false
+      }
+    }
+    
+    return true
   }
 }
