@@ -65,7 +65,8 @@ export class Roster extends React.Component<RosterProps, RosterState> {
           <HeaderRow showPrev={!rows.length}
                      showNext={false}
                      loadPrevPeriod={this.loadPrevPeriod.bind(this)}
-                     loadNextPeriod={this.loadNextPeriod.bind(this)}>
+                     loadNextPeriod={this.loadNextPeriod.bind(this)}
+                     key={`header-${Util.toDateString(date)}`}>
             {Util.monthYearString(date)}
           </HeaderRow>
         )
@@ -86,7 +87,8 @@ export class Roster extends React.Component<RosterProps, RosterState> {
                   updateShifts={this.props.updateShifts}
                   showVolInfo={this.props.showVolInfo}
                   otherFixedMessage={!!this.state.fixedMessage && !Util.datesEqual(this.state.fixedMessage, date)}
-                  messageFixedStateChanged={this.messageFixedStateChanged.bind(this)} />
+                  messageFixedStateChanged={this.messageFixedStateChanged.bind(this)}
+                  key={`shift-${Util.toDateString(date)}`} />
       )
 
       date = Util.addDays(date, 1)
@@ -95,7 +97,8 @@ export class Roster extends React.Component<RosterProps, RosterState> {
       <HeaderRow showPrev={false}
                  showNext={true}
                  loadPrevPeriod={this.loadPrevPeriod.bind(this)}
-                 loadNextPeriod={this.loadNextPeriod.bind(this)} >
+                 loadNextPeriod={this.loadNextPeriod.bind(this)}
+                 key="header-end" >
       </HeaderRow>
     )
     return rows

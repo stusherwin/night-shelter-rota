@@ -92,22 +92,24 @@ export class ShiftRow extends React.Component<ShiftRowProps, ShiftRowState> {
   render() {
     let children =
       [ <ShiftInfo date={this.props.date}
-                    vols={this.props.vols}
-                    config={this.props.config}
-                    ruleResult={this.state.ruleResult}
-                    message={this.state.message}
-                    otherFixedMessage={this.props.otherFixedMessage}
-                    messageFixedStateChanged={this.messageFixedStateChanged.bind(this)}
-                    />
+                   vols={this.props.vols}
+                   config={this.props.config}
+                   ruleResult={this.state.ruleResult}
+                   message={this.state.message}
+                   otherFixedMessage={this.props.otherFixedMessage}
+                   messageFixedStateChanged={this.messageFixedStateChanged.bind(this)}
+                   key="info" />
       , <CurrentVolSignUp date={this.props.date}
-                           vols={this.props.vols}
-                           currentVol={this.props.currentVol}
-                           loading={this.state.loading}
-                           addCurrentVol={this.addCurrentVol.bind(this)}
-                           removeCurrentVol={this.removeCurrentVol.bind(this)}
-                           changeCurrentVolShiftType={this.changeCurrentVolShiftType.bind(this)} />
+                          vols={this.props.vols}
+                          currentVol={this.props.currentVol}
+                          loading={this.state.loading}
+                          addCurrentVol={this.addCurrentVol.bind(this)}
+                          removeCurrentVol={this.removeCurrentVol.bind(this)}
+                          changeCurrentVolShiftType={this.changeCurrentVolShiftType.bind(this)}
+                          key="signup" />
       , <VolMarkers vols={this.props.vols}
-                    showVolInfo={this.props.showVolInfo} />
+                    showVolInfo={this.props.showVolInfo}
+                    key="vol-markers" />
       ]
 
     if(!this.clickable()) {
@@ -319,7 +321,8 @@ function VolMarkers(props: {vols: VolShift[], showVolInfo: (vol: Vol) => void}):
     <div className="row-item vol-markers collapsing">
       {props.vols.map(v => <VolMarker vol={v.vol}
                                       shiftType={v.shiftType}
-                                      showVolInfo={props.showVolInfo} />)}
+                                      showVolInfo={props.showVolInfo}
+                                      key={v.vol.id} />)}
     </div>
   )
 }

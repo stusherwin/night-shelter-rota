@@ -67,7 +67,8 @@ export class Header extends React.Component<HeaderProps, HeaderState> {
             {this.props.vols.sort((a, b) => a.name.localeCompare(b.name))
                             .map(v =>
               <option selected={this.props.currentVol != null && this.props.currentVol.id == v.id}
-                      value={v.id}>{v.name}
+                      value={v.id}
+                      key={v.id}>{v.name}
               </option>)}
           </select>
         </div>
@@ -87,34 +88,40 @@ function HeaderButtons(props: { editingVolDetails: boolean
                                mediaClassName="media-large-screen"
                                text="New volunteer"
                                icon="add"
-                               action={props.editNewVol} />)
+                               action={props.editNewVol}
+                               key="add-lg" />)
     buttons.push(<HeaderButton buttonClassName="header-button-new"
                                mediaClassName="media-larger-screen media-medium-screen"
                                text="New"
                                icon="add"
-                               action={props.editNewVol} />)
+                               action={props.editNewVol}
+                               key="add-lgr-med" />)
     buttons.push(<HeaderButton buttonClassName="mini icon header-button-new"
                                mediaClassName="media-small-screen"
                                text={null}
                                icon="add"
-                               action={props.editNewVol} />)
+                               action={props.editNewVol}
+                               key="add-sm" />)
 
     if(props.currentVol != null) {
       buttons.push(<HeaderButton buttonClassName="header-button-edit"
                                  mediaClassName="media-large-screen"
                                  text="Edit volunteer details"
                                  icon="edit"
-                                 action={props.editCurrentVol} />)
+                                 action={props.editCurrentVol}
+                                 key="edit-lg" />)
       buttons.push(<HeaderButton buttonClassName="header-button-edit"
                                  mediaClassName="media-larger-screen media-medium-screen"
                                  text="Edit"
                                  icon="edit"
-                                 action={props.editCurrentVol} />)
+                                 action={props.editCurrentVol}
+                                 key="edit-lgr-med" />)
       buttons.push(<HeaderButton buttonClassName="mini icon header-button-edit"
                                  mediaClassName="media-small-screen"
                                  text={null}
                                  icon="edit"
-                                 action={props.editCurrentVol} />)
+                                 action={props.editCurrentVol}
+                                 key="edit-sm" />)
     }
   }
   
