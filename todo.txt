@@ -7,3 +7,4 @@
 * Better button icons
 * Loading icon wobble
 * Different logo image resolutions
+* Header icon should stay loading until all requests are finished

@@ -120,7 +120,7 @@ export class ShiftRow extends React.Component<ShiftRowProps, ShiftRowState> {
                           removeCurrentVol={this.removeCurrentVol.bind(this)}
                           changeCurrentVolShiftType={this.changeCurrentVolShiftType.bind(this)}
                           key="signup" />
-      , <VolMarkers vols={this.props.vols}
+      , <VolMarkers vols={this.props.vols.sort((a, b) => a.vol.name.toLowerCase() < b.vol.name.toLowerCase()? -1 : 1)}
                     showVolInfo={this.props.showVolInfo}
                     key="vol-markers" />
       ]

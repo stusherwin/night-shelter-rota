@@ -14,6 +14,7 @@ module Main where
   import Data.Time.Calendar (toGregorian)
   import Data.ByteString.Char8 (pack)
   import Servant
+  import Control.Concurrent(threadDelay)
   import Data.ByteString (ByteString)
   import Network.Wai.Middleware.Cors (cors, simpleCorsResourcePolicy, corsRequestHeaders, corsMethods, simpleMethods, corsOrigins)
   import Network.Wai.Middleware.Servant.Options (provideOptions)
@@ -90,11 +91,13 @@ module Main where
       liftIO $ getVolunteerShifts conn $ ShiftDate y m d
 
     add ::  Int -> Int -> Int -> Int -> ShiftType -> Handler [VolunteerShift]
-    add y m d volId shiftType =
+    add y m d volId shiftType = do
+      --liftIO $ threadDelay 1000000
       liftIO $ addVolunteerShift conn (ShiftDate y m d) volId shiftType
 
     remove :: Int -> Int -> Int -> Int -> Handler [VolunteerShift]
     remove y m d volId = do
+      --liftIO $ threadDelay 10000000
       result <- liftIO $ removeVolunteerShift conn (ShiftDate y m d) volId
       case result of
         Just vs -> return vs
