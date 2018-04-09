@@ -35,8 +35,7 @@ if(isWebpackDevServer) {
 }
 
 module.exports = {
-    entry: "./client/src/react/index.tsx",
-    // entry: './client/src/Main.purs',
+    entry: "./client/src/index.tsx",
 
     output: {
         filename: "js/bundle.js",
@@ -56,7 +55,7 @@ module.exports = {
 
     resolve: {
         modules: [ 'node_modules', 'bower_components' ],
-        extensions: [".purs", ".ts", ".tsx", ".js", ".json"]
+        extensions: [".ts", ".tsx", ".js", ".json"]
     },
 
     module: {
@@ -65,24 +64,6 @@ module.exports = {
             { enforce: "pre", test: /\.js$/, loader: "source-map-loader" },
             { test: /\.less$/, use: lessUse },
             { test: /\.(png|woff|woff2|eot|ttf|svg)$/, loader: 'url-loader?limit=100000' },
-            { test: /\.purs$/,
-              use: [
-                {
-                  loader: 'purs-loader',
-                  options: {
-                    src: [
-                      'bower_components/purescript-*/src/**/*.purs',
-                      'client/src/**/*.purs'
-                    ],
-                    bundle: false,
-                    psc: 'psa',
-                    pscArgs: { censorCodes: "WildcardInferredType" },
-                    watch: isWebpackDevServer || isWatch,
-                    pscIde: false
-                  }
-                }
-              ]
-            }
         ]
     },
 
