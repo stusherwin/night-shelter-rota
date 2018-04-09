@@ -108,6 +108,7 @@ export class ServerApi {
 }
 
 function fetchHttpRequest<T>(req: Request, process: (res: any) => T): Promise<T> {
+  try {
     return fetch(req)
       .then(res => {
         if(!res.ok) {
@@ -119,7 +120,11 @@ function fetchHttpRequest<T>(req: Request, process: (res: any) => T): Promise<T>
         }
         return res.json()
       })
-      .then(res => Promise.resolve(process(res)))  
+      .then(res => Promise.resolve(process(res)))
+      .catch(err => Promise.reject(new ApiError('Error from the server', 'Received an unexpected response from the server: ' + err.error)))
+  } catch(TypeError) {
+    return Promise.reject(new ApiError('Can\'t connect to the server', 'The server seems to be down or busy, please wait a while and try again.'))
+  }
 }
 
 function toDate(date: ApiShiftDate): Date {
