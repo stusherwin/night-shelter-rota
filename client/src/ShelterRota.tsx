@@ -19,6 +19,7 @@ export interface ShelterRotaState { initialDataLoaded: boolean
                                   , error: ApiError | null
                                   , volInfo: Vol | null
                                   , editingVolDetails: boolean
+                                  , checked: boolean
                                   }
 
 export class ShelterRota extends React.Component<ShelterRotaProps, ShelterRotaState> {
@@ -36,6 +37,7 @@ export class ShelterRota extends React.Component<ShelterRotaProps, ShelterRotaSt
                  , error: null
                  , volInfo : null
                  , editingVolDetails: false
+                 , checked: false
                  }
   }
 
@@ -59,6 +61,17 @@ export class ShelterRota extends React.Component<ShelterRotaProps, ShelterRotaSt
 
   render() {
     return (
+      // <div style={{margin: '20px'}}>
+      //   <input data-checked={this.state.checked} type="checkbox" defaultChecked={this.state.checked}
+      //          onChange={e => {
+      //            console.log(e.target)
+      //            console.log(e.target.checked)
+      //            let checked = e.target.checked
+      //            setTimeout(() => this.setState({checked: checked}), 5000)
+      //          }} />
+      //   <i className="loading icon-spin animate-spin"></i>
+      // </div>
+
       <div>
         <Header currentVol={this.state.currentVol}
                 editingVolDetails={this.state.editingVolDetails}
