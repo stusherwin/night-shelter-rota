@@ -123,8 +123,6 @@ export class ShiftRow extends React.Component<ShiftRowProps, ShiftRowState> {
       , <VolMarkers vols={this.props.vols.sort((a, b) => a.vol.name.toLowerCase() < b.vol.name.toLowerCase()? -1 : 1)}
                     showVolInfo={this.props.showVolInfo}
                     key="vol-markers" />
-      // , <Loading date={this.props.date}
-      //            loading={this.state.loading} />
       ]
 
     if(!this.clickable()) {
@@ -408,8 +406,7 @@ const CurrentVolSignUp = pure((props: { date: Date
                           currentVol={props.currentVol}
                           loading={props.loading}
                           addCurrentVol={props.addCurrentVol}
-                          removeCurrentVol={props.removeCurrentVol}
-                          date={props.date} />
+                          removeCurrentVol={props.removeCurrentVol} />
       <CurrentVolShiftType date={props.date}
                            vols={props.vols}
                            currentVol={props.currentVol}
@@ -422,10 +419,12 @@ const CurrentVolSignUp = pure((props: { date: Date
 const CurrentVolSelected = pure((props: { vols: VolShift[]
                                         , currentVol: Vol
                                         , loading: boolean
-                                        , date: Date
                                         , addCurrentVol: (shiftType: ShiftType) => void
                                         , removeCurrentVol: () => void
                                         }) => {
+  if(props.loading) {
+    return <i className="icon-spin animate-spin loading"></i>
+  }
 
   let checked = false
   let onChange = () => props.addCurrentVol('Overnight')
@@ -438,22 +437,13 @@ const CurrentVolSelected = pure((props: { vols: VolShift[]
   }
 
   return (
-    <span>
-      <i className="current-vol-loading icon-spin animate-spin"></i>
-      <span className="current-vol-selected ui fitted checkbox">
-        <input type="checkbox"
-               checked={checked}
-               disabled={disabled}
-               onClick={e => {e.stopPropagation()}}
-               onChange={e => {
-                 let row = document.getElementById(`shift-row-${props.date}`)
-                 if(row) {
-                   row.classList.add('loading');
-                 }
-                 onChange(); e.stopPropagation()
-               }} />
-        <label></label>
-      </span>
+    <span className="current-vol-selected ui fitted checkbox">
+      <input type="checkbox"
+             checked={checked}
+             disabled={disabled}
+             onClick={e => {e.stopPropagation()}}
+             onChange={e => {e.preventDefault(); onChange(); e.stopPropagation()}} />
+      <label></label>
     </span>
   )
 })
@@ -526,10 +516,4 @@ const ShiftTypeRadio = pure((props: { shiftType: ShiftType
       {props.shiftType}
     </label>
   </span>
-))
-
-const Loading = pure((props: {date: Date, loading: boolean}) => (
-  <div className="row-loading">
-    <i className="icon-spin animate-spin loading"></i>
-  </div>
 ))

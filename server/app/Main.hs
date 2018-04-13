@@ -92,15 +92,12 @@ module Main where
 
     add ::  Int -> Int -> Int -> Int -> ShiftType -> Handler [VolunteerShift]
     add y m d volId shiftType = do
-      -- liftIO $ threadDelay 3000000
-      -- throwError err404
+      --liftIO $ threadDelay 1000000
       liftIO $ addVolunteerShift conn (ShiftDate y m d) volId shiftType
 
     remove :: Int -> Int -> Int -> Int -> Handler [VolunteerShift]
     remove y m d volId = do
-      -- liftIO $ threadDelay 3000000
-      -- throwError err404
-      
+      --liftIO $ threadDelay 10000000
       result <- liftIO $ removeVolunteerShift conn (ShiftDate y m d) volId
       case result of
         Just vs -> return vs
