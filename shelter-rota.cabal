@@ -22,6 +22,10 @@ library
                      , servant
                      , servant-server
                      , time
+                     , bytestring
+                     , cookie
+                     , http-api-data
+                     , text
   default-language:    Haskell2010
 
 executable shelter-rota
@@ -31,6 +35,7 @@ executable shelter-rota
   other-modules:     Database
   build-depends:       base
                      , containers
+                     , cookie
                      , shelter-rota
                      , servant
                      , servant-server
@@ -46,6 +51,7 @@ executable shelter-rota
                      , postgresql-simple
                      , bytestring
                      , text
+                     , http-api-data
   default-language:    Haskell2010
 
 test-suite shelter-rota-test

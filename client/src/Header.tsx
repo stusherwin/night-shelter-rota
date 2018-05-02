@@ -1,7 +1,7 @@
 import * as React from 'react';
 import { Vol } from './Types'
 import { MessageBubble, Message } from './MessageBubble'
-import { ApiError } from './ServerApi'
+import { ServerApi, ApiError } from './ServerApi'
 import { pure } from './Util'
 
 export interface HeaderProps { currentVol: Vol | null
@@ -10,6 +10,7 @@ export interface HeaderProps { currentVol: Vol | null
                              , vols: Vol[]
                              , error: ApiError | null
                              , editingVolDetails: boolean
+                             , apiRequest: (req: Promise<any>) => void
                              , changeCurrentVol: (vol: Vol | null) => void
                              , editCurrentVol: () => void
                              , editNewVol: () => void
@@ -61,10 +62,10 @@ export class Header extends React.Component<HeaderProps, HeaderState> {
           </StatusIcon>
           <h2>Night Shelter Rota for </h2>
           <select className="vol-select"
-                  onChange={e => { this.props.changeCurrentVol(e.target.value == ''
-                                                                 ? null
-                                                                 : this.props.vols.find(v => v.id == parseInt(e.target.value)) || null) }}>
-            <option value="">All volunteers</option>
+                  onChange={e => { this.changeCurrentVol(e.target.value == ''
+                                                         ? null
+                                                         : this.props.vols.find(v => v.id == parseInt(e.target.value)) || null) }}>
+            <option value="">Choose a volunteer</option>
             {this.props.vols.sort((a, b) => a.name.localeCompare(b.name))
                             .map(v =>
               <option selected={this.props.currentVol != null && this.props.currentVol.id == v.id}
@@ -75,6 +76,18 @@ export class Header extends React.Component<HeaderProps, HeaderState> {
         </div>
       )
     }
+  }
+
+  changeCurrentVol(vol: Vol | null) {
+    if(!vol) {
+      return 
+    }
+
+    this.props.apiRequest(
+      ServerApi.postCurrentVolId(vol.id)
+        .then(volShifts => {
+          this.props.changeCurrentVol(vol)
+        }))
   }
 }
 

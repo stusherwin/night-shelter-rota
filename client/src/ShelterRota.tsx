@@ -40,12 +40,18 @@ export class ShelterRota extends React.Component<ShelterRotaProps, ShelterRotaSt
   }
 
   componentDidMount() {
-    Promise.all([ServerApi.getVols(), ServerApi.getShifts()])
+    Promise.all([ServerApi.getVols(), ServerApi.getShifts(), ServerApi.getCurrentVolId()])
       .then(results => {
+        let vols = results[0]
+        let shifts = results[1]
+        let currentVolId = results[2]
+        let currentVol = vols.find(v => v.id == currentVolId) || null
+
         this.setState({ reqInProgress: false
-                      , vols: results[0]
+                      , vols
                       , initialDataLoaded: true
-                      , shifts: results[1]
+                      , shifts
+                      , currentVol
                       })
       })
       .catch(err => {
@@ -66,6 +72,7 @@ export class ShelterRota extends React.Component<ShelterRotaProps, ShelterRotaSt
                 initialDataLoaded={this.state.initialDataLoaded}
                 vols={this.state.vols}
                 error={this.state.error}
+                apiRequest={this.apiRequest.bind(this)}
                 changeCurrentVol={this.changeCurrentVol.bind(this)}
                 editNewVol={this.editNewVol.bind(this)}
                 editCurrentVol={this.editCurrentVol.bind(this)} />

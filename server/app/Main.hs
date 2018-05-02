@@ -10,9 +10,12 @@ module Main where
   import Network.Wai.Handler.Warp (run)
   import qualified Data.IntMap.Strict as IM (IntMap(..), fromList, elems, lookup, insert, size)
   import Data.IORef (IORef, newIORef, readIORef, atomicModifyIORef')
-  import Data.Time.Clock (getCurrentTime, utctDay)
-  import Data.Time.Calendar (toGregorian)
+  import Data.Time.Clock (getCurrentTime, utctDay, UTCTime)
+  import Data.Time.Calendar (toGregorian, fromGregorian, addGregorianYearsClip)
+  import Data.Time.Format (formatTime, defaultTimeLocale)
   import Data.ByteString.Char8 (pack)
+  import Data.Text (Text, unpack)
+  import qualified Data.Text as T (pack)
   import Servant
   import Control.Concurrent(threadDelay)
   import Data.ByteString (ByteString)
@@ -20,6 +23,8 @@ module Main where
   import Network.Wai.Middleware.Servant.Options (provideOptions)
   import Network.Wai.Middleware.RequestLogger (logStdoutDev)
   import System.Environment (getEnv, getArgs)
+  import Web.Cookie (parseCookiesText)
+  import Web.HttpApiData
   
   import Types 
   import Api
@@ -45,11 +50,11 @@ module Main where
   appServer :: ByteString -> Server AppAPI
   appServer conn = volsServer conn
               :<|> shiftsServer conn
+              :<|> currentVolServer conn
  
   volsServer :: ByteString -> Server VolsAPI
   volsServer conn = getAll
                :<|> add
-               :<|> getOne
                :<|> update
     where
     getAll :: Handler [Volunteer]
@@ -60,13 +65,6 @@ module Main where
     add details = do
       newId <- liftIO $ addVolunteer conn details
       return $ newVolunteer newId details
-
-    getOne :: Int -> Handler Volunteer
-    getOne id = do
-      result <- liftIO $ getVolunteer conn id
-      case result of
-        Just v -> return v
-        _ -> throwError err404
 
     update :: Int -> VolunteerDetails -> Handler Volunteer
     update id details = do
@@ -109,3 +107,37 @@ module Main where
       case result of
         Just vs -> return vs
         _ -> throwError err404
+
+  currentVolServer :: ByteString -> Server CurrentVolAPI
+  currentVolServer conn = get
+                     :<|> update
+    where
+    get :: Maybe Text -> Handler (Maybe Int)
+    get Nothing = return Nothing
+    get (Just cookie) = do
+      let x = parseCookiesText $ pack $ unpack cookie
+      let y = lookup "CurrentVolId" x
+      case y of
+        Nothing -> return Nothing
+        Just z -> do 
+          case (parseUrlPiece z :: Either Text Int) of
+            Left _ -> return Nothing
+            Right i -> return $ Just i
+    
+    update :: Int -> Handler (Headers '[Header "Set-Cookie" Text] ())
+    update id = do
+      result <- liftIO $ getVolunteer conn id
+      liftIO $ putStrLn $ "vol: " ++ show result
+      case result of
+        Nothing -> throwError err404
+        Just _ -> do
+          time <- liftIO $ getCurrentTime
+          return $ addHeader (T.pack $ "CurrentVolId=" ++ show id ++ "; expires=" ++ (getExpiryDateString time) ++ "; path=/; HttpOnly") ()
+
+  getExpiryDateString :: UTCTime -> String
+  getExpiryDateString currentTime =
+    let day = utctDay currentTime
+        expiryDate = addGregorianYearsClip 10 $ day
+        expDateStr = (formatTime defaultTimeLocale "%a, %d %b %Y" expiryDate)
+        expDateTim = (formatTime defaultTimeLocale "%H:%M:%S" currentTime)
+    in expDateStr ++ " " ++ expDateTim ++ " GMT"

@@ -43,11 +43,6 @@ export class ServerApi {
     return fetchHttpRequest(req, res => (res as ApiVolunteer[]).map(toVol))
   }
 
-  static getVol(volId: number): Promise<Vol> {
-    const req = new Request(`/api/vols/${volId}`)
-    return fetchHttpRequest(req, res => toVol(res as ApiVolunteer))
-  }
-
   static putVol(details: VolDetails): Promise<Vol> {
     const req = new Request('/api/vols',
                               { method: 'PUT'
@@ -105,11 +100,25 @@ export class ServerApi {
                               })
     return fetchHttpRequest(req, res => (res as ApiVolunteerShift[]).map(toVolShift))
   }
+
+  static getCurrentVolId(): Promise<number | null> {
+    const req = new Request(`/api/currentvol`)
+    return fetchHttpRequest(req, res => res)
+  }
+
+  static postCurrentVolId(volId: number): Promise<void> {
+    const req = new Request(`/api/currentvol/${volId}`,
+                              { method: 'POST'
+                              , body: ''
+                              , headers: new Headers({'Content-Type' : 'application/json'})
+                              })
+    return fetchHttpRequest(req, res => {})
+  }
 }
 
 function fetchHttpRequest<T>(req: Request, process: (res: any) => T): Promise<T> {
   try {
-    return fetch(req)
+    return fetch(req, {credentials: 'same-origin'})
       .then(res => {
         if(!res.ok) {
           return res.text().then(txt => { throw new ApiError(`${res.statusText} (${res.status})`, txt) })
