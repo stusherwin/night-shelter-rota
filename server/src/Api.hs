@@ -31,7 +31,8 @@ module Api where
   type CurrentVolAPI =
          Header "Cookie" Text :> Get '[JSON] (Maybe Int)
     :<|> Capture "volId" Int :> Post '[JSON] (Headers '[Header "Set-Cookie" Text] ())
-
+    :<|> Post '[JSON] (Headers '[Header "Set-Cookie" Text] ())
+    
   type FullAPI =
     AppAPI :<|> Raw
   

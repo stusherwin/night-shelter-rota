@@ -13,9 +13,10 @@ module Main where
   import Data.Time.Clock (getCurrentTime, utctDay, UTCTime)
   import Data.Time.Calendar (toGregorian, fromGregorian, addGregorianYearsClip)
   import Data.Time.Format (formatTime, defaultTimeLocale)
-  import Data.ByteString.Char8 (pack)
-  import Data.Text (Text, unpack)
-  import qualified Data.Text as T (pack)
+  import Data.Text (Text)
+  import Text.Read (readMaybe)
+  import qualified Data.Text as T (pack, unpack)
+  import qualified Data.ByteString.Char8 as B (pack, unpack)
   import Servant
   import Control.Concurrent(threadDelay)
   import Data.ByteString (ByteString)
@@ -24,7 +25,7 @@ module Main where
   import Network.Wai.Middleware.RequestLogger (logStdoutDev)
   import System.Environment (getEnv, getArgs)
   import Web.Cookie (parseCookiesText)
-  import Web.HttpApiData
+  import Web.HttpApiData (parseUrlPiece, toUrlPiece)
   
   import Types 
   import Api
@@ -37,7 +38,7 @@ module Main where
     args <- getArgs
     let portStr = head args
     putStrLn $ "port: " ++ portStr
-    run (read portStr) $ app $ pack connectionString
+    run (read portStr) $ app $ B.pack connectionString
 
   app :: ByteString -> Application
   app conn = logStdoutDev
@@ -110,34 +111,33 @@ module Main where
 
   currentVolServer :: ByteString -> Server CurrentVolAPI
   currentVolServer conn = get
-                     :<|> update
+                     :<|> set
+                     :<|> clear
     where
     get :: Maybe Text -> Handler (Maybe Int)
     get Nothing = return Nothing
-    get (Just cookie) = do
-      let x = parseCookiesText $ pack $ unpack cookie
-      let y = lookup "CurrentVolId" x
-      case y of
-        Nothing -> return Nothing
-        Just z -> do 
-          case (parseUrlPiece z :: Either Text Int) of
-            Left _ -> return Nothing
-            Right i -> return $ Just i
+    get (Just cookies) = 
+      return $ readMaybe . T.unpack =<< (lookup "CurrentVolId" $ parseCookiesText $ B.pack $ T.unpack cookies)
     
-    update :: Int -> Handler (Headers '[Header "Set-Cookie" Text] ())
-    update id = do
+    set :: Int -> Handler (Headers '[Header "Set-Cookie" Text] ())
+    set id = do
+      liftIO $ putStrLn "set"
       result <- liftIO $ getVolunteer conn id
-      liftIO $ putStrLn $ "vol: " ++ show result
       case result of
         Nothing -> throwError err404
         Just _ -> do
           time <- liftIO $ getCurrentTime
-          return $ addHeader (T.pack $ "CurrentVolId=" ++ show id ++ "; expires=" ++ (getExpiryDateString time) ++ "; path=/; HttpOnly") ()
+          return $ addHeader (setCookie "CurrentVolId" id time 10) ()
 
-  getExpiryDateString :: UTCTime -> String
-  getExpiryDateString currentTime =
-    let day = utctDay currentTime
-        expiryDate = addGregorianYearsClip 10 $ day
-        expDateStr = (formatTime defaultTimeLocale "%a, %d %b %Y" expiryDate)
+    clear :: Handler (Headers '[Header "Set-Cookie" Text] ())
+    clear = do
+      liftIO $ putStrLn "clear"
+      time <- liftIO $ getCurrentTime
+      return $ addHeader (setCookie "CurrentVolId" "" time 10) ()
+
+  setCookie :: Show a => String -> a -> UTCTime -> Integer -> Text
+  setCookie key val currentTime years =
+    let expDateStr = (formatTime defaultTimeLocale "%a, %d %b %Y" $ addGregorianYearsClip years $ utctDay currentTime)
         expDateTim = (formatTime defaultTimeLocale "%H:%M:%S" currentTime)
-    in expDateStr ++ " " ++ expDateTim ++ " GMT"
+        expDate = expDateStr ++ " " ++ expDateTim ++ " GMT"
+    in  T.pack $ key ++ "=" ++ (show val) ++ "; expires=" ++ expDate ++ "; path=/; HttpOnly"

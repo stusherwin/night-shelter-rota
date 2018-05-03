@@ -106,8 +106,8 @@ export class ServerApi {
     return fetchHttpRequest(req, res => res)
   }
 
-  static postCurrentVolId(volId: number): Promise<void> {
-    const req = new Request(`/api/currentvol/${volId}`,
+  static postCurrentVolId(volId: number | null): Promise<void> {
+    const req = new Request(`/api/currentvol/${volId || ''}`,
                               { method: 'POST'
                               , body: ''
                               , headers: new Headers({'Content-Type' : 'application/json'})

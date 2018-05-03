@@ -79,12 +79,8 @@ export class Header extends React.Component<HeaderProps, HeaderState> {
   }
 
   changeCurrentVol(vol: Vol | null) {
-    if(!vol) {
-      return 
-    }
-
     this.props.apiRequest(
-      ServerApi.postCurrentVolId(vol.id)
+      ServerApi.postCurrentVolId(vol? vol.id : null)
         .then(volShifts => {
           this.props.changeCurrentVol(vol)
         }))
