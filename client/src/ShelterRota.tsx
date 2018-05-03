@@ -4,10 +4,11 @@ import { Roster, RosterProps } from './Roster'
 import { Vol, VolDetails, ShiftType, VolShift, Shift, updateVolShifts, updateVolDetails, updateShiftVolDetails } from './Types'
 import { ServerApi, ApiError } from './ServerApi'
 import { MessageBubbleProps } from './MessageBubble'
-import { Util } from './Util'
+import { Util, pure } from './Util'
 import { ShiftRuleConfig } from './ShiftRules'
 import { VolInfo } from './VolInfo'
 import { VolDetailsForm } from './VolDetailsForm'
+import { CurrentVolSelector } from './CurrentVolSelector'
 
 export interface ShelterRotaProps {}
 export interface ShelterRotaState { initialDataLoaded: boolean
@@ -77,7 +78,11 @@ export class ShelterRota extends React.Component<ShelterRotaProps, ShelterRotaSt
                 editNewVol={this.editNewVol.bind(this)}
                 editCurrentVol={this.editCurrentVol.bind(this)} />
         <div className="container">
-          <Roster visible={this.state.initialDataLoaded && !this.state.editingVolDetails}
+          <CurrentVolSelector visible={this.state.initialDataLoaded && !this.state.currentVol}
+                              vols={this.state.vols}
+                              apiRequest={this.apiRequest.bind(this)}
+                              changeCurrentVol={this.changeCurrentVol.bind(this)} />
+          <Roster visible={this.state.initialDataLoaded && !!this.state.currentVol && !this.state.editingVolDetails}
                   currentVol={this.state.currentVol}
                   shifts={this.state.shifts}
                   config={this.state.config}
