@@ -140,39 +140,32 @@
     }
   }
 
-  h2 {
+  h1 {
     margin: 0;
     height: 36*@px;
     float: left;
     margin-top: 3*@px;
+    font-size: 24*@px;
   }
 
-  select {
+  .vol-name {
     float: left;
     height: auto;
-    background: #fff;
-    border: 1*@px solid rgba(34,36,38,.15);
-    border-radius: .28571429rem;
-    box-shadow: 0 0 0 0 transparent inset;
-    color: #777;
-    -webkit-transition: color .1s ease,border-color .1s ease;
-    transition: color .1s ease,border-color .1s ease;
+    height: 30*@px;
     font-family: inherit;
     font-weight: 700;
-    border: 1*@px solid #ccc;
     font-size: 1.71428571rem;
     line-height: 1.28571429em;
     font-family: Lato,'Helvetica Neue',Arial,Helvetica,sans-serif;
-    position: relative;
-    top: -2*@px;
-    margin-top: -1*@px;
+    white-space: nowrap;
     margin-left: 2*@px;
     min-width: 235*@px;
     max-width: calc(~"100% - " 46*@px);
-    clear: left;
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
 
-  h2, select {
+  h1, .vol-name {
     font-size: 20*@px;
   }
 
@@ -226,15 +219,15 @@
       }
     }
 
-    h2, select {
+    h1, .vol-name {
       font-size: 24*@px;
     }
 
-    h2 {
+    h1 {
       margin-top: 2*@px;
     }
 
-    select {
+    .vol-name {
       min-width: 274*@px;
       max-width: calc(~"100% - " 95*@px);
       margin-top: 4*@px;
@@ -288,12 +281,12 @@
       }
     }
 
-    h2 {
+    h1 {
       margin-top: 3*@px;
       margin-right: 5*@px;
     }
 
-    select {
+    .vol-name {
       margin-top: 4*@px;
       margin-left: 0*@px;
       min-width: 183*@px;
@@ -320,7 +313,7 @@
   }
 
   @media @large-screen {
-    select {
+    .vol-name {
       margin-top: 4*@px;
       margin-left: 0*@px;
       min-width: 176*@px;

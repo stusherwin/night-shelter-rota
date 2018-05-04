@@ -1,0 +1,82 @@
+@import "Variables.less";
+
+.current-vol-selector {
+  .group;
+
+  background: #f2f2f2;
+  padding: 10*@px;
+  padding-top: 15*@px;
+  margin-top: 0*@px;
+  margin-bottom: -10*@px;
+
+  .vols-list {
+    .group;
+
+    background: #fff;
+    border-top: 1px solid rgba(34,36,38,.15);
+    border-bottom: 1px solid rgba(34,36,38,.15);
+    margin-left: -10*@px;
+    width: calc(~"100% + " 20*@px);
+
+    .vol {
+      border-bottom: 1px solid rgba(34,36,38,.15);
+
+      &:last-child {
+        border-bottom: none;
+      }
+
+      .vol-name {
+        display: block;
+        text-decoration: none;
+        text-overflow: ellipsis;
+        overflow: hidden;
+        white-space: nowrap;
+        width: calc(~"100% - " 86*@px);
+        padding: 15*@px 10*@px;
+      }
+
+      button {
+        float: right;
+        margin-top: 10*@px;
+        margin-right: 10*@px;
+        &:first-child {
+          margin-right: 10*@px;
+        }
+      }
+    }
+  }
+
+  .vols-add {
+    margin-top: 10*@px;
+    position: relative;
+
+    button {
+      float: right;
+    }
+  }
+
+  @media @medium-screen {
+    .vols-list {
+      border-left: 1px solid rgba(34,36,38,.15);
+      border-right: 1px solid rgba(34,36,38,.15);
+      border-radius: 5*@px; 
+      margin-left: 0;
+      width: 100%;
+    }
+
+    .vols-add {
+      margin-top: 20*@px;
+      
+      button {
+        float: right;
+        margin-top: -40*@px;
+      }
+    }
+  }
+
+  @media @larger-screen {
+  }
+
+  @media @large-screen {
+  }
+}

@@ -177,6 +177,18 @@
       "src": "fontawesome"
     },
     {
+      "uid": "fb1c59faa93eb6e2248c2456625b08a2",
+      "css": "user-times",
+      "code": 62005,
+      "src": "fontawesome"
+    },
+    {
+      "uid": "31972e4e9d080eaa796290349ae6c1fd",
+      "css": "users",
+      "code": 59405,
+      "src": "fontawesome"
+    },
+    {
       "uid": "99c58e3837b383dd5375924289db1801",
       "css": "no-bed",
       "code": 59399,

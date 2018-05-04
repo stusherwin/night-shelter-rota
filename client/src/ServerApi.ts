@@ -106,8 +106,17 @@ export class ServerApi {
     return fetchHttpRequest(req, res => res)
   }
 
-  static postCurrentVolId(volId: number | null): Promise<void> {
-    const req = new Request(`/api/currentvol/${volId || ''}`,
+  static setCurrentVolId(volId: number): Promise<void> {
+    const req = new Request(`/api/currentvol/${volId}`,
+                              { method: 'POST'
+                              , body: ''
+                              , headers: new Headers({'Content-Type' : 'application/json'})
+                              })
+    return fetchHttpRequest(req, res => {})
+  }
+
+  static clearCurrentVolId(): Promise<void> {
+    const req = new Request(`/api/currentvol`,
                               { method: 'POST'
                               , body: ''
                               , headers: new Headers({'Content-Type' : 'application/json'})

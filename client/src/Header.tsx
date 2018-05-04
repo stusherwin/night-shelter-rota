@@ -11,9 +11,8 @@ export interface HeaderProps { currentVol: Vol | null
                              , error: ApiError | null
                              , editingVolDetails: boolean
                              , apiRequest: (req: Promise<any>) => void
-                             , changeCurrentVol: (vol: Vol | null) => void
+                             , clearCurrentVol: () => void
                              , editCurrentVol: () => void
-                             , editNewVol: () => void
                              }
 
 export interface HeaderState { errorMessage: Message | null
@@ -40,14 +39,22 @@ export class Header extends React.Component<HeaderProps, HeaderState> {
     }
   }
 
+  clearCurrentVol() {
+    this.props.apiRequest(
+      ServerApi.clearCurrentVolId()
+        .then(() => {
+          this.props.clearCurrentVol()
+        }))
+  }
+
   render() {
-    if(!this.props.initialDataLoaded) {
+    if(!this.props.currentVol) {
       return (
         <div className="header initial-data-loading">
           <StatusIcon reqInProgress={this.props.reqInProgress}
                       errorMessage={this.state.errorMessage}>
           </StatusIcon>
-          <h2>Night Shelter Rota</h2>
+          <h1>Night Shelter Rota</h1>
         </div>
       )
     } else {
@@ -55,63 +62,44 @@ export class Header extends React.Component<HeaderProps, HeaderState> {
         <div className="header">
           <HeaderButtons editingVolDetails={this.props.editingVolDetails}
                          currentVol={this.props.currentVol}
-                         editNewVol={this.props.editNewVol}
+                         clearCurrentVol={this.clearCurrentVol.bind(this)}
                          editCurrentVol={this.props.editCurrentVol} />
           <StatusIcon reqInProgress={this.props.reqInProgress}
                       errorMessage={this.state.errorMessage}>
           </StatusIcon>
-          <h2>Night Shelter Rota for </h2>
-          <select className="vol-select"
-                  onChange={e => { this.changeCurrentVol(e.target.value == ''
-                                                         ? null
-                                                         : this.props.vols.find(v => v.id == parseInt(e.target.value)) || null) }}>
-            <option value="">Choose a volunteer</option>
-            {this.props.vols.sort((a, b) => a.name.localeCompare(b.name))
-                            .map(v =>
-              <option selected={this.props.currentVol != null && this.props.currentVol.id == v.id}
-                      value={v.id}
-                      key={v.id}>{v.name}
-              </option>)}
-          </select>
+          <h1>Night Shelter Rota for</h1>  
+          <div className="vol-name">{this.props.currentVol.name}</div>
         </div>
       )
     }
-  }
-
-  changeCurrentVol(vol: Vol | null) {
-    this.props.apiRequest(
-      ServerApi.postCurrentVolId(vol? vol.id : null)
-        .then(volShifts => {
-          this.props.changeCurrentVol(vol)
-        }))
   }
 }
 
 const HeaderButtons = pure((props: { editingVolDetails: boolean 
                                    , currentVol: Vol | null
-                                   , editNewVol: () => void
+                                   , clearCurrentVol: () => void
                                    , editCurrentVol: () => void
                                    }) => {
   let buttons = [];
   if(!props.editingVolDetails) {
-    buttons.push(<HeaderButton buttonClassName="header-button-new"
+    buttons.push(<HeaderButton buttonClassName="header-button-vols"
                                mediaClassName="media-large-screen"
-                               text="New volunteer"
-                               icon="add"
-                               action={props.editNewVol}
-                               key="add-lg" />)
-    buttons.push(<HeaderButton buttonClassName="header-button-new"
+                               text="All volunteers"
+                               icon="users"
+                               action={props.clearCurrentVol}
+                               key="vols-lg" />)
+    buttons.push(<HeaderButton buttonClassName="header-button-vols"
                                mediaClassName="media-larger-screen media-medium-screen"
-                               text="New"
-                               icon="add"
-                               action={props.editNewVol}
-                               key="add-lgr-med" />)
-    buttons.push(<HeaderButton buttonClassName="mini icon header-button-new"
+                               text="Vols"
+                               icon="users"
+                               action={props.clearCurrentVol}
+                               key="vols-lgr-med" />)
+    buttons.push(<HeaderButton buttonClassName="mini icon header-button-vols"
                                mediaClassName="media-small-screen"
                                text={null}
-                               icon="add"
-                               action={props.editNewVol}
-                               key="add-sm" />)
+                               icon="users"
+                               action={props.clearCurrentVol}
+                               key="vols-sm" />)
 
     if(props.currentVol != null) {
       buttons.push(<HeaderButton buttonClassName="header-button-edit"

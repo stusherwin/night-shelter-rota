@@ -61,7 +61,8 @@ export class VolDetailsForm extends React.Component<VolDetailsFormProps, VolDeta
           .then(vol => this.props.updateCurrentVol(vol)))
     } else {
       this.props.apiRequest(ServerApi.putVol(this.state.details)
-          .then(vol => this.props.addNewVol(vol)))
+          .then(vol => this.props.apiRequest(ServerApi.setCurrentVolId(vol.id)
+            .then(() => this.props.addNewVol(vol)))))
     }
   }
 

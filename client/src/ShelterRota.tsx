@@ -74,14 +74,15 @@ export class ShelterRota extends React.Component<ShelterRotaProps, ShelterRotaSt
                 vols={this.state.vols}
                 error={this.state.error}
                 apiRequest={this.apiRequest.bind(this)}
-                changeCurrentVol={this.changeCurrentVol.bind(this)}
-                editNewVol={this.editNewVol.bind(this)}
+                clearCurrentVol={this.clearCurrentVol.bind(this)}
                 editCurrentVol={this.editCurrentVol.bind(this)} />
         <div className="container">
-          <CurrentVolSelector visible={this.state.initialDataLoaded && !this.state.currentVol}
+          <CurrentVolSelector visible={this.state.initialDataLoaded && !this.state.currentVol && !this.state.editingVolDetails}
                               vols={this.state.vols}
                               apiRequest={this.apiRequest.bind(this)}
-                              changeCurrentVol={this.changeCurrentVol.bind(this)} />
+                              changeCurrentVol={this.changeCurrentVol.bind(this)}
+                              editCurrentVol={this.editCurrentVol.bind(this)}
+                              editNewVol={this.editNewVol.bind(this)} />
           <Roster visible={this.state.initialDataLoaded && !!this.state.currentVol && !this.state.editingVolDetails}
                   currentVol={this.state.currentVol}
                   shifts={this.state.shifts}
@@ -103,7 +104,14 @@ export class ShelterRota extends React.Component<ShelterRotaProps, ShelterRotaSt
     )
   }
 
-  changeCurrentVol(vol: Vol | null) {
+  clearCurrentVol() {
+    this.setState({ currentVol: null
+                  , editingVolDetails: false
+                  , error: null
+                  })
+  }
+
+  changeCurrentVol(vol: Vol) {
     this.setState({ currentVol: vol
                   , editingVolDetails: false
                   , error: null
@@ -136,6 +144,12 @@ export class ShelterRota extends React.Component<ShelterRotaProps, ShelterRotaSt
                   , vols: this.state.vols.concat([vol])
                   , editingVolDetails: false
                   })      
+  }
+
+  allVols() {
+    this.setState({ currentVol: null
+                  , error: null
+                  })
   }
 
   apiRequest(req: Promise<any>) {
