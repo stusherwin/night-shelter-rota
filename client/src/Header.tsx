@@ -10,9 +10,11 @@ export interface HeaderProps { currentVol: Vol | null
                              , vols: Vol[]
                              , error: ApiError | null
                              , editingVolDetails: boolean
+                             , active: boolean
                              , apiRequest: (req: Promise<any>) => void
                              , clearCurrentVol: () => void
                              , editCurrentVol: () => void
+                             , setActive: (active: boolean) => void
                              }
 
 export interface HeaderState { errorMessage: Message | null
@@ -49,8 +51,50 @@ export class Header extends React.Component<HeaderProps, HeaderState> {
 
   render() {
     if(!this.props.currentVol) {
+      let buttons = [];
+      if(this.props.active) {
+          buttons.push(<button className={`ui button media-large-screen`}
+                               onClick={e => this.props.setActive(false)}
+                               key="deactv-lg">
+                         <i className={`icon icon-user-times`}></i>
+                         Show inactive volunteers
+                       </button>)
+          buttons.push(<button className={`ui button media-larger-screen media-medium-screen`}
+                               onClick={e => this.props.setActive(false)}
+                               key="deactv-med">
+                         <i className={`icon icon-user-times`}></i>
+                         Show inactive volunteers
+                       </button>)
+          buttons.push(<button className={`ui button mini icon media-small-screen`}
+                               onClick={e => this.props.setActive(false)}
+                               key="deactv-sm">
+                         <i className={`icon icon-user-times`}></i>
+                       </button>)
+      } else {
+          buttons.push(<button className={`ui button media-large-screen`}
+                               onClick={e => this.props.setActive(true)}
+                               key="actv-lg">
+                         <i className={`icon icon-user`}></i>
+                         Show active volunteers
+                       </button>)
+          buttons.push(<button className={`ui button media-larger-screen media-medium-screen`}
+                               onClick={e => this.props.setActive(true)}
+                               key="actv-med">
+                         <i className={`icon icon-user`}></i>
+                         Show active volunteers
+                       </button>)
+          buttons.push(<button className={`ui button mini icon media-small-screen`}
+                               onClick={e => this.props.setActive(true)}
+                               key="actv-sm">
+                         <i className={`icon icon-user`}></i>
+                       </button>)
+      }
+
       return (
         <div className="header initial-data-loading">
+          <div className="header-buttons">
+           {buttons}
+         </div>
           <StatusIcon reqInProgress={this.props.reqInProgress}
                       errorMessage={this.state.errorMessage}>
           </StatusIcon>

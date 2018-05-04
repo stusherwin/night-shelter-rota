@@ -20,6 +20,7 @@ export interface ShelterRotaState { initialDataLoaded: boolean
                                   , error: ApiError | null
                                   , volInfo: Vol | null
                                   , editingVolDetails: boolean
+                                  , active: boolean
                                   }
 
 export class ShelterRota extends React.Component<ShelterRotaProps, ShelterRotaState> {
@@ -37,6 +38,7 @@ export class ShelterRota extends React.Component<ShelterRotaProps, ShelterRotaSt
                  , error: null
                  , volInfo : null
                  , editingVolDetails: false
+                 , active: true
                  }
   }
 
@@ -73,12 +75,15 @@ export class ShelterRota extends React.Component<ShelterRotaProps, ShelterRotaSt
                 initialDataLoaded={this.state.initialDataLoaded}
                 vols={this.state.vols}
                 error={this.state.error}
+                active={this.state.active}
                 apiRequest={this.apiRequest.bind(this)}
                 clearCurrentVol={this.clearCurrentVol.bind(this)}
-                editCurrentVol={this.editCurrentVol.bind(this)} />
+                editCurrentVol={this.editCurrentVol.bind(this)}
+                setActive={this.setActive.bind(this)} />
         <div className="container">
           <CurrentVolSelector visible={this.state.initialDataLoaded && !this.state.currentVol && !this.state.editingVolDetails}
                               vols={this.state.vols}
+                              active={this.state.active}
                               apiRequest={this.apiRequest.bind(this)}
                               changeCurrentVol={this.changeCurrentVol.bind(this)}
                               editCurrentVol={this.editCurrentVol.bind(this)}
@@ -150,6 +155,11 @@ export class ShelterRota extends React.Component<ShelterRotaProps, ShelterRotaSt
   allVols() {
     this.setState({ currentVol: null
                   , error: null
+                  })
+  }
+
+  setActive(active: boolean) {
+    this.setState({ active: active
                   })
   }
 
