@@ -2,7 +2,7 @@
 {-# LANGUAGE StandaloneDeriving #-}
 {-# LANGUAGE LambdaCase #-}
 
-module Database (getAllVolunteers, getVolunteer, addVolunteer, updateVolunteer, getAllShifts, getVolunteerShifts, addVolunteerShift, removeVolunteerShift, updateVolunteerShift) where
+module Database (getAllVolunteers, getVolunteer, addVolunteer, updateVolunteer, getAllShifts, getVolunteerShifts, addVolunteerShift, removeVolunteerShift, updateVolunteerShift, activateVolunteer, deactivateVolunteer) where
   import Control.Monad (mzero, when)
   import Control.Monad.IO.Class (liftIO)
   import Database.PostgreSQL.Simple
@@ -46,7 +46,7 @@ module Database (getAllVolunteers, getVolunteer, addVolunteer, updateVolunteer, 
         _ -> mzero
 
   instance FromRow Volunteer where
-    fromRow = Volunteer <$> field <*> field <*> field <*> field <*> field <*> field
+    fromRow = Volunteer <$> field <*> field <*> field <*> field <*> field <*> field <*> field
 
   instance FromField ShiftDate where
     fromField f date = do
@@ -80,7 +80,7 @@ module Database (getAllVolunteers, getVolunteer, addVolunteer, updateVolunteer, 
   getAllVolunteers connectionString = do
     conn <- connectPostgreSQL connectionString
     result <- query_ conn
-      " select id, name, intro, overnight_pref, overnight_gender_pref, notes\
+      " select id, name, intro, overnight_pref, overnight_gender_pref, notes, active\
       \ from volunteer"
     close conn
     return result
@@ -89,7 +89,7 @@ module Database (getAllVolunteers, getVolunteer, addVolunteer, updateVolunteer, 
   getVolunteer connectionString id = do
     conn <- connectPostgreSQL connectionString
     result <- query conn
-      " select id, name, intro, overnight_pref, overnight_gender_pref, notes\
+      " select id, name, intro, overnight_pref, overnight_gender_pref, notes, active\
       \ from volunteer\
       \ where id = ?"
       (Only id)
@@ -101,15 +101,16 @@ module Database (getAllVolunteers, getVolunteer, addVolunteer, updateVolunteer, 
     conn <- connectPostgreSQL connectionString
     [Only id] <- query conn
       " insert into volunteer\
-      \   (name, intro, overnight_pref, overnight_gender_pref, notes)\
+      \   (name, intro, overnight_pref, overnight_gender_pref, notes, active)\
       \ values\
-      \   (?, ?, ?, ?, ?)\
+      \   (?, ?, ?, ?, ?, ?)\
       \ returning id"
       ( vdName details
       , vdIntro details
       , vdPref details
       , vdGenderPref details
       , vdNotes details
+      , True
       )
     close conn
     return id
@@ -125,7 +126,7 @@ module Database (getAllVolunteers, getVolunteer, addVolunteer, updateVolunteer, 
       \   , overnight_gender_pref = ?\
       \   , notes = ?\
       \ where id = ?\
-      \ returning id, name, intro, overnight_pref, overnight_gender_pref, notes"
+      \ returning id, name, intro, overnight_pref, overnight_gender_pref, notes, active"
       ( vdName details
       , vdIntro details
       , vdPref details
@@ -135,13 +136,37 @@ module Database (getAllVolunteers, getVolunteer, addVolunteer, updateVolunteer, 
       )
     close conn
     return $ listToMaybe result
+  
+  activateVolunteer :: ByteString -> Int -> IO (Maybe Volunteer)
+  activateVolunteer connectionString id = do
+    conn <- connectPostgreSQL connectionString
+    result <- query conn
+      " update volunteer\
+      \ set active = true\
+      \ where id = ?\
+      \ returning id, name, intro, overnight_pref, overnight_gender_pref, notes, active"
+      (Only id)
+    close conn
+    return $ listToMaybe result
+  
+  deactivateVolunteer :: ByteString -> Int -> IO (Maybe Volunteer)
+  deactivateVolunteer connectionString id = do
+    conn <- connectPostgreSQL connectionString
+    result <- query conn
+      " update volunteer\
+      \ set active = false\
+      \ where id = ?\
+      \ returning id, name, intro, overnight_pref, overnight_gender_pref, notes, active"
+      (Only id)
+    close conn
+    return $ listToMaybe result
 
   getAllShifts :: ByteString -> IO [Shift]
   getAllShifts connectionString = do
     conn <- connectPostgreSQL connectionString
     -- TODO: convert to single db query
     rVols <- query_ conn
-      " select id, name, intro, overnight_pref, overnight_gender_pref, notes\
+      " select id, name, intro, overnight_pref, overnight_gender_pref, notes, active\
       \ from volunteer v\
       \ join volunteer_shift vs\
       \   on vs.volunteerId = v.id"
@@ -161,7 +186,7 @@ module Database (getAllVolunteers, getVolunteer, addVolunteer, updateVolunteer, 
     conn <- connectPostgreSQL connectionString
     -- TODO: convert to single db query
     rVols <- query conn
-      " select id, name, intro, overnight_pref, overnight_gender_pref, notes\
+      " select id, name, intro, overnight_pref, overnight_gender_pref, notes, active\
       \ from volunteer v\
       \ join volunteer_shift vs\
       \   on vs.volunteerId = v.id\
@@ -197,7 +222,7 @@ module Database (getAllVolunteers, getVolunteer, addVolunteer, updateVolunteer, 
       )
   
     rVols <- query conn
-      " select id, name, intro, overnight_pref, overnight_gender_pref, notes\
+      " select id, name, intro, overnight_pref, overnight_gender_pref, notes, active\
       \ from volunteer v\
       \ join volunteer_shift vs\
       \   on vs.volunteerId = v.id\
@@ -228,7 +253,7 @@ module Database (getAllVolunteers, getVolunteer, addVolunteer, updateVolunteer, 
       return Nothing
     else do
       rVols <- query conn
-        " select id, name, intro, overnight_pref, overnight_gender_pref, notes\
+        " select id, name, intro, overnight_pref, overnight_gender_pref, notes, active\
         \ from volunteer v\
         \ join volunteer_shift vs\
         \   on vs.volunteerId = v.id\
@@ -261,7 +286,7 @@ module Database (getAllVolunteers, getVolunteer, addVolunteer, updateVolunteer, 
       return Nothing
     else do
       rVols <- query conn
-        " select id, name, intro, overnight_pref, overnight_gender_pref, notes\
+        " select id, name, intro, overnight_pref, overnight_gender_pref, notes, active\
         \ from volunteer v\
         \ join volunteer_shift vs\
         \   on vs.volunteerId = v.id\

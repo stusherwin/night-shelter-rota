@@ -20,6 +20,8 @@ module Api where
          Get '[JSON] [Volunteer] 
     :<|> ReqBody '[JSON] VolunteerDetails :> Put '[JSON] Volunteer
     :<|> Capture "id" Int :> ReqBody '[JSON] VolunteerDetails :> Post '[JSON] Volunteer
+    :<|> "active" :> Capture "id" Int :> Post '[JSON] Volunteer
+    :<|> "inactive" :> Capture "id" Int :> Post '[JSON] Volunteer
 
   type ShiftsAPI =
          Get '[JSON] [Shift]

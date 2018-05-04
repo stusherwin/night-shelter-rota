@@ -57,6 +57,8 @@ module Main where
   volsServer conn = getAll
                :<|> add
                :<|> update
+               :<|> activate
+               :<|> deactivate
     where
     getAll :: Handler [Volunteer]
     getAll =
@@ -74,6 +76,20 @@ module Main where
         Just v -> return v
         _ -> throwError err404
  
+    activate :: Int -> Handler Volunteer
+    activate id = do
+      result <- liftIO $ activateVolunteer conn id
+      case result of
+        Just v -> return v
+        _ -> throwError err404
+
+    deactivate :: Int -> Handler Volunteer
+    deactivate id = do
+      result <- liftIO $ deactivateVolunteer conn id
+      case result of
+        Just v -> return v
+        _ -> throwError err404
+
   shiftsServer :: ByteString -> Server ShiftsAPI
   shiftsServer conn = getAll
                  :<|> getOne

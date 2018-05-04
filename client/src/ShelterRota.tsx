@@ -1,7 +1,7 @@
 import * as React from 'react';
 import { Header, HeaderProps } from './Header'
 import { Roster, RosterProps } from './Roster'
-import { Vol, VolDetails, ShiftType, VolShift, Shift, updateVolShifts, updateVolDetails, updateShiftVolDetails } from './Types'
+import { Vol, VolDetails, ShiftType, VolShift, Shift, updateVolShifts, updateVolDetails, findAndUpdateVolDetails, findAndUpdateShiftVolDetails } from './Types'
 import { ServerApi, ApiError } from './ServerApi'
 import { MessageBubbleProps } from './MessageBubble'
 import { Util, pure } from './Util'
@@ -82,7 +82,8 @@ export class ShelterRota extends React.Component<ShelterRotaProps, ShelterRotaSt
                               apiRequest={this.apiRequest.bind(this)}
                               changeCurrentVol={this.changeCurrentVol.bind(this)}
                               editCurrentVol={this.editCurrentVol.bind(this)}
-                              editNewVol={this.editNewVol.bind(this)} />
+                              editNewVol={this.editNewVol.bind(this)}
+                              updateVolDetails={this.updateVolDetails.bind(this)} />
           <Roster visible={this.state.initialDataLoaded && !!this.state.currentVol && !this.state.editingVolDetails}
                   currentVol={this.state.currentVol}
                   shifts={this.state.shifts}
@@ -95,7 +96,7 @@ export class ShelterRota extends React.Component<ShelterRotaProps, ShelterRotaSt
                           readOnly={this.state.reqInProgress}
                           apiRequest={this.apiRequest.bind(this)}
                           addNewVol={this.addNewVol.bind(this)}
-                          updateCurrentVol={this.updateCurrentVol.bind(this)}
+                          updateVolDetails={this.updateVolDetails.bind(this)}
                           cancel={this.cancelEditingVolDetails.bind(this)} />
         </div>
         <VolInfo vol={this.state.volInfo}
@@ -131,10 +132,10 @@ export class ShelterRota extends React.Component<ShelterRotaProps, ShelterRotaSt
                   })
   }
 
-  updateCurrentVol(vol: Vol) {
-    this.setState({ currentVol: vol
-                  , vols: updateVolDetails(this.state.vols, vol)
-                  , shifts: updateShiftVolDetails(this.state.shifts, vol)
+  updateVolDetails(vol: Vol) {
+    this.setState({ currentVol: this.state.currentVol && updateVolDetails(this.state.currentVol, vol)
+                  , vols: findAndUpdateVolDetails(this.state.vols, vol)
+                  , shifts: findAndUpdateShiftVolDetails(this.state.shifts, vol)
                   , editingVolDetails: false
                   })
   }

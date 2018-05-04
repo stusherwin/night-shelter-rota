@@ -6,6 +6,7 @@ type ApiVolunteer = { vId: number
                     , vOvernightPreference: string | null
                     , vOvernightGenderPreference: string | null
                     , vNotes: string
+                    , vActive: boolean
                     }
 
 type ApiShiftDate = { year: number
@@ -61,6 +62,22 @@ export class ServerApi {
     return fetchHttpRequest(req, res => toVol(res as ApiVolunteer))
   }
 
+  static activateVol(volId: number): Promise<Vol> {
+    const req = new Request(`/api/vols/active/${volId}`,
+                              { method: 'POST'
+                              , headers: new Headers({'Content-Type' : 'application/json'})
+                              })
+    return fetchHttpRequest(req, res => toVol(res as ApiVolunteer))
+  }
+
+  static deactivateVol(volId: number): Promise<Vol> {
+    const req = new Request(`/api/vols/inactive/${volId}`,
+                              { method: 'POST'
+                              , headers: new Headers({'Content-Type' : 'application/json'})
+                              })
+    return fetchHttpRequest(req, res => toVol(res as ApiVolunteer))
+  }
+
   static getShifts(): Promise<Shift[]> {
     const req = new Request('/api/shifts')
     return fetchHttpRequest(req, res => (res as ApiShift[]).map(toShift))
@@ -109,7 +126,6 @@ export class ServerApi {
   static setCurrentVolId(volId: number): Promise<void> {
     const req = new Request(`/api/currentvol/${volId}`,
                               { method: 'POST'
-                              , body: ''
                               , headers: new Headers({'Content-Type' : 'application/json'})
                               })
     return fetchHttpRequest(req, res => {})
@@ -163,7 +179,8 @@ function toVol(v: ApiVolunteer): Vol {
     intro: v.vIntro,
     overnightPreference: constrainOvernightPreference(v.vOvernightPreference),
     overnightGenderPreference: constrainOvernightGenderPreference(v.vOvernightGenderPreference),
-    notes: v.vNotes
+    notes: v.vNotes,
+    active: v.vActive
   }
 }
 

@@ -6,6 +6,7 @@ export type Vol = { id: number
                   , overnightPreference: OvernightPreference | null
                   , overnightGenderPreference: OvernightGenderPreference | null
                   , notes: string
+                  , active: boolean
                   }
 
 export type OvernightPreference = 'PreferToBeAlone' | 'PreferAnotherVolunteer'
@@ -52,11 +53,15 @@ export function otherShiftType(shiftType: ShiftType) {
   }
 }
 
-export function updateVolDetails(vols: Vol[], vol: Vol): Vol[] {
-  return vols.map(v => v.id == vol.id? Util.update(v, vol) : v)
+export function updateVolDetails(volToUpdate: Vol, newDetails: Vol): Vol {
+  return volToUpdate.id == newDetails.id? Util.update(volToUpdate, newDetails) : volToUpdate
 }
 
-export function updateShiftVolDetails(shifts: Shift[], vol: Vol): Shift[] {
+export function findAndUpdateVolDetails(vols: Vol[], vol: Vol): Vol[] {
+  return vols.map(v => updateVolDetails(v, vol))
+}
+
+export function findAndUpdateShiftVolDetails(shifts: Shift[], vol: Vol): Shift[] {
   return shifts.map(s => Util.update(s, { vols: s.vols.map(v => v.vol.id == vol.id
                                                                   ? Util.update(v, {vol: vol})
                                                                   : v)

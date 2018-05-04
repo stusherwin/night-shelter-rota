@@ -24,6 +24,7 @@ module Types where
                              , vOvernightPreference :: Maybe OvernightPreference
                              , vOvernightGenderPreference :: Maybe OvernightGenderPreference
                              , vNotes :: String
+                             , vActive :: Bool
                              } deriving (Eq, Show, Generic)
   instance ToJSON Volunteer
 
@@ -60,7 +61,7 @@ module Types where
   instance ToJSON Shift
 
   newVolunteer :: Int -> VolunteerDetails -> Volunteer
-  newVolunteer id details = Volunteer id (vdName details) (vdIntro details) (vdPref details) (vdGenderPref details) (vdNotes details)
+  newVolunteer id details = Volunteer id (vdName details) (vdIntro details) (vdPref details) (vdGenderPref details) (vdNotes details) True
 
   toShiftDate :: Day -> ShiftDate
   toShiftDate day = let (y, m, d) = toGregorian day

@@ -9,6 +9,7 @@ export interface CurrentVolSelectorProps { visible: boolean
                                          , changeCurrentVol: (vol: Vol) => void
                                          , editCurrentVol: () => void
                                          , editNewVol: () => void
+                                         , updateVolDetails: (vol: Vol) => void
                                          }
 
 export class CurrentVolSelector extends React.Component<CurrentVolSelectorProps, {}> {
@@ -24,12 +25,15 @@ export class CurrentVolSelector extends React.Component<CurrentVolSelectorProps,
         <p>Hi, who are you? Please choose your name:</p>
 
         <div className="vols-list">
-          {this.props.vols.sort((a, b) => a.name.localeCompare(b.name)).map(vol =>
+          {this.props.vols
+             .filter(v => v.active)
+             .sort((a, b) => a.name.localeCompare(b.name))
+             .map(vol =>
             <div className="vol" key={vol.id}>
-              {/* <button className={`ui button icon mini`}
-                      onClick={e => this.props.editNewVol()}>
+              <button className={`ui button icon mini`}
+                      onClick={e => this.deactivateVol(vol)}>
                 <i className={`icon icon-user-times`}></i>
-              </button> */}
+              </button>
               <button className={`ui button icon mini`}
                       onClick={e => this.changeCurrentVolAndEdit(vol)}>
                 <i className={`icon icon-edit`}></i>
@@ -69,6 +73,14 @@ export class CurrentVolSelector extends React.Component<CurrentVolSelectorProps,
         .then(() => {
           this.props.changeCurrentVol(vol)
           this.props.editCurrentVol()
+        }))
+  }
+
+  deactivateVol(vol: Vol) {
+    this.props.apiRequest(
+      ServerApi.deactivateVol(vol.id)
+        .then(vol => {
+          this.props.updateVolDetails(vol)
         }))
   }
 }

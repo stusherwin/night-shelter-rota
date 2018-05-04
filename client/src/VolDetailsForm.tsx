@@ -8,7 +8,7 @@ export class VolDetailsFormProps {
   currentVol: Vol | null
   readOnly: boolean
   apiRequest: (req: Promise<any>) => void
-  updateCurrentVol: (vol: Vol) => void
+  updateVolDetails: (vol: Vol) => void
   addNewVol: (vol: Vol) => void
   cancel: () => void
 }
@@ -58,7 +58,7 @@ export class VolDetailsForm extends React.Component<VolDetailsFormProps, VolDeta
     if(this.props.currentVol) {
       let currentVolId = this.props.currentVol.id
       this.props.apiRequest(ServerApi.postVol(this.state.details, currentVolId)
-          .then(vol => this.props.updateCurrentVol(vol)))
+          .then(vol => this.props.updateVolDetails(vol)))
     } else {
       this.props.apiRequest(ServerApi.putVol(this.state.details)
           .then(vol => this.props.apiRequest(ServerApi.setCurrentVolId(vol.id)
