@@ -35,7 +35,7 @@ export class CurrentVolSelector extends React.Component<CurrentVolSelectorProps,
           : <h3><i className="icon-history"></i>Inactive volunteers</h3>
         }
         
-        {!this.props.active? null : <p>Please choose your name from the list:</p>}
+        {!this.props.active? null : <p>Hi! Please choose your name from the list:</p>}
 
         <div className="vols-list">
           {this.props.vols
