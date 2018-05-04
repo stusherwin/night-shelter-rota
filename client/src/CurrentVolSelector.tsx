@@ -30,7 +30,10 @@ export class CurrentVolSelector extends React.Component<CurrentVolSelectorProps,
 
     return (
       <div className="current-vol-selector">
-        <h3>{this.props.active? 'Volunteers' : 'Inactive volunteers'}</h3>
+        {this.props.active
+          ? <h3><i className="icon-user"></i>Volunteers</h3>
+          : <h3><i className="icon-history"></i>Inactive volunteers</h3>
+        }
         
         {!this.props.active? null : <p>Please choose your name from the list:</p>}
 
@@ -44,7 +47,7 @@ export class CurrentVolSelector extends React.Component<CurrentVolSelectorProps,
                 ? <span>
                     <button className={`ui button icon mini`}
                             onClick={e => this.deactivateVol(vol)}>
-                      <i className={`icon icon-user-times`}></i>
+                      <i className={`icon icon-history`}></i>
                     </button>
                     <button className={`ui button icon mini`}
                             onClick={e => this.changeCurrentVolAndEdit(vol)}>

@@ -56,19 +56,19 @@ export class Header extends React.Component<HeaderProps, HeaderState> {
           buttons.push(<button className={`ui button media-large-screen`}
                                onClick={e => this.props.setActive(false)}
                                key="deactv-lg">
-                         <i className={`icon icon-user-times`}></i>
+                         <i className={`icon icon-history`}></i>
                          Show inactive volunteers
                        </button>)
           buttons.push(<button className={`ui button media-larger-screen media-medium-screen`}
                                onClick={e => this.props.setActive(false)}
                                key="deactv-med">
-                         <i className={`icon icon-user-times`}></i>
+                         <i className={`icon icon-history`}></i>
                          Show inactive volunteers
                        </button>)
           buttons.push(<button className={`ui button mini icon media-small-screen`}
                                onClick={e => this.props.setActive(false)}
                                key="deactv-sm">
-                         <i className={`icon icon-user-times`}></i>
+                         <i className={`icon icon-history`}></i>
                        </button>)
       } else {
           buttons.push(<button className={`ui button media-large-screen`}
