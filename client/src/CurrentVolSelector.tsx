@@ -31,7 +31,7 @@ export class CurrentVolSelector extends React.Component<CurrentVolSelectorProps,
     return (
       <div className="current-vol-selector">
         {this.props.active
-          ? <h3><i className="icon-user"></i>Volunteers</h3>
+          ? <h3><i className="icon-users"></i>Volunteers</h3>
           : <h3><i className="icon-history"></i>Inactive volunteers</h3>
         }
         
@@ -42,7 +42,7 @@ export class CurrentVolSelector extends React.Component<CurrentVolSelectorProps,
              .filter(v => v.active == this.props.active)
              .sort((a, b) => a.name.localeCompare(b.name))
              .map(vol =>
-            <div className="vol" key={vol.id}>
+            <div className={`vol ${!this.props.active && 'inactive'}`} key={vol.id}>
               {this.props.active 
                 ? <span>
                     <button className={`ui button icon mini`}

@@ -75,7 +75,10 @@ export class VolDetailsForm extends React.Component<VolDetailsFormProps, VolDeta
 
     return (
       <form className={`ui form details ${formError? "error": ""}`}>
-        <h3>{this.props.currentVol? this.props.currentVol.name + "'s details" : "Add new volunteer"}</h3>
+        {this.props.currentVol
+          ? <h3><i className="icon-user"></i>Volunteer details</h3>
+          : <h3><i className="icon-user"></i>New volunteer details</h3>
+        }
         <div className={`required field ${formError? "error" : ""}`}>
           <label htmlFor="volName">Name</label>
           <input type="text"

@@ -9,6 +9,12 @@
   margin-top: 0*@px;
   margin-bottom: -10*@px;
 
+  h3 i {
+    position: relative;
+    margin-left: -3*@px;
+    margin-right: 3*@px;
+  }
+
   .vols-list {
     .group;
 
@@ -20,6 +26,10 @@
 
     .vol {
       border-bottom: 1px solid rgba(34,36,38,.15);
+
+      &.inactive {
+        color: #777;
+      }
 
       &:last-child {
         border-bottom: none;
