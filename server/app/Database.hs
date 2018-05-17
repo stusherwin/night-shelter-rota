@@ -2,7 +2,7 @@
 {-# LANGUAGE StandaloneDeriving #-}
 {-# LANGUAGE LambdaCase #-}
 
-module Database (getAllVolunteers, getVolunteer, addVolunteer, updateVolunteer, getAllShifts, getVolunteerShifts, addVolunteerShift, removeVolunteerShift, updateVolunteerShift, activateVolunteer, deactivateVolunteer) where
+module Database (getAllVolunteers, getVolunteer, addVolunteer, updateVolunteer, getAllShifts, getVolunteerShifts, addVolunteerShift, removeVolunteerShift, updateVolunteerShift, activateVolunteer, deactivateVolunteer, getRota) where
   import Control.Monad (mzero, when)
   import Control.Monad.IO.Class (liftIO)
   import Database.PostgreSQL.Simple
@@ -302,3 +302,14 @@ module Database (getAllVolunteers, getVolunteer, addVolunteer, updateVolunteer, 
       -- TODO: handle vol not existing?
       let result = rVolShifts <&> \(id, st) -> VolunteerShift (fromJust $ IM.lookup id vols) st
       return $ Just result
+
+  getRota :: ByteString -> String -> IO (Maybe Int)
+  getRota connectionString key = do
+    conn <- connectPostgreSQL connectionString
+    result <- query conn
+      " select id\
+      \ from rota\
+      \ where key = ?"
+      (Only key)
+    close conn
+    return $ listToMaybe $ fmap fromOnly $ (result :: [Only Int])

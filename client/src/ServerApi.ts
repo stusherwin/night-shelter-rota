@@ -42,13 +42,13 @@ export class ApiError {
 }
 
 export class ServerApi {
-  static getVols(rotaId: string | undefined): Promise<Vol[]> {
-    const req = new Request(`/api/${rotaId}/vols`)
+  static getVols(rotaKey: string | undefined): Promise<Vol[]> {
+    const req = new Request(`/api/${rotaKey}/vols`)
     return fetchHttpRequest(req, res => (res as ApiVolunteer[]).map(toVol))
   }
 
-  static putVol(rotaId: string | undefined, details: VolDetails): Promise<Vol> {
-    const req = new Request(`/api/${rotaId}/vols`,
+  static putVol(rotaKey: string | undefined, details: VolDetails): Promise<Vol> {
+    const req = new Request(`/api/${rotaKey}/vols`,
                               { method: 'PUT'
                               , body: JSON.stringify(fromVolDetails(details))
                               , headers: new Headers({'Content-Type' : 'application/json'})
@@ -56,8 +56,8 @@ export class ServerApi {
     return fetchHttpRequest(req, res => toVol(res as ApiVolunteer))
   }
 
-  static postVol(rotaId: string | undefined, details: VolDetails, volId: number): Promise<Vol> {
-    const req = new Request(`/api/${rotaId}/vols/${volId}`,
+  static postVol(rotaKey: string | undefined, details: VolDetails, volId: number): Promise<Vol> {
+    const req = new Request(`/api/${rotaKey}/vols/${volId}`,
                               { method: 'POST'
                               , body: JSON.stringify(fromVolDetails(details))
                               , headers: new Headers({'Content-Type' : 'application/json'})
@@ -65,36 +65,36 @@ export class ServerApi {
     return fetchHttpRequest(req, res => toVol(res as ApiVolunteer))
   }
 
-  static activateVol(rotaId: string | undefined, volId: number): Promise<Vol> {
-    const req = new Request(`/api/${rotaId}/vols/active/${volId}`,
+  static activateVol(rotaKey: string | undefined, volId: number): Promise<Vol> {
+    const req = new Request(`/api/${rotaKey}/vols/active/${volId}`,
                               { method: 'POST'
                               , headers: new Headers({'Content-Type' : 'application/json'})
                               })
     return fetchHttpRequest(req, res => toVol(res as ApiVolunteer))
   }
 
-  static deactivateVol(rotaId: string | undefined, volId: number): Promise<Vol> {
-    const req = new Request(`/api/${rotaId}/vols/inactive/${volId}`,
+  static deactivateVol(rotaKey: string | undefined, volId: number): Promise<Vol> {
+    const req = new Request(`/api/${rotaKey}/vols/inactive/${volId}`,
                               { method: 'POST'
                               , headers: new Headers({'Content-Type' : 'application/json'})
                               })
     return fetchHttpRequest(req, res => toVol(res as ApiVolunteer))
   }
 
-  static getShifts(rotaId: string | undefined): Promise<Shift[]> {
-    const req = new Request(`/api/${rotaId}/shifts`)
+  static getShifts(rotaKey: string | undefined): Promise<Shift[]> {
+    const req = new Request(`/api/${rotaKey}/shifts`)
     return fetchHttpRequest(req, res => (res as ApiShift[]).map(toShift))
   }
 
-  static getVolShifts(rotaId: string | undefined, date: Date): Promise<VolShift[]> {
+  static getVolShifts(rotaKey: string | undefined, date: Date): Promise<VolShift[]> {
     const apiDate = fromDate(date)
-    const req = new Request(`/api/${rotaId}/shifts/${apiDate.year}/${apiDate.month}/${apiDate.day}`)
+    const req = new Request(`/api/${rotaKey}/shifts/${apiDate.year}/${apiDate.month}/${apiDate.day}`)
     return fetchHttpRequest(req, res => (res as ApiVolunteerShift[]).map(toVolShift))
   }
 
-  static putVolShift(rotaId: string | undefined, shiftType: ShiftType, date: Date, volId: number): Promise<VolShift[]> {
+  static putVolShift(rotaKey: string | undefined, shiftType: ShiftType, date: Date, volId: number): Promise<VolShift[]> {
     const apiDate = fromDate(date)
-    const req = new Request(`/api/${rotaId}/shifts/${apiDate.year}/${apiDate.month}/${apiDate.day}/${volId}`,
+    const req = new Request(`/api/${rotaKey}/shifts/${apiDate.year}/${apiDate.month}/${apiDate.day}/${volId}`,
                               { method: 'PUT'
                               , body: JSON.stringify(shiftType)
                               , headers: new Headers({'Content-Type' : 'application/json'})
@@ -102,18 +102,18 @@ export class ServerApi {
     return fetchHttpRequest(req, res => (res as ApiVolunteerShift[]).map(toVolShift))
   }
 
-  static deleteVolShift(rotaId: string | undefined, date: Date, volId: number): Promise<VolShift[]> {
+  static deleteVolShift(rotaKey: string | undefined, date: Date, volId: number): Promise<VolShift[]> {
     const apiDate = fromDate(date)
-    const req = new Request(`/api/${rotaId}/shifts/${apiDate.year}/${apiDate.month}/${apiDate.day}/${volId}`, 
+    const req = new Request(`/api/${rotaKey}/shifts/${apiDate.year}/${apiDate.month}/${apiDate.day}/${volId}`, 
                               { method: 'DELETE' 
                               , headers: new Headers({'Content-Type' : 'application/json'})
                               })
     return fetchHttpRequest(req, res => (res as ApiVolunteerShift[]).map(toVolShift))
   }
 
-  static postVolShift(rotaId: string | undefined, shiftType: ShiftType, date: Date, volId: number): Promise<VolShift[]> {
+  static postVolShift(rotaKey: string | undefined, shiftType: ShiftType, date: Date, volId: number): Promise<VolShift[]> {
     const apiDate = fromDate(date)
-    const req = new Request(`/api/${rotaId}/shifts/${apiDate.year}/${apiDate.month}/${apiDate.day}/${volId}`,
+    const req = new Request(`/api/${rotaKey}/shifts/${apiDate.year}/${apiDate.month}/${apiDate.day}/${volId}`,
                               { method: 'POST'
                               , body: JSON.stringify(shiftType)
                               , headers: new Headers({'Content-Type' : 'application/json'})
@@ -121,21 +121,21 @@ export class ServerApi {
     return fetchHttpRequest(req, res => (res as ApiVolunteerShift[]).map(toVolShift))
   }
 
-  static getCurrentVolId(rotaId: string | undefined): Promise<number | null> {
-    const req = new Request(`/api/${rotaId}/currentvol`)
+  static getCurrentVolId(rotaKey: string | undefined): Promise<number | null> {
+    const req = new Request(`/api/${rotaKey}/currentvol`)
     return fetchHttpRequest(req, res => res)
   }
 
-  static setCurrentVolId(rotaId: string | undefined, volId: number): Promise<void> {
-    const req = new Request(`/api/${rotaId}/currentvol/${volId}`,
+  static setCurrentVolId(rotaKey: string | undefined, volId: number): Promise<void> {
+    const req = new Request(`/api/${rotaKey}/currentvol/${volId}`,
                               { method: 'POST'
                               , headers: new Headers({'Content-Type' : 'application/json'})
                               })
     return fetchHttpRequest(req, res => {})
   }
 
-  static clearCurrentVolId(rotaId: string | undefined): Promise<void> {
-    const req = new Request(`/api/${rotaId}/currentvol`,
+  static clearCurrentVolId(rotaKey: string | undefined): Promise<void> {
+    const req = new Request(`/api/${rotaKey}/currentvol`,
                               { method: 'POST'
                               , body: ''
                               , headers: new Headers({'Content-Type' : 'application/json'})
@@ -143,8 +143,8 @@ export class ServerApi {
     return fetchHttpRequest(req, res => {})
   }
 
-  static verifyRota(rotaId: string | undefined): Promise<boolean> {
-    const req = new Request(`/api/verify/${rotaId}`,
+  static verifyRota(rotaKey: string | undefined): Promise<boolean> {
+    const req = new Request(`/api/verify/${rotaKey}`,
                               { method: 'POST'
                               , body: ''
                               , headers: new Headers({'Content-Type' : 'application/json'})

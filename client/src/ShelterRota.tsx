@@ -21,7 +21,7 @@ export interface ShelterRotaState { initialDataLoaded: boolean
                                   , volInfo: Vol | null
                                   , editingVolDetails: boolean
                                   , active: boolean
-                                  , rotaId: string | undefined
+                                  , rotaKey: string | undefined
                                   , rotaExists: boolean
                                   }
 
@@ -29,7 +29,7 @@ export class ShelterRota extends React.Component<ShelterRotaProps, ShelterRotaSt
   constructor(props: ShelterRotaProps) {
     super(props)
     let pathParts = window.location.pathname.split('/')
-    let rotaId = pathParts[pathParts.indexOf('rota') + 1]
+    let rotaKey = pathParts[pathParts.indexOf('rota') + 1]
 
     this.state = { initialDataLoaded: false
                  , vols: []
@@ -44,13 +44,13 @@ export class ShelterRota extends React.Component<ShelterRotaProps, ShelterRotaSt
                  , volInfo : null
                  , editingVolDetails: false
                  , active: true
-                 , rotaId
+                 , rotaKey
                  , rotaExists: false
                  }
   }
 
   componentDidMount() {
-    if(!this.state.rotaId) {
+    if(!this.state.rotaKey) {
       this.setState({ initialDataLoaded: true
                     , reqInProgress: false
                     , rotaExists: false
@@ -58,11 +58,11 @@ export class ShelterRota extends React.Component<ShelterRotaProps, ShelterRotaSt
       return
     }
 
-    ServerApi.verifyRota(this.state.rotaId)
+    ServerApi.verifyRota(this.state.rotaKey)
       .then(result => {
         if(result) {
           this.setState({ rotaExists: true })
-          Promise.all([ServerApi.getVols(this.state.rotaId), ServerApi.getShifts(this.state.rotaId), ServerApi.getCurrentVolId(this.state.rotaId)])
+          Promise.all([ServerApi.getVols(this.state.rotaKey), ServerApi.getShifts(this.state.rotaKey), ServerApi.getCurrentVolId(this.state.rotaKey)])
             .then(results => {
               let vols = results[0]
               let shifts = results[1]
@@ -107,7 +107,7 @@ export class ShelterRota extends React.Component<ShelterRotaProps, ShelterRotaSt
                 clearCurrentVol={this.clearCurrentVol.bind(this)}
                 editCurrentVol={this.editCurrentVol.bind(this)}
                 setActive={this.setActive.bind(this)}
-                rotaId={this.state.rotaId}
+                rotaKey={this.state.rotaKey}
                 rotaExists={this.state.rotaExists} />
         <div className="container">
           <div style={{display: this.state.initialDataLoaded && !this.state.rotaExists? 'block' : 'none'}}>
@@ -122,7 +122,7 @@ export class ShelterRota extends React.Component<ShelterRotaProps, ShelterRotaSt
                               editCurrentVol={this.editCurrentVol.bind(this)}
                               editNewVol={this.editNewVol.bind(this)}
                               updateVolDetails={this.updateVolDetails.bind(this)}
-                              rotaId={this.state.rotaId} />
+                              rotaKey={this.state.rotaKey} />
           <Roster visible={this.state.initialDataLoaded && this.state.rotaExists && !!this.state.currentVol && !this.state.editingVolDetails}
                   currentVol={this.state.currentVol}
                   shifts={this.state.shifts}
@@ -130,7 +130,7 @@ export class ShelterRota extends React.Component<ShelterRotaProps, ShelterRotaSt
                   apiRequest={this.apiRequest.bind(this)}
                   updateShifts={this.updateShifts.bind(this)}
                   showVolInfo={this.showVolInfo.bind(this)}
-                  rotaId={this.state.rotaId} />
+                  rotaKey={this.state.rotaKey} />
           <VolDetailsForm visible={this.state.editingVolDetails}
                           currentVol={this.state.currentVol}
                           readOnly={this.state.reqInProgress}
@@ -138,7 +138,7 @@ export class ShelterRota extends React.Component<ShelterRotaProps, ShelterRotaSt
                           addNewVol={this.addNewVol.bind(this)}
                           updateVolDetails={this.updateVolDetails.bind(this)}
                           cancel={this.cancelEditingVolDetails.bind(this)}
-                          rotaId={this.state.rotaId} />
+                          rotaKey={this.state.rotaKey} />
         </div>
         <VolInfo vol={this.state.volInfo}
                  close={this.hideVolInfo.bind(this)} />
