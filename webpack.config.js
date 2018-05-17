@@ -44,10 +44,11 @@ module.exports = {
 
     devServer: {
       contentBase: './client/static',
+      historyApiFallback: true,
       port: 5022,
       stats: 'errors-only',
       proxy: {
-        '/api/**': 'http://localhost:8081/'
+        '/api/**': 'http://localhost:8081/',
       }
     },
 

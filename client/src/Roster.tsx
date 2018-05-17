@@ -13,6 +13,7 @@ export interface RosterProps { visible: boolean
                              , apiRequest: (req: Promise<any>) => void
                              , updateShifts: (date: Date, vols: VolShift[]) => void
                              , showVolInfo: (vol: Vol) => void
+                             , rotaId: string | undefined
                              }
 
 export interface RosterState { startDate: Date
@@ -88,7 +89,8 @@ export class Roster extends React.Component<RosterProps, RosterState> {
                   showVolInfo={this.props.showVolInfo}
                   otherFixedMessage={!!this.state.fixedMessage && !Util.datesEqual(this.state.fixedMessage, date)}
                   messageFixedStateChanged={this.messageFixedStateChanged.bind(this)}
-                  key={`shift-${Util.toDateString(date)}`} />
+                  key={`shift-${Util.toDateString(date)}`}
+                  rotaId={this.props.rotaId} />
       )
 
       date = Util.addDays(date, 1)

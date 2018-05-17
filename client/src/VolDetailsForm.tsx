@@ -11,6 +11,7 @@ export class VolDetailsFormProps {
   updateVolDetails: (vol: Vol) => void
   addNewVol: (vol: Vol) => void
   cancel: () => void
+  rotaId: string | undefined
 }
 
 export class VolDetailsFormState {
@@ -57,11 +58,11 @@ export class VolDetailsForm extends React.Component<VolDetailsFormProps, VolDeta
   save() {
     if(this.props.currentVol) {
       let currentVolId = this.props.currentVol.id
-      this.props.apiRequest(ServerApi.postVol(this.state.details, currentVolId)
+      this.props.apiRequest(ServerApi.postVol(this.props.rotaId, this.state.details, currentVolId)
           .then(vol => this.props.updateVolDetails(vol)))
     } else {
-      this.props.apiRequest(ServerApi.putVol(this.state.details)
-          .then(vol => this.props.apiRequest(ServerApi.setCurrentVolId(vol.id)
+      this.props.apiRequest(ServerApi.putVol(this.props.rotaId, this.state.details)
+          .then(vol => this.props.apiRequest(ServerApi.setCurrentVolId(this.props.rotaId, vol.id)
             .then(() => this.props.addNewVol(vol)))))
     }
   }

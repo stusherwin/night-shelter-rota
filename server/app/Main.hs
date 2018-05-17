@@ -46,97 +46,114 @@ module Main where
            
   server :: ByteString -> Server FullAPI
   server conn = appServer conn
+           :<|> serveFilesWithRota
            :<|> serveDirectoryFileServer "client/static"
+    where
+    serveFilesWithRota :: Text -> Server Raw
+    serveFilesWithRota _ = serveDirectoryFileServer "client/static"
 
   appServer :: ByteString -> Server AppAPI
-  appServer conn = volsServer conn
-              :<|> shiftsServer conn
-              :<|> currentVolServer conn
- 
-  volsServer :: ByteString -> Server VolsAPI
-  volsServer conn = getAll
-               :<|> add
-               :<|> update
-               :<|> activate
-               :<|> deactivate
+  appServer conn = verifyServer conn
+              :<|> withRotaServer conn
+
+  verifyServer :: ByteString -> Server VerifyAPI
+  verifyServer conn rotaId = do
+    rota <- liftIO $ findRota conn rotaId
+    case rota of
+      Just _ -> return True
+      _ -> return False
+  
+  withRotaServer :: ByteString -> Server WithRotaAPI
+  withRotaServer conn rotaId = volsServer conn rotaId
+                          :<|> shiftsServer conn rotaId
+                          :<|> currentVolServer conn rotaId
+
+  volsServer :: ByteString -> Text -> Server VolsAPI
+  volsServer conn rotaId = getAll rotaId
+                      :<|> add rotaId
+                      :<|> update rotaId
+                      :<|> activate rotaId
+                      :<|> deactivate rotaId
     where
-    getAll :: Handler [Volunteer]
-    getAll =
+    getAll :: Text -> Handler [Volunteer]
+    getAll rotaId = findRotaOr404 conn rotaId $
       liftIO $ getAllVolunteers conn
 
-    add :: VolunteerDetails -> Handler Volunteer
-    add details = do
+    add :: Text -> VolunteerDetails -> Handler Volunteer
+    add rotaId details = findRotaOr404 conn rotaId $ do
       newId <- liftIO $ addVolunteer conn details
       return $ newVolunteer newId details
 
-    update :: Int -> VolunteerDetails -> Handler Volunteer
-    update id details = do
+    update :: Text -> Int -> VolunteerDetails -> Handler Volunteer
+    update rotaId id details = findRotaOr404 conn rotaId $ do
       result <- liftIO $ updateVolunteer conn id details
       case result of
         Just v -> return v
         _ -> throwError err404
  
-    activate :: Int -> Handler Volunteer
-    activate id = do
+    activate :: Text -> Int -> Handler Volunteer
+    activate rotaId id = findRotaOr404 conn rotaId $ do
       result <- liftIO $ activateVolunteer conn id
       case result of
         Just v -> return v
         _ -> throwError err404
 
-    deactivate :: Int -> Handler Volunteer
-    deactivate id = do
+    deactivate :: Text -> Int -> Handler Volunteer
+    deactivate rotaId id = findRotaOr404 conn rotaId $ do
       result <- liftIO $ deactivateVolunteer conn id
       case result of
         Just v -> return v
         _ -> throwError err404
 
-  shiftsServer :: ByteString -> Server ShiftsAPI
-  shiftsServer conn = getAll
-                 :<|> getOne
-                 :<|> add
-                 :<|> remove
-                 :<|> update
+  shiftsServer :: ByteString -> Text -> Server ShiftsAPI
+  shiftsServer conn rotaId = getAll rotaId
+                        :<|> getOne rotaId
+                        :<|> add rotaId
+                        :<|> remove rotaId
+                        :<|> update rotaId
     where
-    getAll :: Handler [Shift]
-    getAll = 
+    getAll :: Text -> Handler [Shift]
+    getAll rotaId = findRotaOr404 conn rotaId $ 
       liftIO $ getAllShifts conn
   
-    getOne :: Int -> Int -> Int -> Handler [VolunteerShift]
-    getOne y m d =
+    getOne :: Text -> Int -> Int -> Int -> Handler [VolunteerShift]
+    getOne rotaId y m d = findRotaOr404 conn rotaId $ 
       liftIO $ getVolunteerShifts conn $ ShiftDate y m d
 
-    add ::  Int -> Int -> Int -> Int -> ShiftType -> Handler [VolunteerShift]
-    add y m d volId shiftType = do
+    add ::  Text -> Int -> Int -> Int -> Int -> ShiftType -> Handler [VolunteerShift]
+    add rotaId y m d volId shiftType = findRotaOr404 conn rotaId $ do
       --liftIO $ threadDelay 1000000
       liftIO $ addVolunteerShift conn (ShiftDate y m d) volId shiftType
 
-    remove :: Int -> Int -> Int -> Int -> Handler [VolunteerShift]
-    remove y m d volId = do
+    remove :: Text -> Int -> Int -> Int -> Int -> Handler [VolunteerShift]
+    remove rotaId y m d volId = findRotaOr404 conn rotaId $ do
       --liftIO $ threadDelay 10000000
       result <- liftIO $ removeVolunteerShift conn (ShiftDate y m d) volId
       case result of
         Just vs -> return vs
         _ -> throwError err404
 
-    update :: Int -> Int -> Int -> Int -> ShiftType -> Handler [VolunteerShift]
-    update y m d volId shiftType = do
+    update :: Text -> Int -> Int -> Int -> Int -> ShiftType -> Handler [VolunteerShift]
+    update rotaId y m d volId shiftType = findRotaOr404 conn rotaId $ do
       result <- liftIO $ updateVolunteerShift conn (ShiftDate y m d) volId shiftType
       case result of
         Just vs -> return vs
         _ -> throwError err404
 
-  currentVolServer :: ByteString -> Server CurrentVolAPI
-  currentVolServer conn = get
-                     :<|> set
-                     :<|> clear
+  currentVolServer :: ByteString -> Text -> Server CurrentVolAPI
+  currentVolServer conn rotaId = get rotaId
+                            :<|> set rotaId
+                            :<|> clear rotaId
     where
-    get :: Maybe Text -> Handler (Maybe Int)
-    get Nothing = return Nothing
-    get (Just cookies) = 
-      return $ readMaybe . T.unpack =<< (lookup "CurrentVolId" $ parseCookiesText $ B.pack $ T.unpack cookies)
+    get :: Text -> Maybe Text -> Handler (Maybe Int)
+    get rotaId c = findRotaOr404 conn rotaId $ get' c
+      where
+      get' Nothing = return Nothing
+      get' (Just cookies) = 
+        return $ readMaybe . T.unpack =<< (lookup "CurrentVolId" $ parseCookiesText $ B.pack $ T.unpack cookies)
     
-    set :: Int -> Handler (Headers '[Header "Set-Cookie" Text] ())
-    set id = do
+    set :: Text -> Int -> Handler (Headers '[Header "Set-Cookie" Text] ())
+    set rotaId id = findRotaOr404 conn rotaId $ do
       liftIO $ putStrLn "set"
       result <- liftIO $ getVolunteer conn id
       case result of
@@ -145,8 +162,8 @@ module Main where
           time <- liftIO $ getCurrentTime
           return $ addHeader (setCookie "CurrentVolId" id time 10) ()
 
-    clear :: Handler (Headers '[Header "Set-Cookie" Text] ())
-    clear = do
+    clear :: Text -> Handler (Headers '[Header "Set-Cookie" Text] ())
+    clear rotaId = findRotaOr404 conn rotaId $ do
       liftIO $ putStrLn "clear"
       time <- liftIO $ getCurrentTime
       return $ addHeader (setCookie "CurrentVolId" "" time 10) ()
@@ -157,3 +174,16 @@ module Main where
         expDateTim = (formatTime defaultTimeLocale "%H:%M:%S" currentTime)
         expDate = expDateStr ++ " " ++ expDateTim ++ " GMT"
     in  T.pack $ key ++ "=" ++ (show val) ++ "; expires=" ++ expDate ++ "; path=/; HttpOnly"
+
+  findRota :: ByteString -> Text -> IO (Maybe Int)
+  findRota conn rotaId = do
+    case T.unpack rotaId of
+      "hi" -> return $ Just 123
+      _ -> return Nothing
+
+  findRotaOr404 :: ByteString -> Text -> Handler a -> Handler a
+  findRotaOr404 conn rotaId handler = do
+    rota <- liftIO $ findRota conn rotaId
+    case rota of
+      Just _ -> handler
+      _ -> throwError err404

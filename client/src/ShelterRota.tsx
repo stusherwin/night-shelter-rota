@@ -21,11 +21,16 @@ export interface ShelterRotaState { initialDataLoaded: boolean
                                   , volInfo: Vol | null
                                   , editingVolDetails: boolean
                                   , active: boolean
+                                  , rotaId: string | undefined
+                                  , rotaExists: boolean
                                   }
 
 export class ShelterRota extends React.Component<ShelterRotaProps, ShelterRotaState> {
   constructor(props: ShelterRotaProps) {
     super(props)
+    let pathParts = window.location.pathname.split('/')
+    let rotaId = pathParts[pathParts.indexOf('rota') + 1]
+
     this.state = { initialDataLoaded: false
                  , vols: []
                  , shifts: []
@@ -39,30 +44,52 @@ export class ShelterRota extends React.Component<ShelterRotaProps, ShelterRotaSt
                  , volInfo : null
                  , editingVolDetails: false
                  , active: true
+                 , rotaId
+                 , rotaExists: false
                  }
   }
 
   componentDidMount() {
-    Promise.all([ServerApi.getVols(), ServerApi.getShifts(), ServerApi.getCurrentVolId()])
-      .then(results => {
-        let vols = results[0]
-        let shifts = results[1]
-        let currentVolId = results[2]
-        let currentVol = vols.find(v => v.id == currentVolId) || null
+    if(!this.state.rotaId) {
+      this.setState({ initialDataLoaded: true
+                    , reqInProgress: false
+                    , rotaExists: false
+                    })
+      return
+    }
 
-        this.setState({ reqInProgress: false
-                      , vols
-                      , initialDataLoaded: true
-                      , shifts
-                      , currentVol
-                      })
-      })
-      .catch(err => {
-        let apiError = err as ApiError
-        console.log(err)
-        this.setState({ reqInProgress: false
-                      , error: apiError
-                      })
+    ServerApi.verifyRota(this.state.rotaId)
+      .then(result => {
+        if(result) {
+          this.setState({ rotaExists: true })
+          Promise.all([ServerApi.getVols(this.state.rotaId), ServerApi.getShifts(this.state.rotaId), ServerApi.getCurrentVolId(this.state.rotaId)])
+            .then(results => {
+              let vols = results[0]
+              let shifts = results[1]
+              let currentVolId = results[2]
+              let currentVol = vols.find(v => v.id == currentVolId) || null
+
+              this.setState({ reqInProgress: false
+                            , vols
+                            , initialDataLoaded: true
+                            , shifts
+                            , currentVol
+                            , rotaExists: true
+                            })
+            })
+            .catch(err => {
+              let apiError = err as ApiError
+              console.log(err)
+              this.setState({ reqInProgress: false
+                            , error: apiError
+                            })
+            })
+        } else {
+          this.setState({ reqInProgress: false
+                        , initialDataLoaded: true
+                        , rotaExists: false
+                        })  
+        }
       })
   }
 
@@ -79,30 +106,37 @@ export class ShelterRota extends React.Component<ShelterRotaProps, ShelterRotaSt
                 apiRequest={this.apiRequest.bind(this)}
                 clearCurrentVol={this.clearCurrentVol.bind(this)}
                 editCurrentVol={this.editCurrentVol.bind(this)}
-                setActive={this.setActive.bind(this)} />
+                setActive={this.setActive.bind(this)}
+                rotaId={this.state.rotaId} />
         <div className="container">
-          <CurrentVolSelector visible={this.state.initialDataLoaded && !this.state.currentVol && !this.state.editingVolDetails}
+          <div style={{display: this.state.initialDataLoaded && !this.state.rotaExists? 'block' : 'none'}}>
+            <h3>There is no rota ...</h3>
+          </div>
+          <CurrentVolSelector visible={this.state.initialDataLoaded && this.state.rotaExists && !this.state.currentVol && !this.state.editingVolDetails}
                               vols={this.state.vols}
                               active={this.state.active}
                               apiRequest={this.apiRequest.bind(this)}
                               changeCurrentVol={this.changeCurrentVol.bind(this)}
                               editCurrentVol={this.editCurrentVol.bind(this)}
                               editNewVol={this.editNewVol.bind(this)}
-                              updateVolDetails={this.updateVolDetails.bind(this)} />
-          <Roster visible={this.state.initialDataLoaded && !!this.state.currentVol && !this.state.editingVolDetails}
+                              updateVolDetails={this.updateVolDetails.bind(this)}
+                              rotaId={this.state.rotaId} />
+          <Roster visible={this.state.initialDataLoaded && this.state.rotaExists && !!this.state.currentVol && !this.state.editingVolDetails}
                   currentVol={this.state.currentVol}
                   shifts={this.state.shifts}
                   config={this.state.config}
                   apiRequest={this.apiRequest.bind(this)}
                   updateShifts={this.updateShifts.bind(this)}
-                  showVolInfo={this.showVolInfo.bind(this)} />
+                  showVolInfo={this.showVolInfo.bind(this)}
+                  rotaId={this.state.rotaId} />
           <VolDetailsForm visible={this.state.editingVolDetails}
                           currentVol={this.state.currentVol}
                           readOnly={this.state.reqInProgress}
                           apiRequest={this.apiRequest.bind(this)}
                           addNewVol={this.addNewVol.bind(this)}
                           updateVolDetails={this.updateVolDetails.bind(this)}
-                          cancel={this.cancelEditingVolDetails.bind(this)} />
+                          cancel={this.cancelEditingVolDetails.bind(this)}
+                          rotaId={this.state.rotaId} />
         </div>
         <VolInfo vol={this.state.volInfo}
                  close={this.hideVolInfo.bind(this)} />

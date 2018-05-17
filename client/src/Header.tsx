@@ -15,6 +15,7 @@ export interface HeaderProps { currentVol: Vol | null
                              , clearCurrentVol: () => void
                              , editCurrentVol: () => void
                              , setActive: (active: boolean) => void
+                             , rotaId: string | undefined
                              }
 
 export interface HeaderState { errorMessage: Message | null
@@ -43,7 +44,7 @@ export class Header extends React.Component<HeaderProps, HeaderState> {
 
   clearCurrentVol() {
     this.props.apiRequest(
-      ServerApi.clearCurrentVolId()
+      ServerApi.clearCurrentVolId(this.props.rotaId)
         .then(() => {
           this.props.clearCurrentVol()
         }))

@@ -11,6 +11,7 @@ export interface CurrentVolSelectorProps { visible: boolean
                                          , editCurrentVol: () => void
                                          , editNewVol: () => void
                                          , updateVolDetails: (vol: Vol) => void
+                                         , rotaId: string | undefined
                                          }
 
 export interface CurrentVolSelectorState { 
@@ -89,7 +90,7 @@ export class CurrentVolSelector extends React.Component<CurrentVolSelectorProps,
 
   changeCurrentVol(vol: Vol) {
     this.props.apiRequest(
-      ServerApi.setCurrentVolId(vol.id)
+      ServerApi.setCurrentVolId(this.props.rotaId, vol.id)
         .then(() => {
           this.props.changeCurrentVol(vol)
         }))
@@ -97,7 +98,7 @@ export class CurrentVolSelector extends React.Component<CurrentVolSelectorProps,
 
   changeCurrentVolAndEdit(vol: Vol) {
     this.props.apiRequest(
-      ServerApi.setCurrentVolId(vol.id)
+      ServerApi.setCurrentVolId(this.props.rotaId, vol.id)
         .then(() => {
           this.props.changeCurrentVol(vol)
           this.props.editCurrentVol()
@@ -106,7 +107,7 @@ export class CurrentVolSelector extends React.Component<CurrentVolSelectorProps,
 
   deactivateVol(vol: Vol) {
     this.props.apiRequest(
-      ServerApi.deactivateVol(vol.id)
+      ServerApi.deactivateVol(this.props.rotaId, vol.id)
         .then(vol => {
           this.props.updateVolDetails(vol)
         }))
@@ -114,7 +115,7 @@ export class CurrentVolSelector extends React.Component<CurrentVolSelectorProps,
 
   activateVol(vol: Vol) {
     this.props.apiRequest(
-      ServerApi.activateVol(vol.id)
+      ServerApi.activateVol(this.props.rotaId, vol.id)
         .then(vol => {
           this.props.updateVolDetails(vol)
         }))

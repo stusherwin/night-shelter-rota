@@ -14,6 +14,7 @@ export interface ShiftRowProps { date: Date
                                , apiRequest: (req: Promise<any>) => void
                                , updateShifts: (date: Date, vols: VolShift[]) => void
                                , showVolInfo: (vol: Vol) => void
+                               , rotaId: string | undefined
                                }
 
 export interface CurrentVolSignedUpState { shiftType: string | null
@@ -204,7 +205,7 @@ export class ShiftRow extends React.Component<ShiftRowProps, ShiftRowState> {
 
     let currentVolId = this.props.currentVol.id
     this.apiRequest(
-      ServerApi.putVolShift(shiftType, this.props.date, currentVolId)
+      ServerApi.putVolShift(this.props.rotaId, shiftType, this.props.date, currentVolId)
         .then(volShifts => {
           this.props.updateShifts(this.props.date, volShifts);
         }))
@@ -217,7 +218,7 @@ export class ShiftRow extends React.Component<ShiftRowProps, ShiftRowState> {
 
     let currentVolId = this.props.currentVol.id
     this.apiRequest(
-      ServerApi.deleteVolShift(this.props.date, currentVolId)
+      ServerApi.deleteVolShift(this.props.rotaId, this.props.date, currentVolId)
         .then(volShifts => {
           this.props.updateShifts(this.props.date, volShifts);
         }))
@@ -230,7 +231,7 @@ export class ShiftRow extends React.Component<ShiftRowProps, ShiftRowState> {
 
     let currentVolId = this.props.currentVol.id
     this.apiRequest(
-      ServerApi.postVolShift(shiftType, this.props.date, currentVolId)
+      ServerApi.postVolShift(this.props.rotaId, shiftType, this.props.date, currentVolId)
         .then(volShifts => {
           this.props.updateShifts(this.props.date, volShifts);
         }))

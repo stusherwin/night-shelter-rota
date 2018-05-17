@@ -11,6 +11,15 @@ module Api where
  
   type AppAPI =
     "api" :> (
+           "verify" :> VerifyAPI
+      :<|> WithRotaAPI
+    )
+
+  type VerifyAPI =
+         Capture "rotaId" Text :> Post '[JSON] Bool
+
+  type WithRotaAPI =
+    Capture "rotaId" Text :> (
            "vols" :> VolsAPI
       :<|> "shifts" :> ShiftsAPI
       :<|> "currentvol" :> CurrentVolAPI
@@ -36,7 +45,9 @@ module Api where
     :<|> Post '[JSON] (Headers '[Header "Set-Cookie" Text] ())
     
   type FullAPI =
-    AppAPI :<|> Raw
+         AppAPI
+    :<|> "rota" :> Capture "rotaId" Text :> Raw
+    :<|> Raw
   
   fullAPI :: Proxy FullAPI
   fullAPI = Proxy

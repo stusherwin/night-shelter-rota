@@ -30,22 +30,25 @@ type ApiVolDetails = { vdName: string
                      }
 
 export class ApiError {
-  constructor(error: string, message: string) {
+  constructor(error: string, message: string, status: number | null) {
     this.error = error
     this.message = message
+    this.status = status
   }
+
   error: string
   message: string
+  status: number | null
 }
 
 export class ServerApi {
-  static getVols(): Promise<Vol[]> {
-    const req = new Request('/api/vols')
+  static getVols(rotaId: string | undefined): Promise<Vol[]> {
+    const req = new Request(`/api/${rotaId}/vols`)
     return fetchHttpRequest(req, res => (res as ApiVolunteer[]).map(toVol))
   }
 
-  static putVol(details: VolDetails): Promise<Vol> {
-    const req = new Request('/api/vols',
+  static putVol(rotaId: string | undefined, details: VolDetails): Promise<Vol> {
+    const req = new Request(`/api/${rotaId}/vols`,
                               { method: 'PUT'
                               , body: JSON.stringify(fromVolDetails(details))
                               , headers: new Headers({'Content-Type' : 'application/json'})
@@ -53,8 +56,8 @@ export class ServerApi {
     return fetchHttpRequest(req, res => toVol(res as ApiVolunteer))
   }
 
-  static postVol(details: VolDetails, volId: number): Promise<Vol> {
-    const req = new Request(`/api/vols/${volId}`,
+  static postVol(rotaId: string | undefined, details: VolDetails, volId: number): Promise<Vol> {
+    const req = new Request(`/api/${rotaId}/vols/${volId}`,
                               { method: 'POST'
                               , body: JSON.stringify(fromVolDetails(details))
                               , headers: new Headers({'Content-Type' : 'application/json'})
@@ -62,36 +65,36 @@ export class ServerApi {
     return fetchHttpRequest(req, res => toVol(res as ApiVolunteer))
   }
 
-  static activateVol(volId: number): Promise<Vol> {
-    const req = new Request(`/api/vols/active/${volId}`,
+  static activateVol(rotaId: string | undefined, volId: number): Promise<Vol> {
+    const req = new Request(`/api/${rotaId}/vols/active/${volId}`,
                               { method: 'POST'
                               , headers: new Headers({'Content-Type' : 'application/json'})
                               })
     return fetchHttpRequest(req, res => toVol(res as ApiVolunteer))
   }
 
-  static deactivateVol(volId: number): Promise<Vol> {
-    const req = new Request(`/api/vols/inactive/${volId}`,
+  static deactivateVol(rotaId: string | undefined, volId: number): Promise<Vol> {
+    const req = new Request(`/api/${rotaId}/vols/inactive/${volId}`,
                               { method: 'POST'
                               , headers: new Headers({'Content-Type' : 'application/json'})
                               })
     return fetchHttpRequest(req, res => toVol(res as ApiVolunteer))
   }
 
-  static getShifts(): Promise<Shift[]> {
-    const req = new Request('/api/shifts')
+  static getShifts(rotaId: string | undefined): Promise<Shift[]> {
+    const req = new Request(`/api/${rotaId}/shifts`)
     return fetchHttpRequest(req, res => (res as ApiShift[]).map(toShift))
   }
 
-  static getVolShifts(date: Date): Promise<VolShift[]> {
+  static getVolShifts(rotaId: string | undefined, date: Date): Promise<VolShift[]> {
     const apiDate = fromDate(date)
-    const req = new Request(`/api/shifts/${apiDate.year}/${apiDate.month}/${apiDate.day}`)
+    const req = new Request(`/api/${rotaId}/shifts/${apiDate.year}/${apiDate.month}/${apiDate.day}`)
     return fetchHttpRequest(req, res => (res as ApiVolunteerShift[]).map(toVolShift))
   }
 
-  static putVolShift(shiftType: ShiftType, date: Date, volId: number): Promise<VolShift[]> {
+  static putVolShift(rotaId: string | undefined, shiftType: ShiftType, date: Date, volId: number): Promise<VolShift[]> {
     const apiDate = fromDate(date)
-    const req = new Request(`/api/shifts/${apiDate.year}/${apiDate.month}/${apiDate.day}/${volId}`,
+    const req = new Request(`/api/${rotaId}/shifts/${apiDate.year}/${apiDate.month}/${apiDate.day}/${volId}`,
                               { method: 'PUT'
                               , body: JSON.stringify(shiftType)
                               , headers: new Headers({'Content-Type' : 'application/json'})
@@ -99,18 +102,18 @@ export class ServerApi {
     return fetchHttpRequest(req, res => (res as ApiVolunteerShift[]).map(toVolShift))
   }
 
-  static deleteVolShift(date: Date, volId: number): Promise<VolShift[]> {
+  static deleteVolShift(rotaId: string | undefined, date: Date, volId: number): Promise<VolShift[]> {
     const apiDate = fromDate(date)
-    const req = new Request(`/api/shifts/${apiDate.year}/${apiDate.month}/${apiDate.day}/${volId}`, 
+    const req = new Request(`/api/${rotaId}/shifts/${apiDate.year}/${apiDate.month}/${apiDate.day}/${volId}`, 
                               { method: 'DELETE' 
                               , headers: new Headers({'Content-Type' : 'application/json'})
                               })
     return fetchHttpRequest(req, res => (res as ApiVolunteerShift[]).map(toVolShift))
   }
 
-  static postVolShift(shiftType: ShiftType, date: Date, volId: number): Promise<VolShift[]> {
+  static postVolShift(rotaId: string | undefined, shiftType: ShiftType, date: Date, volId: number): Promise<VolShift[]> {
     const apiDate = fromDate(date)
-    const req = new Request(`/api/shifts/${apiDate.year}/${apiDate.month}/${apiDate.day}/${volId}`,
+    const req = new Request(`/api/${rotaId}/shifts/${apiDate.year}/${apiDate.month}/${apiDate.day}/${volId}`,
                               { method: 'POST'
                               , body: JSON.stringify(shiftType)
                               , headers: new Headers({'Content-Type' : 'application/json'})
@@ -118,26 +121,35 @@ export class ServerApi {
     return fetchHttpRequest(req, res => (res as ApiVolunteerShift[]).map(toVolShift))
   }
 
-  static getCurrentVolId(): Promise<number | null> {
-    const req = new Request(`/api/currentvol`)
+  static getCurrentVolId(rotaId: string | undefined): Promise<number | null> {
+    const req = new Request(`/api/${rotaId}/currentvol`)
     return fetchHttpRequest(req, res => res)
   }
 
-  static setCurrentVolId(volId: number): Promise<void> {
-    const req = new Request(`/api/currentvol/${volId}`,
+  static setCurrentVolId(rotaId: string | undefined, volId: number): Promise<void> {
+    const req = new Request(`/api/${rotaId}/currentvol/${volId}`,
                               { method: 'POST'
                               , headers: new Headers({'Content-Type' : 'application/json'})
                               })
     return fetchHttpRequest(req, res => {})
   }
 
-  static clearCurrentVolId(): Promise<void> {
-    const req = new Request(`/api/currentvol`,
+  static clearCurrentVolId(rotaId: string | undefined): Promise<void> {
+    const req = new Request(`/api/${rotaId}/currentvol`,
                               { method: 'POST'
                               , body: ''
                               , headers: new Headers({'Content-Type' : 'application/json'})
                               })
     return fetchHttpRequest(req, res => {})
+  }
+
+  static verifyRota(rotaId: string | undefined): Promise<boolean> {
+    const req = new Request(`/api/verify/${rotaId}`,
+                              { method: 'POST'
+                              , body: ''
+                              , headers: new Headers({'Content-Type' : 'application/json'})
+                              })
+    return fetchHttpRequest(req, res => res)
   }
 }
 
@@ -146,18 +158,18 @@ function fetchHttpRequest<T>(req: Request, process: (res: any) => T): Promise<T>
     return fetch(req, {credentials: 'same-origin'})
       .then(res => {
         if(!res.ok) {
-          return res.text().then(txt => { throw new ApiError(`${res.statusText} (${res.status})`, txt) })
+          return res.text().then(txt => { throw new ApiError(`${res.statusText} (${res.status})`, txt, res.status) })
         }
         let contentType = res.headers.get('content-type')
         if (contentType == null || !contentType.includes('application/json')) {
-          throw new ApiError('Invalid server response', 'Expected response to have content-type application/json.');
+          throw new ApiError('Invalid server response', 'Expected response to have content-type application/json.', null);
         }
         return res.json()
       })
       .then(res => Promise.resolve(process(res)))
-      .catch(err => Promise.reject(new ApiError('Error from the server', 'Received an unexpected response from the server: ' + err.error)))
+      .catch(err => Promise.reject(new ApiError('Error from the server', 'Received an unexpected response from the server: ' + err.error, err.status || null)))
   } catch(TypeError) {
-    return Promise.reject(new ApiError('Can\'t connect to the server', 'The server seems to be down or busy, please wait a while and try again.'))
+    return Promise.reject(new ApiError('Can\'t connect to the server', 'The server seems to be down or busy, please wait a while and try again.', null))
   }
 }
 
