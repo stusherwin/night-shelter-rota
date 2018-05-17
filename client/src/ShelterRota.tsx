@@ -107,10 +107,12 @@ export class ShelterRota extends React.Component<ShelterRotaProps, ShelterRotaSt
                 clearCurrentVol={this.clearCurrentVol.bind(this)}
                 editCurrentVol={this.editCurrentVol.bind(this)}
                 setActive={this.setActive.bind(this)}
-                rotaId={this.state.rotaId} />
+                rotaId={this.state.rotaId}
+                rotaExists={this.state.rotaExists} />
         <div className="container">
           <div style={{display: this.state.initialDataLoaded && !this.state.rotaExists? 'block' : 'none'}}>
-            <h3>There is no rota ...</h3>
+            <h2>Rota not found</h2>
+            <p>The rota you are looking for cannot be found. Please make sure you are using the most up-to-date link.</p>
           </div>
           <CurrentVolSelector visible={this.state.initialDataLoaded && this.state.rotaExists && !this.state.currentVol && !this.state.editingVolDetails}
                               vols={this.state.vols}
