@@ -14,14 +14,17 @@ export interface CurrentVolSelectorProps { visible: boolean
                                          , rotaKey: string | undefined
                                          }
 
-export interface CurrentVolSelectorState { 
+export interface CurrentVolSelectorState { active: boolean
+                                         , activeVols: boolean
                                          }
 
 export class CurrentVolSelector extends React.Component<CurrentVolSelectorProps, CurrentVolSelectorState> {
   constructor(props: CurrentVolSelectorProps) {
     super(props)
     
-    this.state = { active: true }
+    this.state = { active: true
+                 , activeVols: !!this.props.vols.filter(v => v.active).length
+                 }
   }
 
   render() {
@@ -29,61 +32,42 @@ export class CurrentVolSelector extends React.Component<CurrentVolSelectorProps,
       return null
     }
 
+    let vols = this.props.vols.filter(v => v.active == this.props.active)
+
     return (
       <div className="current-vol-selector">
         {this.props.active
           ? <h3><i className="icon-users"></i>Volunteers</h3>
           : <h3><i className="icon-history"></i>Inactive volunteers</h3>
         }
+
+        {this.props.active && vols.length
+          ? <p>Hi! Please choose your name from the list:</p>
+          : null}
         
-        {!this.props.active? null : <p>Hi! Please choose your name from the list:</p>}
+        {!this.props.active && !vols.length
+          ? <p>There aren't any inactive volunteers.</p>
+          : null}
+        
+        <VolsList vols={vols}
+                  active={this.props.active}
+                  deactivateVol={this.deactivateVol.bind(this)}
+                  changeCurrentVolAndEdit={this.changeCurrentVolAndEdit.bind(this)}
+                  activateVol={this.activateVol.bind(this)}
+                  changeCurrentVol={this.changeCurrentVol.bind(this)} />
 
-        <div className="vols-list">
-          {this.props.vols
-             .filter(v => v.active == this.props.active)
-             .sort((a, b) => a.name.localeCompare(b.name))
-             .map(vol =>
-            <div className={`vol ${!this.props.active && 'inactive'}`} key={vol.id}>
-              {this.props.active 
-                ? <span>
-                    <button className={`ui button icon mini`}
-                            onClick={e => this.deactivateVol(vol)}>
-                      <i className={`icon icon-history`}></i>
-                    </button>
-                    <button className={`ui button icon mini`}
-                            onClick={e => this.changeCurrentVolAndEdit(vol)}>
-                      <i className={`icon icon-edit`}></i>
-                    </button>
-                  </span>
-                : <span>
-                    <button className={`ui button icon mini`}
-                            onClick={e => this.activateVol(vol)}>
-                      <i className={`icon icon-user`}></i>
-                    </button>
-                  </span>
-              }
-              {this.props.active 
-                ? <a href="#"
-                     className="vol-name"
-                     onClick={e => { this.changeCurrentVol(vol) }}>
-                    {vol.name}
-                  </a>
-                : <span className="vol-name">{vol.name}</span>
-              }
+        {this.props.active
+          ? <div className="vols-add">
+              {vols.length
+                ? <p>Can't find your name? You can add yourself here:</p>
+                : <p>There aren't any active volunteers on this rota. You can add yourself here:</p>}
+              <button className={`ui button primary`}
+                      onClick={e => this.props.editNewVol()}>
+                <i className={`icon icon-add`}></i>
+                Add your details
+              </button>
             </div>
-          )}
-        </div>
-
-        {!this.props.active? null :
-          <div className="vols-add">
-            <p>Can't find your name? You can add yourself here:</p>
-            <button className={`ui button primary`}
-                    onClick={e => this.props.editNewVol()}>
-              <i className={`icon icon-add`}></i>
-              Add your details
-            </button>
-          </div>
-        }
+          : null}
       </div>
     )
   }
@@ -121,3 +105,46 @@ export class CurrentVolSelector extends React.Component<CurrentVolSelectorProps,
         }))
   }
 }
+
+const VolsList = pure((props: { vols: Vol[]
+                              , active: boolean
+                              , deactivateVol: (vol: Vol) => void
+                              , changeCurrentVolAndEdit: (vol: Vol) => void
+                              , activateVol: (vol: Vol) => void
+                              , changeCurrentVol: (vol: Vol) => void
+                              }) => !props.vols.length ? null : (
+  <div className="vols-list">
+    {props.vols
+       .sort((a, b) => a.name.localeCompare(b.name))
+       .map(vol =>
+      <div className={`vol ${!props.active && 'inactive'}`} key={vol.id}>
+        {props.active 
+          ? <span>
+              <button className={`ui button icon mini`}
+                      onClick={e => props.deactivateVol(vol)}>
+                <i className={`icon icon-history`}></i>
+              </button>
+              <button className={`ui button icon mini`}
+                      onClick={e => props.changeCurrentVolAndEdit(vol)}>
+                <i className={`icon icon-edit`}></i>
+              </button>
+            </span>
+          : <span>
+              <button className={`ui button icon mini`}
+                      onClick={e => props.activateVol(vol)}>
+                <i className={`icon icon-user`}></i>
+              </button>
+            </span>
+        }
+        {props.active 
+          ? <a href="#"
+               className="vol-name"
+               onClick={e => { props.changeCurrentVol(vol) }}>
+              {vol.name}
+            </a>
+          : <span className="vol-name">{vol.name}</span>
+        }
+      </div>
+    )}
+  </div>
+))

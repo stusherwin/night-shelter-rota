@@ -147,7 +147,7 @@ module Database (getAllVolunteers, getVolunteer, addVolunteer, updateVolunteer, 
     result <- query conn
       " update volunteer\
       \ set active = true\
-      \ where id = ? and rotaId = ?\
+      \ where id = ? and rota_id = ?\
       \ returning id, rota_id, name, intro, overnight_pref, overnight_gender_pref, notes, active"
       (id, rotaId)
     close conn

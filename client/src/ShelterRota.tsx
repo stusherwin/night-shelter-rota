@@ -110,10 +110,7 @@ export class ShelterRota extends React.Component<ShelterRotaProps, ShelterRotaSt
                 rotaKey={this.state.rotaKey}
                 rotaExists={this.state.rotaExists} />
         <div className="container">
-          <div style={{display: this.state.initialDataLoaded && !this.state.rotaExists? 'block' : 'none'}}>
-            <h2>Rota not found</h2>
-            <p>The rota you are looking for cannot be found. Please make sure you are using the most up-to-date link.</p>
-          </div>
+          <RotaNotFound visible={this.state.initialDataLoaded && !this.state.rotaExists} />
           <CurrentVolSelector visible={this.state.initialDataLoaded && this.state.rotaExists && !this.state.currentVol && !this.state.editingVolDetails}
                               vols={this.state.vols}
                               active={this.state.active}
@@ -235,3 +232,12 @@ export class ShelterRota extends React.Component<ShelterRotaProps, ShelterRotaSt
     this.setState({volInfo: null})
   }
 }
+
+const RotaNotFound = pure((props: { visible: boolean
+                                  }) => !props.visible ? null : (
+  <div className="current-vol-selector">
+    <h2>Rota not found</h2>
+    <p>The rota you are looking for cannot be found. Please make sure you are using the most up-to-date link.</p>
+    <p>If you don't have a link and you're curious, why don't you have a play with the <a href="/rota/DEMO">demo rota</a>?</p>
+  </div>
+))
