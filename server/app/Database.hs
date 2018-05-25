@@ -169,9 +169,9 @@ module Database (getAllVolunteers, getVolunteer, addVolunteer, updateVolunteer, 
       " select id, name, intro, overnight_pref, overnight_gender_pref, notes, active\
       \ from volunteer v\
       \ join volunteer_shift vs\
-      \   on vs.volunteerId = v.id"
+      \   on vs.volunteer_id = v.id"
     rVolShifts <- query_ conn
-      " select shiftDate, volunteerId, shiftType\
+      " select shift_date, volunteer_id, shift_type\
       \ from volunteer_shift"
     close conn
     let vols = IM.fromList $ map (\v -> (vId v, v)) (rVols :: [Volunteer])
@@ -189,13 +189,13 @@ module Database (getAllVolunteers, getVolunteer, addVolunteer, updateVolunteer, 
       " select id, name, intro, overnight_pref, overnight_gender_pref, notes, active\
       \ from volunteer v\
       \ join volunteer_shift vs\
-      \   on vs.volunteerId = v.id\
-      \ where shiftDate = ?"
+      \   on vs.volunteer_id = v.id\
+      \ where shift_date = ?"
       (Only shiftDate)
     rVolShifts <- query conn
-      " select volunteerId, shiftType\
+      " select volunteer_id, shift_type\
       \ from volunteer_shift\
-      \ where shiftDate = ?"
+      \ where shift_date = ?"
       (Only shiftDate)
     close conn
     let vols = IM.fromList $ map (\v -> (vId v, v)) (rVols :: [Volunteer])
@@ -210,12 +210,12 @@ module Database (getAllVolunteers, getVolunteer, addVolunteer, updateVolunteer, 
     -- Add should be idempotent, shouldn't throw an error if already exists
     _ <- execute conn
       " insert into volunteer_shift as vs\
-      \   (shiftDate, volunteerId, shiftType)\
+      \   (shift_date, volunteer_id, shift_type)\
       \ values\
       \   (?, ?, ?)\
-      \ on conflict (shiftDate, volunteerId) do update\
-      \   set shiftType = excluded.shiftType\
-      \   where vs.shiftDate = excluded.shiftDate and vs.volunteerId = excluded.volunteerId"
+      \ on conflict (shift_date, volunteer_id) do update\
+      \   set shift_type = excluded.shift_type\
+      \   where vs.shift_date = excluded.shift_date and vs.volunteer_id = excluded.volunteer_id"
       ( shiftDate
       , volId
       , shiftType
@@ -225,13 +225,13 @@ module Database (getAllVolunteers, getVolunteer, addVolunteer, updateVolunteer, 
       " select id, name, intro, overnight_pref, overnight_gender_pref, notes, active\
       \ from volunteer v\
       \ join volunteer_shift vs\
-      \   on vs.volunteerId = v.id\
-      \ where shiftDate = ?"
+      \   on vs.volunteer_id = v.id\
+      \ where shift_date = ?"
       (Only shiftDate)
     rVolShifts <- query conn
-      " select volunteerId, shiftType\
+      " select volunteer_id, shift_type\
       \ from volunteer_shift\
-      \ where shiftDate = ?"
+      \ where shift_date = ?"
       (Only shiftDate)
     close conn
     let vols = IM.fromList $ map (\v -> (vId v, v)) (rVols :: [Volunteer])
@@ -245,7 +245,7 @@ module Database (getAllVolunteers, getVolunteer, addVolunteer, updateVolunteer, 
     -- TODO: convert to single db query
     count <- execute conn
       " delete from volunteer_shift\
-      \ where shiftDate = ? and volunteerId = ?"
+      \ where shift_date = ? and volunteer_id = ?"
       ( shiftDate
       , volId
       )
@@ -256,13 +256,13 @@ module Database (getAllVolunteers, getVolunteer, addVolunteer, updateVolunteer, 
         " select id, name, intro, overnight_pref, overnight_gender_pref, notes, active\
         \ from volunteer v\
         \ join volunteer_shift vs\
-        \   on vs.volunteerId = v.id\
-        \ where shiftDate = ?"
+        \   on vs.volunteer_id = v.id\
+        \ where shift_date = ?"
         (Only shiftDate)
       rVolShifts <- query conn
-        " select volunteerId, shiftType\
+        " select volunteer_id, shift_type\
         \ from volunteer_shift\
-        \ where shiftDate = ?"
+        \ where shift_date = ?"
         (Only shiftDate)
       close conn
       let vols = IM.fromList $ map (\v -> (vId v, v)) (rVols :: [Volunteer])
@@ -276,8 +276,8 @@ module Database (getAllVolunteers, getVolunteer, addVolunteer, updateVolunteer, 
     -- TODO: convert to single db query
     count <- execute conn
       " update volunteer_shift\
-      \ set shiftType = ?\
-      \ where shiftDate = ? and volunteerId = ?"
+      \ set shift_type = ?\
+      \ where shift_date = ? and volunteer_id = ?"
       ( shiftType
       , shiftDate
       , volId
@@ -289,13 +289,13 @@ module Database (getAllVolunteers, getVolunteer, addVolunteer, updateVolunteer, 
         " select id, name, intro, overnight_pref, overnight_gender_pref, notes, active\
         \ from volunteer v\
         \ join volunteer_shift vs\
-        \   on vs.volunteerId = v.id\
-        \ where shiftDate = ?"
+        \   on vs.volunteer_id = v.id\
+        \ where shift_date = ?"
         (Only shiftDate)
       rVolShifts <- query conn
-        " select volunteerId, shiftType\
+        " select volunteer_id, shift_type\
         \ from volunteer_shift\
-        \ where shiftDate = ?"
+        \ where shift_date = ?"
         (Only shiftDate)
       close conn
       let vols = IM.fromList $ map (\v -> (vId v, v)) (rVols :: [Volunteer])
