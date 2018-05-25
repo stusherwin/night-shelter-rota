@@ -76,31 +76,31 @@ module Main where
                       :<|> deactivate rotaKey
     where
     getAll :: Text -> Handler [Volunteer]
-    getAll rotaKey = findRotaOr404 conn rotaKey $
-      liftIO $ getAllVolunteers conn
+    getAll rotaKey = findRotaOr404 conn rotaKey $ \rotaId ->
+      liftIO $ getAllVolunteers conn rotaId
 
     add :: Text -> VolunteerDetails -> Handler Volunteer
-    add rotaKey details = findRotaOr404 conn rotaKey $ do
-      newId <- liftIO $ addVolunteer conn details
-      return $ newVolunteer newId details
+    add rotaKey details = findRotaOr404 conn rotaKey $ \rotaId -> do
+      newId <- liftIO $ addVolunteer conn rotaId details
+      return $ newVolunteer newId rotaId details
 
     update :: Text -> Int -> VolunteerDetails -> Handler Volunteer
-    update rotaKey id details = findRotaOr404 conn rotaKey $ do
-      result <- liftIO $ updateVolunteer conn id details
+    update rotaKey id details = findRotaOr404 conn rotaKey $ \rotaId -> do
+      result <- liftIO $ updateVolunteer conn rotaId id details
       case result of
         Just v -> return v
         _ -> throwError err404
  
     activate :: Text -> Int -> Handler Volunteer
-    activate rotaKey id = findRotaOr404 conn rotaKey $ do
-      result <- liftIO $ activateVolunteer conn id
+    activate rotaKey id = findRotaOr404 conn rotaKey $ \rotaId -> do
+      result <- liftIO $ activateVolunteer conn rotaId id
       case result of
         Just v -> return v
         _ -> throwError err404
 
     deactivate :: Text -> Int -> Handler Volunteer
-    deactivate rotaKey id = findRotaOr404 conn rotaKey $ do
-      result <- liftIO $ deactivateVolunteer conn id
+    deactivate rotaKey id = findRotaOr404 conn rotaKey $ \rotaId -> do
+      result <- liftIO $ deactivateVolunteer conn rotaId id
       case result of
         Just v -> return v
         _ -> throwError err404
@@ -113,29 +113,32 @@ module Main where
                         :<|> update rotaKey
     where
     getAll :: Text -> Handler [Shift]
-    getAll rotaKey = findRotaOr404 conn rotaKey $ 
-      liftIO $ getAllShifts conn
+    getAll rotaKey = findRotaOr404 conn rotaKey $ \rotaId -> 
+      liftIO $ getAllShifts conn rotaId
   
     getOne :: Text -> Int -> Int -> Int -> Handler [VolunteerShift]
-    getOne rotaKey y m d = findRotaOr404 conn rotaKey $ 
-      liftIO $ getVolunteerShifts conn $ ShiftDate y m d
+    getOne rotaKey y m d = findRotaOr404 conn rotaKey $ \rotaId -> 
+      liftIO $ getVolunteerShifts conn rotaId $ ShiftDate y m d
 
     add ::  Text -> Int -> Int -> Int -> Int -> ShiftType -> Handler [VolunteerShift]
-    add rotaKey y m d volId shiftType = findRotaOr404 conn rotaKey $ do
+    add rotaKey y m d volId shiftType = findRotaOr404 conn rotaKey $ \rotaId -> do
       --liftIO $ threadDelay 1000000
-      liftIO $ addVolunteerShift conn (ShiftDate y m d) volId shiftType
+      result <- liftIO $ addVolunteerShift conn rotaId (ShiftDate y m d) volId shiftType
+      case result of
+        Just vs -> return vs
+        _ -> throwError err404
 
     remove :: Text -> Int -> Int -> Int -> Int -> Handler [VolunteerShift]
-    remove rotaKey y m d volId = findRotaOr404 conn rotaKey $ do
+    remove rotaKey y m d volId = findRotaOr404 conn rotaKey $ \rotaId -> do
       --liftIO $ threadDelay 10000000
-      result <- liftIO $ removeVolunteerShift conn (ShiftDate y m d) volId
+      result <- liftIO $ removeVolunteerShift conn rotaId (ShiftDate y m d) volId
       case result of
         Just vs -> return vs
         _ -> throwError err404
 
     update :: Text -> Int -> Int -> Int -> Int -> ShiftType -> Handler [VolunteerShift]
-    update rotaKey y m d volId shiftType = findRotaOr404 conn rotaKey $ do
-      result <- liftIO $ updateVolunteerShift conn (ShiftDate y m d) volId shiftType
+    update rotaKey y m d volId shiftType = findRotaOr404 conn rotaKey $ \rotaId -> do
+      result <- liftIO $ updateVolunteerShift conn rotaId (ShiftDate y m d) volId shiftType
       case result of
         Just vs -> return vs
         _ -> throwError err404
@@ -146,16 +149,19 @@ module Main where
                             :<|> clear rotaKey
     where
     get :: Text -> Maybe Text -> Handler (Maybe Int)
-    get rotaKey c = findRotaOr404 conn rotaKey $ get' c
+    get rotaKey c = findRotaOr404 conn rotaKey $ \rotaId -> get' c
       where
       get' Nothing = return Nothing
       get' (Just cookies) = 
+        -- DO THIS:
+        --select vol id from database
+
         return $ readMaybe . T.unpack =<< (lookup "CurrentVolId" $ parseCookiesText $ B.pack $ T.unpack cookies)
     
     set :: Text -> Int -> Handler (Headers '[Header "Set-Cookie" Text] ())
-    set rotaKey id = findRotaOr404 conn rotaKey $ do
+    set rotaKey id = findRotaOr404 conn rotaKey $ \rotaId -> do
       liftIO $ putStrLn "set"
-      result <- liftIO $ getVolunteer conn id
+      result <- liftIO $ getVolunteer conn rotaId id
       case result of
         Nothing -> throwError err404
         Just _ -> do
@@ -163,7 +169,7 @@ module Main where
           return $ addHeader (setCookie "CurrentVolId" id time 10) ()
 
     clear :: Text -> Handler (Headers '[Header "Set-Cookie" Text] ())
-    clear rotaKey = findRotaOr404 conn rotaKey $ do
+    clear rotaKey = findRotaOr404 conn rotaKey $ \rotaId -> do
       liftIO $ putStrLn "clear"
       time <- liftIO $ getCurrentTime
       return $ addHeader (setCookie "CurrentVolId" "" time 10) ()
@@ -180,9 +186,9 @@ module Main where
     rotaId <- getRota conn (T.unpack rotaKey)
     return rotaId
 
-  findRotaOr404 :: ByteString -> Text -> Handler a -> Handler a
+  findRotaOr404 :: ByteString -> Text -> (Int -> Handler a) -> Handler a
   findRotaOr404 conn rotaId handler = do
     rotaId <- liftIO $ findRota conn rotaId
     case rotaId of
-      Just _ -> handler
+      Just id -> handler id
       _ -> throwError err404

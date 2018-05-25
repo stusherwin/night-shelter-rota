@@ -46,7 +46,7 @@ module Database (getAllVolunteers, getVolunteer, addVolunteer, updateVolunteer, 
         _ -> mzero
 
   instance FromRow Volunteer where
-    fromRow = Volunteer <$> field <*> field <*> field <*> field <*> field <*> field <*> field
+    fromRow = Volunteer <$> field <*> field <*> field <*> field <*> field <*> field <*> field <*> field
 
   instance FromField ShiftDate where
     fromField f date = do
@@ -76,36 +76,39 @@ module Database (getAllVolunteers, getVolunteer, addVolunteer, updateVolunteer, 
   (&) :: a -> (a -> b) -> b
   (&) = flip ($)
   
-  getAllVolunteers :: ByteString -> IO [Volunteer]
-  getAllVolunteers connectionString = do
+  getAllVolunteers :: ByteString -> Int -> IO [Volunteer]
+  getAllVolunteers connectionString rotaId = do
     conn <- connectPostgreSQL connectionString
-    result <- query_ conn
-      " select id, name, intro, overnight_pref, overnight_gender_pref, notes, active\
-      \ from volunteer"
+    result <- query conn
+      " select id, rota_id, name, intro, overnight_pref, overnight_gender_pref, notes, active\
+      \ from volunteer\
+      \ where rota_id = ?"
+      (Only rotaId)
     close conn
     return result
 
-  getVolunteer :: ByteString -> Int -> IO (Maybe Volunteer)
-  getVolunteer connectionString id = do
+  getVolunteer :: ByteString -> Int -> Int -> IO (Maybe Volunteer)
+  getVolunteer connectionString rotaId id = do
     conn <- connectPostgreSQL connectionString
     result <- query conn
-      " select id, name, intro, overnight_pref, overnight_gender_pref, notes, active\
+      " select id, rota_id, name, intro, overnight_pref, overnight_gender_pref, notes, active\
       \ from volunteer\
-      \ where id = ?"
-      (Only id)
+      \ where id = ? and rota_id = ?"
+      (id, rotaId)
     close conn
     return $ listToMaybe result
 
-  addVolunteer :: ByteString -> VolunteerDetails -> IO Int
-  addVolunteer connectionString details = do
+  addVolunteer :: ByteString -> Int -> VolunteerDetails -> IO Int
+  addVolunteer connectionString rotaId details = do
     conn <- connectPostgreSQL connectionString
     [Only id] <- query conn
       " insert into volunteer\
-      \   (name, intro, overnight_pref, overnight_gender_pref, notes, active)\
+      \   (rota_id, name, intro, overnight_pref, overnight_gender_pref, notes, active)\
       \ values\
-      \   (?, ?, ?, ?, ?, ?)\
+      \   (?, ?, ?, ?, ?, ?, ?)\
       \ returning id"
-      ( vdName details
+      ( rotaId 
+      , vdName details
       , vdIntro details
       , vdPref details
       , vdGenderPref details
@@ -115,8 +118,8 @@ module Database (getAllVolunteers, getVolunteer, addVolunteer, updateVolunteer, 
     close conn
     return id
   
-  updateVolunteer :: ByteString -> Int -> VolunteerDetails -> IO (Maybe Volunteer)
-  updateVolunteer connectionString id details = do
+  updateVolunteer :: ByteString -> Int -> Int -> VolunteerDetails -> IO (Maybe Volunteer)
+  updateVolunteer connectionString rotaId id details = do
     conn <- connectPostgreSQL connectionString
     result <- query conn
       " update volunteer\
@@ -125,54 +128,59 @@ module Database (getAllVolunteers, getVolunteer, addVolunteer, updateVolunteer, 
       \   , overnight_pref = ?\
       \   , overnight_gender_pref = ?\
       \   , notes = ?\
-      \ where id = ?\
-      \ returning id, name, intro, overnight_pref, overnight_gender_pref, notes, active"
+      \ where id = ? and rota_id = ?\ 
+      \ returning id, rota_id, name, intro, overnight_pref, overnight_gender_pref, notes, active"
       ( vdName details
       , vdIntro details
       , vdPref details
       , vdGenderPref details
       , vdNotes details
       , id
+      , rotaId
       )
     close conn
     return $ listToMaybe result
   
-  activateVolunteer :: ByteString -> Int -> IO (Maybe Volunteer)
-  activateVolunteer connectionString id = do
+  activateVolunteer :: ByteString -> Int -> Int -> IO (Maybe Volunteer)
+  activateVolunteer connectionString rotaId id = do
     conn <- connectPostgreSQL connectionString
     result <- query conn
       " update volunteer\
       \ set active = true\
-      \ where id = ?\
-      \ returning id, name, intro, overnight_pref, overnight_gender_pref, notes, active"
-      (Only id)
+      \ where id = ? and rotaId = ?\
+      \ returning id, rota_id, name, intro, overnight_pref, overnight_gender_pref, notes, active"
+      (id, rotaId)
     close conn
     return $ listToMaybe result
   
-  deactivateVolunteer :: ByteString -> Int -> IO (Maybe Volunteer)
-  deactivateVolunteer connectionString id = do
+  deactivateVolunteer :: ByteString -> Int -> Int -> IO (Maybe Volunteer)
+  deactivateVolunteer connectionString rotaId id = do
     conn <- connectPostgreSQL connectionString
     result <- query conn
       " update volunteer\
       \ set active = false\
-      \ where id = ?\
-      \ returning id, name, intro, overnight_pref, overnight_gender_pref, notes, active"
-      (Only id)
+      \ where id = ? and rota_id = ?\
+      \ returning id, rota_id, name, intro, overnight_pref, overnight_gender_pref, notes, active"
+      (id, rotaId)
     close conn
     return $ listToMaybe result
 
-  getAllShifts :: ByteString -> IO [Shift]
-  getAllShifts connectionString = do
+  getAllShifts :: ByteString -> Int -> IO [Shift]
+  getAllShifts connectionString rotaId = do
     conn <- connectPostgreSQL connectionString
     -- TODO: convert to single db query
-    rVols <- query_ conn
-      " select id, name, intro, overnight_pref, overnight_gender_pref, notes, active\
+    rVols <- query conn
+      " select id, rota_id, name, intro, overnight_pref, overnight_gender_pref, notes, active\
       \ from volunteer v\
-      \ join volunteer_shift vs\
-      \   on vs.volunteer_id = v.id"
-    rVolShifts <- query_ conn
+      \ where rota_id = ?"
+      (Only rotaId)
+    rVolShifts <- query conn
       " select shift_date, volunteer_id, shift_type\
-      \ from volunteer_shift"
+      \ from volunteer_shift vs\
+      \ join volunteer v\
+      \   on vs.volunteer_id = v.id\
+      \ where rota_id = ?"
+      (Only rotaId)
     close conn
     let vols = IM.fromList $ map (\v -> (vId v, v)) (rVols :: [Volunteer])
     -- TODO: handle vol not existing?
@@ -181,127 +189,159 @@ module Database (getAllVolunteers, getVolunteer, addVolunteer, updateVolunteer, 
     let result = (assocs shifts) <&> \(d, vols) -> Shift d vols
     return result
   
-  getVolunteerShifts :: ByteString -> ShiftDate -> IO [VolunteerShift]
-  getVolunteerShifts connectionString shiftDate = do
+  getVolunteerShifts :: ByteString -> Int -> ShiftDate -> IO [VolunteerShift]
+  getVolunteerShifts connectionString rotaId shiftDate = do
     conn <- connectPostgreSQL connectionString
     -- TODO: convert to single db query
     rVols <- query conn
-      " select id, name, intro, overnight_pref, overnight_gender_pref, notes, active\
+      " select id, rota_id, name, intro, overnight_pref, overnight_gender_pref, notes, active\
       \ from volunteer v\
-      \ join volunteer_shift vs\
-      \   on vs.volunteer_id = v.id\
-      \ where shift_date = ?"
-      (Only shiftDate)
+      \ where rota_id = ?"
+      (Only rotaId)
     rVolShifts <- query conn
       " select volunteer_id, shift_type\
-      \ from volunteer_shift\
-      \ where shift_date = ?"
-      (Only shiftDate)
+      \ from volunteer_shift vs\
+      \ join volunteer v\
+      \   on vs.volunteer_id = v.id\
+      \ where shift_date = ? and rota_id = ?"
+      (shiftDate, rotaId)
     close conn
     let vols = IM.fromList $ map (\v -> (vId v, v)) (rVols :: [Volunteer])
     -- TODO: handle vol not existing?
     let result = rVolShifts <&> \(id, st) -> VolunteerShift (fromJust $ IM.lookup id vols) st
     return result
   
-  addVolunteerShift :: ByteString -> ShiftDate -> Int -> ShiftType -> IO [VolunteerShift]
-  addVolunteerShift connectionString shiftDate volId shiftType = do
+  addVolunteerShift :: ByteString -> Int -> ShiftDate -> Int -> ShiftType -> IO (Maybe [VolunteerShift])
+  addVolunteerShift connectionString rotaId shiftDate volId shiftType = do
     conn <- connectPostgreSQL connectionString
     -- TODO: convert to single db query
-    -- Add should be idempotent, shouldn't throw an error if already exists
-    _ <- execute conn
-      " insert into volunteer_shift as vs\
-      \   (shift_date, volunteer_id, shift_type)\
-      \ values\
-      \   (?, ?, ?)\
-      \ on conflict (shift_date, volunteer_id) do update\
-      \   set shift_type = excluded.shift_type\
-      \   where vs.shift_date = excluded.shift_date and vs.volunteer_id = excluded.volunteer_id"
-      ( shiftDate
-      , volId
-      , shiftType
-      )
-  
-    rVols <- query conn
-      " select id, name, intro, overnight_pref, overnight_gender_pref, notes, active\
-      \ from volunteer v\
-      \ join volunteer_shift vs\
-      \   on vs.volunteer_id = v.id\
-      \ where shift_date = ?"
-      (Only shiftDate)
-    rVolShifts <- query conn
-      " select volunteer_id, shift_type\
-      \ from volunteer_shift\
-      \ where shift_date = ?"
-      (Only shiftDate)
-    close conn
-    let vols = IM.fromList $ map (\v -> (vId v, v)) (rVols :: [Volunteer])
-    -- TODO: handle vol not existing?
-    let result = rVolShifts <&> \(id, st) -> VolunteerShift (fromJust $ IM.lookup id vols) st
-    return result
-      
-  removeVolunteerShift :: ByteString -> ShiftDate -> Int -> IO (Maybe [VolunteerShift])
-  removeVolunteerShift connectionString shiftDate volId = do
-    conn <- connectPostgreSQL connectionString
-    -- TODO: convert to single db query
-    count <- execute conn
-      " delete from volunteer_shift\
-      \ where shift_date = ? and volunteer_id = ?"
-      ( shiftDate
-      , volId
-      )
-    if (count == 0) then
-      return Nothing
-    else do
-      rVols <- query conn
-        " select id, name, intro, overnight_pref, overnight_gender_pref, notes, active\
-        \ from volunteer v\
-        \ join volunteer_shift vs\
-        \   on vs.volunteer_id = v.id\
-        \ where shift_date = ?"
-        (Only shiftDate)
-      rVolShifts <- query conn
-        " select volunteer_id, shift_type\
-        \ from volunteer_shift\
-        \ where shift_date = ?"
-        (Only shiftDate)
-      close conn
-      let vols = IM.fromList $ map (\v -> (vId v, v)) (rVols :: [Volunteer])
-      -- TODO: handle vol not existing?
-      let result = rVolShifts <&> \(id, st) -> VolunteerShift (fromJust $ IM.lookup id vols) st
-      return $ Just result
 
-  updateVolunteerShift :: ByteString -> ShiftDate -> Int -> ShiftType -> IO (Maybe [VolunteerShift])
-  updateVolunteerShift connectionString shiftDate volId shiftType = do
-    conn <- connectPostgreSQL connectionString
-    -- TODO: convert to single db query
-    count <- execute conn
-      " update volunteer_shift\
-      \ set shift_type = ?\
-      \ where shift_date = ? and volunteer_id = ?"
-      ( shiftType
-      , shiftDate
-      , volId
-      )
-    if (count == 0) then
+    rVol <- query conn
+      " select id, rota_id, name, intro, overnight_pref, overnight_gender_pref, notes, active\
+      \ from volunteer v\
+      \ where id = ? and rota_id = ?"
+      (volId, rotaId)
+
+    if (length (rVol :: [Volunteer]) == 0) then
       return Nothing
     else do
+      -- Add should be idempotent, shouldn't throw an error if already exists
+      _ <- execute conn
+        " insert into volunteer_shift as vs\
+        \   (shift_date, volunteer_id, shift_type)\
+        \ values\
+        \   (?, ?, ?)\
+        \ on conflict (shift_date, volunteer_id) do update\
+        \   set shift_type = excluded.shift_type\
+        \   where vs.shift_date = excluded.shift_date and vs.volunteer_id = excluded.volunteer_id"
+        ( shiftDate
+        , volId
+        , shiftType
+        )
+    
       rVols <- query conn
-        " select id, name, intro, overnight_pref, overnight_gender_pref, notes, active\
+        " select id, rota_id, name, intro, overnight_pref, overnight_gender_pref, notes, active\
         \ from volunteer v\
-        \ join volunteer_shift vs\
-        \   on vs.volunteer_id = v.id\
-        \ where shift_date = ?"
-        (Only shiftDate)
+        \ where rota_id = ?"
+        (Only rotaId)
+
       rVolShifts <- query conn
         " select volunteer_id, shift_type\
-        \ from volunteer_shift\
-        \ where shift_date = ?"
-        (Only shiftDate)
+        \ from volunteer_shift vs\
+        \ join volunteer v\
+        \   on vs.volunteer_id = v.id\
+        \ where shift_date = ? and rota_id = ?"
+        (shiftDate, rotaId)
+      
       close conn
       let vols = IM.fromList $ map (\v -> (vId v, v)) (rVols :: [Volunteer])
       -- TODO: handle vol not existing?
       let result = rVolShifts <&> \(id, st) -> VolunteerShift (fromJust $ IM.lookup id vols) st
-      return $ Just result
+      return (Just result)
+      
+  removeVolunteerShift :: ByteString -> Int -> ShiftDate -> Int -> IO (Maybe [VolunteerShift])
+  removeVolunteerShift connectionString rotaId shiftDate volId = do
+    conn <- connectPostgreSQL connectionString
+    -- TODO: convert to single db query
+    rVol <- query conn
+      " select id, rota_id, name, intro, overnight_pref, overnight_gender_pref, notes, active\
+      \ from volunteer v\
+      \ where id = ? and rota_id = ?"
+      (volId, rotaId)
+
+    if (length (rVol :: [Volunteer]) == 0) then
+      return Nothing
+    else do
+      count <- execute conn
+        " delete from volunteer_shift\
+        \ where shift_date = ? and volunteer_id = ?"
+        ( shiftDate
+        , volId
+        )
+      if (count == 0) then
+        return Nothing
+      else do
+        rVols <- query conn
+          " select id, rota_id, name, intro, overnight_pref, overnight_gender_pref, notes, active\
+          \ from volunteer v\
+          \ where rota_id = ?"
+          (Only rotaId)
+
+        rVolShifts <- query conn
+          " select volunteer_id, shift_type\
+          \ from volunteer_shift vs\
+          \ join volunteer v\
+          \   on vs.volunteer_id = v.id\
+          \ where shift_date = ? and rota_id = ?"
+          (shiftDate, rotaId)
+        close conn
+        let vols = IM.fromList $ map (\v -> (vId v, v)) (rVols :: [Volunteer])
+        -- TODO: handle vol not existing?
+        let result = rVolShifts <&> \(id, st) -> VolunteerShift (fromJust $ IM.lookup id vols) st
+        return $ Just result
+
+  updateVolunteerShift :: ByteString -> Int -> ShiftDate -> Int -> ShiftType -> IO (Maybe [VolunteerShift])
+  updateVolunteerShift connectionString rotaId shiftDate volId shiftType = do
+    conn <- connectPostgreSQL connectionString
+    -- TODO: convert to single db query
+    rVol <- query conn
+      " select id, rota_id, name, intro, overnight_pref, overnight_gender_pref, notes, active\
+      \ from volunteer v\
+      \ where id = ? and rota_id = ?"
+      (volId, rotaId)
+
+    if (length (rVol :: [Volunteer]) == 0) then
+      return Nothing
+    else do
+      count <- execute conn
+        " update volunteer_shift\
+        \ set shift_type = ?\
+        \ where shift_date = ? and volunteer_id = ?"
+        ( shiftType
+        , shiftDate
+        , volId
+        )
+      if (count == 0) then
+        return Nothing
+      else do
+        rVols <- query conn
+          " select id, rota_id, name, intro, overnight_pref, overnight_gender_pref, notes, active\
+          \ from volunteer v\
+          \ where rota_id = ?"
+          (Only rotaId)
+
+        rVolShifts <- query conn
+          " select volunteer_id, shift_type\
+          \ from volunteer_shift vs\
+          \ join volunteer v\
+          \   on vs.volunteer_id = v.id\
+          \ where shift_date = ? and rota_id = ?"
+          (shiftDate, rotaId)
+        close conn
+        let vols = IM.fromList $ map (\v -> (vId v, v)) (rVols :: [Volunteer])
+        -- TODO: handle vol not existing?
+        let result = rVolShifts <&> \(id, st) -> VolunteerShift (fromJust $ IM.lookup id vols) st
+        return $ Just result
 
   getRota :: ByteString -> String -> IO (Maybe Int)
   getRota connectionString key = do

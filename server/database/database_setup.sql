@@ -43,7 +43,7 @@ create table volunteer_shift
 ( volunteerId  integer not null references volunteer(id)
 , shiftDate    date    not null
 , shiftType    char(1) not null
-, primary key (volunteerId, shiftDate)
+, constraint volunteer_shift_pkey primary key (volunteerId, shiftDate)
 );
 
 insert into volunteer_shift (shiftDate, volunteerId, shiftType) values ('2018-01-07', v1Id, 'O');
