@@ -29,7 +29,7 @@ export class ShelterRota extends React.Component<ShelterRotaProps, ShelterRotaSt
   constructor(props: ShelterRotaProps) {
     super(props)
     let pathParts = window.location.pathname.split('/')
-    let rotaKey = pathParts[pathParts.indexOf('rota') + 1]
+    let rotaKey = pathParts[pathParts.indexOf('r') + 1]
 
     this.state = { initialDataLoaded: false
                  , vols: []
@@ -238,6 +238,6 @@ const RotaNotFound = pure((props: { visible: boolean
   <div className="current-vol-selector">
     <h2>Rota not found</h2>
     <p>The rota you are looking for cannot be found. Please make sure you are using the most up-to-date link.</p>
-    <p>If you don't have a link and you're curious, why don't you have a play with the <a href="/rota/DEMO">demo rota</a>?</p>
+    <p>If you don't have a link and you're curious, why don't you have a play with the <a href="/r/DEMO">demo rota</a>?</p>
   </div>
 ))

@@ -48,6 +48,7 @@ module Main where
   server conn = appServer conn
            :<|> serveFilesWithRota
            :<|> serveDirectoryFileServer "client/static"
+           :<|> serveDirectoryFileServer "client/static"
     where
     serveFilesWithRota :: Text -> Server Raw
     serveFilesWithRota _ = serveDirectoryFileServer "client/static"

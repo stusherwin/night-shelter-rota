@@ -14,7 +14,7 @@ module Api where
            "verify" :> VerifyAPI
       :<|> WithRotaAPI
     )
-
+ 
   type VerifyAPI =
          Capture "rotaKey" Text :> Post '[JSON] Bool
 
@@ -46,7 +46,8 @@ module Api where
     
   type FullAPI =
          AppAPI
-    :<|> "rota" :> Capture "rotaKey" Text :> Raw
+    :<|> "r" :> Capture "rotaKey" Text :> Raw
+    :<|> "r" :> Raw
     :<|> Raw
   
   fullAPI :: Proxy FullAPI
